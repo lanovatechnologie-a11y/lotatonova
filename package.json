@@ -1,26 +1,24 @@
 {
   "name": "nova-lotto",
   "version": "1.0.0",
-  "description": "Système de gestion de loterie multi-niveaux",
+  "description": "Application de loterie Nova Lotto",
   "main": "server/server.js",
+  "engines": {
+    "node": ">=20.0.0"
+  },
   "scripts": {
     "start": "node server/server.js",
-    "dev": "nodemon server/server.js",
-    "render-build": "npm install"
+    "dev": "nodemon server/server.js"
   },
   "dependencies": {
     "express": "^4.18.2",
     "cors": "^2.8.5",
-    "@supabase/supabase-js": "^2.38.0",
     "dotenv": "^16.3.1",
+    "@supabase/supabase-js": "^2.87.3",
     "bcryptjs": "^2.4.3",
-    "jsonwebtoken": "^9.0.2",
-    "express-rate-limit": "^7.1.5"
+    "jsonwebtoken": "^9.0.2"
   },
   "devDependencies": {
     "nodemon": "^3.0.1"
-  },
-  "engines": {
-    "node": "18.x"
   }
 }

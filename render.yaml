@@ -2,18 +2,10 @@ services:
   - type: web
     name: nova-lotto
     env: node
-    region: ohio
     plan: free
+    region: ohio
     buildCommand: npm install
-    startCommand: npm start
+    startCommand: node server.js
     envVars:
-      - key: NODE_ENV
-        value: production
-      - key: PORT
-        value: 10000
-      - key: SUPABASE_URL
-        sync: false
-      - key: SUPABASE_KEY
-        sync: false
-      - key: JWT_SECRET
-        generateValue: true
+      - key: NODE_VERSION
+        value: 20.0.0

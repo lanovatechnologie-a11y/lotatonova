@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const supabase = require('../supabase');
-const authMiddleware = require('../middleware/auth');
+const authMiddleware = require('../middleware/auth'); // Modification ici
 
 // Récupérer la liste des agents
 router.get('/agents', authMiddleware, async (req, res) => {

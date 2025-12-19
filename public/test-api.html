@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tests API - Nova Lotto</title>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            max-width: 800px; 
+            margin: 0 auto; 
+            padding: 20px; 
+            background: #f5f5f5;
+        }
+        .test-section { 
+            background: white; 
+            padding: 20px; 
+            margin: 15px 0; 
+            border-radius: 8px; 
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        button { 
+            background: #007bff; 
+            color: white; 
+            border: none; 
+            padding: 10px 15px; 
+            border-radius: 4px; 
+            cursor: pointer; 
+            margin: 5px;
+        }
+        button:hover { background: #0056b3; }
+        .result { 
+            background: #f8f9fa; 
+            padding: 10px; 
+            margin-top: 10px; 
+            border-radius: 4px; 
+            border-left: 4px solid #007bff;
+            white-space: pre-wrap;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .success { color: green; }
+        .error { color: red; }
+        .loading { color: blue; }
+    </style>
+</head>
+<body>
+    <h1>🧪 Tests API - Nova Lotto</h1>
+    
+    <!-- Test de santé -->
+    <div class="test-section">
+        <h3>1. Test de santé du serveur</h3>
+        <button onclick="testHealth()">Tester /health</button>
+        <div id="health-result" class="result"></div>
+    </div>
+
+    <!-- Test de login -->
+    <div class="test-section">
+        <h3>2. Test de connexion</h3>
+        <div>
+            <label>Utilisateur: </label>
+            <select id="user-select">
+                <option value='{"username":"master","password":"master123"}'>Master</option>
+                <option value='{"username":"superviseur2","password":"sup2123"}'>Superviseur 2</option>
+                <option value='{"username":"superviseur1","password":"sup1123"}'>Superviseur 1</option>
+                <option value='{"username":"agent1","password":"agent123"}'>Agent 1</option>
+            </select>
+        </div>
+        <button onclick="testLogin()">Tester Login</button>
+        <div id="login-result" class="result"></div>
+    </div>
+
+    <!-- Test de création de ticket -->
+    <div class="test-section">
+        <h3>3. Test création de ticket (nécessite token)</h3>
+        <button onclick="testCreateTicket()">Créer un ticket test</button>
+        <div id="ticket-result" class="result"></div>
+    </div>
+
+    <!-- Test de récupération des utilisateurs -->
+    <div class="test-section">
+        <h3>4. Test récupération des utilisateurs</h3>
+        <button onclick="testGetUsers()">Lister les utilisateurs</button>
+        <div id="users-result" class="result"></div>
+    </div>
+
+    <script>
+        const API_BASE = window.location.origin + '/api';
+        let currentToken = '';
+
+        // Fonction pour afficher les résultats
+        function showResult(elementId, data, isError = false) {
+            const element = document.getElementById(elementId);
+            element.innerHTML = `<span class="${isError ? 'error' : 'success'}">${JSON.stringify(data, null, 2)}</span>`;
+        }
+
+        // 1. Test de santé
+        async function testHealth() {
+            const resultElement = document.getElementById('health-result');
+            resultElement.innerHTML = '<span class="loading">Test en cours...</span>';
+            
+            try {
+                const response = await fetch('/health');
+                const data = await response.text();
+                showResult('health-result', data);
+            } catch (error) {
+                showResult('health-result', error.message, true);
+            }
+        }
+
+        // 2. Test de login
+        async function testLogin() {
+            const resultElement = document.getElementById('login-result');
+            resultElement.innerHTML = '<span class="loading">Connexion en cours...</span>';
+            
+            try {
+                const userData = JSON.parse(document.getElementById('user-select').value);
+                
+                const response = await fetch(API_BASE + '/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(userData)
+                });
+                
+                const data = await response.json();
+                
+                if (data.token) {
+                    currentToken = data.token;
+                    showResult('login-result', { 
+                        success: true, 
+                        token: data.token.substring(0, 50) + '...',
+                        user: data.user 
+                    });
+                } else {
+                    showResult('login-result', data, true);
+                }
+            } catch (error) {
+                showResult('login-result', error.message, true);
+            }
+        }
+
+        // 3. Test création de ticket
+        async function testCreateTicket() {
+            if (!currentToken) {
+                showResult('ticket-result', 'Veuillez d\'abord vous connecter', true);
+                return;
+            }
+            
+            const resultElement = document.getElementById('ticket-result');
+            resultElement.innerHTML = '<span class="loading">Création du ticket...</span>';
+            
+            try {
+                const response = await fetch(API_BASE + '/tickets', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + currentToken
+                    },
+                    body: JSON.stringify({
+                        amount: Math.floor(Math.random() * 1000) + 100,
+                        ticket_number: 'TEST' + Date.now()
+                    })
+                });
+                
+                const data = await response.json();
+                showResult('ticket-result', data);
+            } catch (error) {
+                showResult('ticket-result', error.message, true);
+            }
+        }
+
+        // 4. Test récupération utilisateurs
+        async function testGetUsers() {
+            if (!currentToken) {
+                showResult('users-result', 'Veuillez d\'abord vous connecter', true);
+                return;
+            }
+            
+            const resultElement = document.getElementById('users-result');
+            resultElement.innerHTML = '<span class="loading">Récupération des utilisateurs...</span>';
+            
+            try {
+                const response = await fetch(API_BASE + '/users', {
+                    headers: {
+                        'Authorization': 'Bearer ' + currentToken
+                    }
+                });
+                
+                const data = await response.json();
+                showResult('users-result', data);
+            } catch (error) {
+                showResult('users-result', error.message, true);
+            }
+        }
+    </script>
+</body>
+</html>

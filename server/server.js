@@ -1,105 +1,77 @@
+require('dotenv').config();
 const express = require('express');
-const router = express.Router();
-const supabase = require('../supabase');
-const authMiddleware = require('../middleware/auth'); // Modification ici
+const cors = require('cors');
+const path = require('path');
+const rateLimit = require('express-rate-limit');
 
-// Récupérer la liste des agents
-router.get('/agents', authMiddleware, async (req, res) => {
-    try {
-        const userRole = req.user.role;
-        const userId = req.user.id;
-        
-        let query = supabase
-            .from('agents')
-            .select(`
-                *,
-                supervisors_level1(
-                    id,
-                    username,
-                    full_name
-                )
-            `);
-        
-        // Filtrer selon le rôle
-        if (userRole === 'supervisor1') {
-            query = query.eq('supervisor1_id', userId);
-        } else if (userRole === 'supervisor2') {
-            // Récupérer les supervisors1 de ce supervisor2
-            const { data: sup1s } = await supabase
-                .from('supervisors_level1')
-                .select('id')
-                .eq('supervisor2_id', userId);
-            
-            if (sup1s && sup1s.length > 0) {
-                const sup1Ids = sup1s.map(s => s.id);
-                query = query.in('supervisor1_id', sup1Ids);
-            }
-        }
-        
-        const { data, error } = await query.order('created_at', { ascending: false });
-        
-        if (error) {
-            console.error('Get agents error:', error);
-            return res.status(400).json({ 
-                error: 'Erreur de récupération',
-                details: error.message 
-            });
-        }
-        
-        res.json({ 
-            success: true,
-            agents: data || [],
-            count: data ? data.length : 0
-        });
-    } catch (error) {
-        console.error('Get agents error:', error);
-        res.status(500).json({ 
-            error: 'Erreur serveur',
-            message: error.message 
-        });
-    }
+const app = express();
+const PORT = process.env.PORT || 3000;
+
+// Configuration CORS pour production
+const corsOptions = {
+  origin: process.env.FRONTEND_URL || '*',
+  credentials: true,
+  optionsSuccessStatus: 200
+};
+app.use(cors(corsOptions));
+
+// Rate limiting (protection contre les attaques brute force)
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100 // limite chaque IP à 100 requêtes par fenêtre
 });
 
-// Récupérer le profil de l'utilisateur connecté
-router.get('/profile', authMiddleware, async (req, res) => {
-    try {
-        const userId = req.user.id;
-        const userRole = req.user.role;
-        
-        const tables = {
-            master: 'master_users',
-            subsystem: 'subsystem_admins',
-            supervisor2: 'supervisors_level2',
-            supervisor1: 'supervisors_level1',
-            agent: 'agents'
-        };
-        
-        const tableName = tables[userRole];
-        if (!tableName) {
-            return res.status(400).json({ error: 'Type d\'utilisateur invalide' });
-        }
-        
-        const { data, error } = await supabase
-            .from(tableName)
-            .select('*')
-            .eq('id', userId)
-            .single();
-        
-        if (error) {
-            return res.status(400).json({ error: error.message });
-        }
-        
-        // Supprimer le hash du mot de passe
-        delete data.password_hash;
-        
-        res.json({ 
-            success: true,
-            user: data 
-        });
-    } catch (error) {
-        console.error('Get profile error:', error);
-        res.status(500).json({ error: 'Erreur serveur' });
-    }
+// Middlewares essentiels
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+app.use(limiter);
+
+// Servir les fichiers statiques
+app.use(express.static(path.join(__dirname, '../public')));
+
+// Routes API
+const apiRoutes = [
+  { path: '/api/auth', route: require('../routes/auth') },
+  { path: '/api/tickets', route: require('../routes/tickets') },
+  { path: '/api/users', route: require('../routes/users') }
+];
+
+apiRoutes.forEach(route => {
+  app.use(route.path, route.route);
 });
 
-module.exports = router;
+// Route de vérification de santé
+app.get('/api/health', (req, res) => {
+  res.json({
+    status: 'OK',
+    environment: process.env.NODE_ENV || 'development',
+    supabase: !!process.env.SUPABASE_URL,
+    jwt: !!process.env.JWT_SECRET
+  });
+});
+
+// Gestion des routes non trouvées
+app.use((req, res, next) => {
+  res.status(404).json({ error: 'Endpoint non trouvé' });
+});
+
+// Gestion des erreurs centralisée
+app.use((err, req, res, next) => {
+  console.error('Erreur serveur:', err.stack);
+  res.status(500).json({
+    error: 'Erreur interne du serveur',
+    message: process.env.NODE_ENV === 'development' ? err.message : undefined
+  });
+});
+
+// Démarrer le serveur
+app.listen(PORT, () => {
+  console.log('\n' + '='.repeat(50));
+  console.log(`🚀 Serveur Nova Lotto démarré sur le port ${PORT}`);
+  console.log(`🌍 Environnement: ${process.env.NODE_ENV || 'development'}`);
+  console.log(`🔗 Supabase: ${process.env.SUPABASE_URL ? 'Connecté' : 'Non configuré'}`);
+  console.log(`🔒 JWT: ${process.env.JWT_SECRET ? 'Configuré' : 'Non configuré'}`);
+  console.log('='.repeat(50) + '\n');
+});
+
+module.exports = app;

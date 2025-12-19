@@ -1,5 +1,5 @@
 {
-  "name": "nova-lotto",
+  "name": "lotatonova",
   "version": "1.0.0",
   "description": "Système de gestion de loterie Nova Lotto",
   "main": "server.js",

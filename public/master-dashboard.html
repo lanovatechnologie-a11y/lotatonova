@@ -6,6 +6,7 @@
     <title>Nova / LOTATO - Administration Master</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="manifest" href="manifest.json">
+    <script src="/config.js"></script>
     <style>
         :root {
             --primary-color: #2c3e50;
@@ -838,6 +839,10 @@
                 <div class="nav-icon"><i class="fas fa-building"></i></div>
                 <div class="nav-label">Sous-systèmes</div>
             </a>
+            <a href="#" class="nav-item" data-section="detailed-stats">
+                <div class="nav-icon"><i class="fas fa-chart-pie"></i></div>
+                <div class="nav-label">Statistiques détaillées</div>
+            </a>
             <a href="#" class="nav-item" data-section="reports">
                 <div class="nav-icon"><i class="fas fa-chart-bar"></i></div>
                 <div class="nav-label">Rapports</div>
@@ -1091,6 +1096,208 @@
                             <i class="fas fa-chevron-right"></i>
                         </button>
                     </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Detailed Stats Section -->
+        <div id="detailed-stats-section" class="section-content" style="display: none;">
+            <div class="tabs">
+                <button class="tab active" data-stats-tab="agents">Agents</button>
+                <button class="tab" data-stats-tab="supervisors">Superviseurs</button>
+                <button class="tab" data-stats-tab="subsystems-stats">Sous-systèmes</button>
+                <button class="tab" data-stats-tab="global">Global</button>
+            </div>
+            
+            <div class="tab-content active" id="agents-tab">
+                <div class="table-container">
+                    <div class="table-header">
+                        <div class="table-title">Statistiques des Agents</div>
+                        <div class="search-box">
+                            <input type="text" class="search-input" placeholder="Rechercher un agent..." id="search-agents">
+                            <button class="btn btn-primary" id="search-agents-btn">
+                                <i class="fas fa-search"></i>
+                            </button>
+                            <select class="form-control" id="filter-online" style="width: 180px;">
+                                <option value="all">Tous les statuts</option>
+                                <option value="online">En ligne</option>
+                                <option value="offline">Hors ligne</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="loading" id="agents-loading">
+                        <div class="loading-spinner"></div>
+                        <p>Chargement des statistiques agents...</p>
+                    </div>
+                    
+                    <table class="table" id="agents-table" style="display: none;">
+                        <thead>
+                            <tr>
+                                <th>Agent</th>
+                                <th>Sous-système</th>
+                                <th>Statut</th>
+                                <th>Ventes (HTG)</th>
+                                <th>Gains (HTG)</th>
+                                <th>Pertes (HTG)</th>
+                                <th>Profit (HTG)</th>
+                                <th>Taux de réussite</th>
+                                <th>Activité</th>
+                            </tr>
+                        </thead>
+                        <tbody id="agents-table-body">
+                            <!-- Rempli dynamiquement -->
+                        </tbody>
+                    </table>
+                    
+                    <div class="empty-state" id="agents-empty" style="display: none;">
+                        <div class="empty-icon">
+                            <i class="fas fa-user"></i>
+                        </div>
+                        <h3>Aucune donnée d'agent disponible</h3>
+                        <p>Les statistiques seront disponibles lorsque les agents commenceront à travailler</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="tab-content" id="supervisors-tab">
+                <div class="table-container">
+                    <div class="table-header">
+                        <div class="table-title">Statistiques des Superviseurs</div>
+                        <div class="search-box">
+                            <input type="text" class="search-input" placeholder="Rechercher un superviseur...">
+                            <button class="btn btn-primary">
+                                <i class="fas fa-search"></i>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="loading" id="supervisors-loading">
+                        <div class="loading-spinner"></div>
+                        <p>Chargement des statistiques superviseurs...</p>
+                    </div>
+                    
+                    <table class="table" id="supervisors-table" style="display: none;">
+                        <thead>
+                            <tr>
+                                <th>Superviseur</th>
+                                <th>Sous-système</th>
+                                <th>Agents sous supervision</th>
+                                <th>Ventes totales (HTG)</th>
+                                <th>Gains totaux (HTG)</th>
+                                <th>Pertes totales (HTG)</th>
+                                <th>Profit total (HTG)</th>
+                                <th>Performance</th>
+                            </tr>
+                        </thead>
+                        <tbody id="supervisors-table-body">
+                            <!-- Rempli dynamiquement -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <div class="tab-content" id="subsystems-stats-tab">
+                <div class="table-container">
+                    <div class="table-header">
+                        <div class="table-title">Statistiques détaillées par Sous-système</div>
+                        <div class="search-box">
+                            <input type="text" class="search-input" placeholder="Rechercher un sous-système...">
+                            <button class="btn btn-primary">
+                                <i class="fas fa-search"></i>
+                            </button>
+                            <select class="form-control" id="filter-period" style="width: 150px;">
+                                <option value="today">Aujourd'hui</option>
+                                <option value="week">Cette semaine</option>
+                                <option value="month" selected>Ce mois</option>
+                                <option value="quarter">Ce trimestre</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="loading" id="subsystems-stats-loading">
+                        <div class="loading-spinner"></div>
+                        <p>Chargement des statistiques détaillées...</p>
+                    </div>
+                    
+                    <table class="table" id="subsystems-stats-table" style="display: none;">
+                        <thead>
+                            <tr>
+                                <th>Sous-système</th>
+                                <th>Agents actifs</th>
+                                <th>Ventes (HTG)</th>
+                                <th>Gains (HTG)</th>
+                                <th>Pertes (HTG)</th>
+                                <th>Profit (HTG)</th>
+                                <th>Commission Master</th>
+                                <th>Taux de profit</th>
+                                <th>Détails</th>
+                            </tr>
+                        </thead>
+                        <tbody id="subsystems-stats-table-body">
+                            <!-- Rempli dynamiquement -->
+                        </tbody>
+                    </table>
+                </div>
+                
+                <!-- Graphiques de performance par sous-système -->
+                <div class="chart-container" style="margin-top: 30px;">
+                    <div class="chart-title">Performance comparée des sous-systèmes</div>
+                    <canvas id="subsystems-comparison-chart" height="80"></canvas>
+                </div>
+            </div>
+            
+            <div class="tab-content" id="global-tab">
+                <div class="stats-cards">
+                    <div class="stat-card">
+                        <div class="stat-icon" style="background-color: #3498db;">
+                            <i class="fas fa-users"></i>
+                        </div>
+                        <div class="stat-info">
+                            <div class="stat-value" id="total-active-agents">0</div>
+                            <div class="stat-label">Agents actifs</div>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card">
+                        <div class="stat-icon" style="background-color: #9b59b6;">
+                            <i class="fas fa-user-tie"></i>
+                        </div>
+                        <div class="stat-info">
+                            <div class="stat-value" id="total-active-supervisors">0</div>
+                            <div class="stat-label">Superviseurs actifs</div>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card">
+                        <div class="stat-icon" style="background-color: #2ecc71;">
+                            <i class="fas fa-money-bill-wave"></i>
+                        </div>
+                        <div class="stat-info">
+                            <div class="stat-value" id="global-sales">0 HTG</div>
+                            <div class="stat-label">Ventes globales</div>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card">
+                        <div class="stat-icon" style="background-color: #e74c3c;">
+                            <i class="fas fa-chart-line"></i>
+                        </div>
+                        <div class="stat-info">
+                            <div class="stat-value" id="global-profit">0 HTG</div>
+                            <div class="stat-label">Profit global</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="chart-container">
+                    <div class="chart-title">Évolution du profit global (30 derniers jours)</div>
+                    <canvas id="global-profit-chart" height="100"></canvas>
+                </div>
+                
+                <div class="chart-container">
+                    <div class="chart-title">Répartition des ventes par type de jeu</div>
+                    <canvas id="games-distribution-chart" height="100"></canvas>
                 </div>
             </div>
         </div>
@@ -1479,6 +1686,9 @@
         let totalPages = 1;
         let currentSubsystems = [];
         let revenueChart = null;
+        let statsChart1 = null;
+        let statsChart2 = null;
+        let statsChart3 = null;
         
         // Initialisation
         document.addEventListener('DOMContentLoaded', function() {
@@ -1659,6 +1869,14 @@
             document.getElementById('prev-page').addEventListener('click', () => changePage(-1));
             document.getElementById('next-page').addEventListener('click', () => changePage(1));
             
+            // Tabs statistiques détaillées
+            document.querySelectorAll('[data-stats-tab]').forEach(tab => {
+                tab.addEventListener('click', function() {
+                    const tabId = this.getAttribute('data-stats-tab');
+                    switchStatsTab(tabId);
+                });
+            });
+            
             // Tabs rapports
             document.querySelectorAll('[data-report-tab]').forEach(tab => {
                 tab.addEventListener('click', function() {
@@ -1689,6 +1907,10 @@
             // Génération de rapport
             document.getElementById('generate-report').addEventListener('click', generateConsolidatedReport);
             document.getElementById('export-report').addEventListener('click', exportReport);
+            
+            // Recherche agents
+            document.getElementById('search-agents').addEventListener('input', filterAgents);
+            document.getElementById('filter-online').addEventListener('change', loadAgentsStats);
         }
         
         // Afficher une section
@@ -1713,6 +1935,9 @@
                         break;
                     case 'subsystems':
                         loadAllSubsystems();
+                        break;
+                    case 'detailed-stats':
+                        loadAgentsStats();
                         break;
                     case 'reports':
                         generateConsolidatedReport();
@@ -2482,6 +2707,37 @@
             document.getElementById('edit-subsystem-modal').classList.remove('active');
         }
         
+        // Changer l'onglet des statistiques
+        function switchStatsTab(tabId) {
+            // Mettre à jour les tabs
+            document.querySelectorAll('[data-stats-tab]').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.querySelector(`[data-stats-tab="${tabId}"]`).classList.add('active');
+            
+            // Afficher le contenu correspondant
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            document.getElementById(`${tabId}-tab`).classList.add('active');
+            
+            // Charger les données correspondantes
+            switch(tabId) {
+                case 'agents':
+                    loadAgentsStats();
+                    break;
+                case 'supervisors':
+                    loadSupervisorsStats();
+                    break;
+                case 'subsystems-stats':
+                    loadSubsystemsStats();
+                    break;
+                case 'global':
+                    loadGlobalStats();
+                    break;
+            }
+        }
+        
         // Changer l'onglet des rapports
         function switchReportTab(tabId) {
             // Mettre à jour les tabs
@@ -2510,6 +2766,463 @@
                 content.classList.remove('active');
             });
             document.getElementById(`${tabId}-tab`).classList.add('active');
+        }
+        
+        // Charger les statistiques détaillées des agents
+        async function loadAgentsStats() {
+            const loading = document.getElementById('agents-loading');
+            const table = document.getElementById('agents-table');
+            const empty = document.getElementById('agents-empty');
+            const tbody = document.getElementById('agents-table-body');
+            
+            loading.style.display = 'flex';
+            table.style.display = 'none';
+            empty.style.display = 'none';
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}${APP_CONFIG.agents}?detailed=true`, {
+                    headers: {
+                        'Authorization': `Bearer ${masterToken}`
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    const agents = data.agents || [];
+                    
+                    if (agents.length === 0) {
+                        loading.style.display = 'none';
+                        empty.style.display = 'block';
+                        return;
+                    }
+                    
+                    tbody.innerHTML = '';
+                    
+                    agents.forEach(agent => {
+                        const profit = (agent.total_sales || 0) - (agent.total_payout || 0);
+                        const successRate = agent.total_tickets > 0 ? 
+                            Math.round((agent.winning_tickets || 0) / agent.total_tickets * 100) : 0;
+                        
+                        const row = document.createElement('tr');
+                        row.innerHTML = `
+                            <td>
+                                <strong>${agent.full_name || agent.username}</strong>
+                                <div style="font-size: 0.8rem; color: #6c757d;">
+                                    ${agent.email || ''}
+                                </div>
+                            </td>
+                            <td>${agent.subsystem_name || 'N/A'}</td>
+                            <td>
+                                <span class="status-badge ${agent.is_online ? 'status-active' : 'status-inactive'}">
+                                    ${agent.is_online ? 'En ligne' : 'Hors ligne'}
+                                </span>
+                            </td>
+                            <td>${(agent.total_sales || 0).toLocaleString()} HTG</td>
+                            <td style="color: #27ae60; font-weight: bold;">
+                                ${(agent.total_payout || 0).toLocaleString()} HTG
+                            </td>
+                            <td style="color: #e74c3c; font-weight: bold;">
+                                ${((agent.total_sales || 0) - (agent.total_payout || 0) < 0 ? 
+                                    Math.abs(profit) : 0).toLocaleString()} HTG
+                            </td>
+                            <td style="color: ${profit >= 0 ? '#27ae60' : '#e74c3c'}; font-weight: bold;">
+                                ${profit.toLocaleString()} HTG
+                            </td>
+                            <td>
+                                <div class="progress-bar" style="height: 10px; margin-bottom: 5px;">
+                                    <div class="progress-fill" style="width: ${Math.min(successRate, 100)}%"></div>
+                                </div>
+                                ${successRate}%
+                            </td>
+                            <td>
+                                ${agent.last_active ? 
+                                    `Dernière activité: ${new Date(agent.last_active).toLocaleTimeString('fr-FR')}` :
+                                    'Aucune activité'}
+                            </td>
+                        `;
+                        
+                        tbody.appendChild(row);
+                    });
+                    
+                    loading.style.display = 'none';
+                    table.style.display = 'table';
+                }
+            } catch (error) {
+                console.error('Erreur chargement agents:', error);
+                loading.style.display = 'none';
+                empty.style.display = 'block';
+                showNotification('Erreur lors du chargement des agents', 'error');
+            }
+        }
+        
+        // Filtrer les agents
+        function filterAgents() {
+            const searchTerm = document.getElementById('search-agents').value.toLowerCase();
+            const statusFilter = document.getElementById('filter-online').value;
+            const rows = document.querySelectorAll('#agents-table-body tr');
+            
+            rows.forEach(row => {
+                const text = row.textContent.toLowerCase();
+                const isOnline = row.querySelector('.status-badge')?.textContent.includes('En ligne');
+                
+                let shouldShow = true;
+                
+                if (searchTerm && !text.includes(searchTerm)) {
+                    shouldShow = false;
+                }
+                
+                if (statusFilter === 'online' && !isOnline) {
+                    shouldShow = false;
+                } else if (statusFilter === 'offline' && isOnline) {
+                    shouldShow = false;
+                }
+                
+                row.style.display = shouldShow ? '' : 'none';
+            });
+        }
+        
+        // Charger les statistiques des superviseurs
+        async function loadSupervisorsStats() {
+            const loading = document.getElementById('supervisors-loading');
+            const table = document.getElementById('supervisors-table');
+            const tbody = document.getElementById('supervisors-table-body');
+            
+            loading.style.display = 'flex';
+            table.style.display = 'none';
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}${APP_CONFIG.users}?role=supervisor&detailed=true`, {
+                    headers: {
+                        'Authorization': `Bearer ${masterToken}`
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    const supervisors = data.users || [];
+                    
+                    tbody.innerHTML = '';
+                    
+                    supervisors.forEach(supervisor => {
+                        const profit = (supervisor.total_sales || 0) - (supervisor.total_payout || 0);
+                        const performance = supervisor.agents_count > 0 ? 
+                            Math.round((supervisor.total_sales || 0) / supervisor.agents_count) : 0;
+                        
+                        const row = document.createElement('tr');
+                        row.innerHTML = `
+                            <td>
+                                <strong>${supervisor.full_name || supervisor.username}</strong>
+                                <div style="font-size: 0.8rem; color: #6c757d;">
+                                    ${supervisor.email || ''}
+                                </div>
+                            </td>
+                            <td>${supervisor.subsystem_name || 'N/A'}</td>
+                            <td>${supervisor.agents_count || 0}</td>
+                            <td>${(supervisor.total_sales || 0).toLocaleString()} HTG</td>
+                            <td style="color: #27ae60;">${(supervisor.total_payout || 0).toLocaleString()} HTG</td>
+                            <td style="color: #e74c3c;">
+                                ${((supervisor.total_sales || 0) - (supervisor.total_payout || 0) < 0 ? 
+                                    Math.abs(profit) : 0).toLocaleString()} HTG
+                            </td>
+                            <td style="color: ${profit >= 0 ? '#27ae60' : '#e74c3c'}; font-weight: bold;">
+                                ${profit.toLocaleString()} HTG
+                            </td>
+                            <td>
+                                <div class="progress-bar" style="height: 10px;">
+                                    <div class="progress-fill" style="width: ${Math.min(performance / 10000, 100)}%"></div>
+                                </div>
+                                ${performance.toLocaleString()} HTG/agent
+                            </td>
+                        `;
+                        
+                        tbody.appendChild(row);
+                    });
+                    
+                    loading.style.display = 'none';
+                    table.style.display = 'table';
+                }
+            } catch (error) {
+                console.error('Erreur chargement superviseurs:', error);
+                loading.style.display = 'none';
+                showNotification('Erreur lors du chargement des superviseurs', 'error');
+            }
+        }
+        
+        // Charger les statistiques des sous-systèmes
+        async function loadSubsystemsStats() {
+            const loading = document.getElementById('subsystems-stats-loading');
+            const table = document.getElementById('subsystems-stats-table');
+            const tbody = document.getElementById('subsystems-stats-table-body');
+            
+            loading.style.display = 'flex';
+            table.style.display = 'none';
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/master/subsystems/stats`, {
+                    headers: {
+                        'Authorization': `Bearer ${masterToken}`
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    const subsystems = data.subsystems || [];
+                    
+                    tbody.innerHTML = '';
+                    
+                    subsystems.forEach(subsystem => {
+                        const profit = (subsystem.total_sales || 0) - (subsystem.total_payout || 0);
+                        const profitRate = subsystem.total_sales > 0 ? 
+                            Math.round((profit / subsystem.total_sales) * 100) : 0;
+                        const masterCommission = profit * 0.1; // 10% de commission pour le master
+                        
+                        const row = document.createElement('tr');
+                        row.innerHTML = `
+                            <td>
+                                <strong>${subsystem.name}</strong>
+                                <div style="font-size: 0.8rem; color: #6c757d;">
+                                    ${subsystem.subdomain}
+                                </div>
+                            </td>
+                            <td>${subsystem.active_agents || 0}</td>
+                            <td>${(subsystem.total_sales || 0).toLocaleString()} HTG</td>
+                            <td style="color: #27ae60;">${(subsystem.total_payout || 0).toLocaleString()} HTG</td>
+                            <td style="color: #e74c3c;">
+                                ${((subsystem.total_sales || 0) - (subsystem.total_payout || 0) < 0 ? 
+                                    Math.abs(profit) : 0).toLocaleString()} HTG
+                            </td>
+                            <td style="color: ${profit >= 0 ? '#27ae60' : '#e74c3c'}; font-weight: bold;">
+                                ${profit.toLocaleString()} HTG
+                            </td>
+                            <td style="color: #9b59b6; font-weight: bold;">
+                                ${masterCommission.toLocaleString()} HTG
+                            </td>
+                            <td>
+                                <span style="color: ${profitRate >= 0 ? '#27ae60' : '#e74c3c'}">
+                                    ${profitRate}%
+                                </span>
+                            </td>
+                            <td>
+                                <button class="action-btn view" onclick="viewSubsystem('${subsystem.id}')" title="Voir détails">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                            </td>
+                        `;
+                        
+                        tbody.appendChild(row);
+                    });
+                    
+                    loading.style.display = 'none';
+                    table.style.display = 'table';
+                    
+                    // Mettre à jour le graphique de comparaison
+                    updateSubsystemsComparisonChart(subsystems);
+                }
+            } catch (error) {
+                console.error('Erreur chargement stats sous-systèmes:', error);
+                loading.style.display = 'none';
+                showNotification('Erreur lors du chargement des statistiques', 'error');
+            }
+        }
+        
+        // Mettre à jour le graphique de comparaison des sous-systèmes
+        function updateSubsystemsComparisonChart(subsystems) {
+            const ctx = document.getElementById('subsystems-comparison-chart').getContext('2d');
+            
+            const labels = subsystems.map(s => s.name);
+            const profits = subsystems.map(s => {
+                const profit = (s.total_sales || 0) - (s.total_payout || 0);
+                return profit;
+            });
+            const sales = subsystems.map(s => s.total_sales || 0);
+            
+            if (statsChart1) {
+                statsChart1.destroy();
+            }
+            
+            statsChart1 = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'Ventes (HTG)',
+                            data: sales,
+                            backgroundColor: '#3498db',
+                            borderColor: '#2980b9',
+                            borderWidth: 1
+                        },
+                        {
+                            label: 'Profit (HTG)',
+                            data: profits,
+                            backgroundColor: profits.map(p => p >= 0 ? '#2ecc71' : '#e74c3c'),
+                            borderColor: profits.map(p => p >= 0 ? '#27ae60' : '#c0392b'),
+                            borderWidth: 1
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top'
+                        },
+                        title: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return value.toLocaleString() + ' HTG';
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
+        // Charger les statistiques globales
+        async function loadGlobalStats() {
+            try {
+                const response = await fetch(`${API_BASE_URL}${APP_CONFIG.statistics}`, {
+                    headers: {
+                        'Authorization': `Bearer ${masterToken}`
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    const stats = data.statistics || {};
+                    
+                    // Mettre à jour les cartes
+                    document.getElementById('total-active-agents').textContent = stats.active_agents || 0;
+                    document.getElementById('total-active-supervisors').textContent = stats.active_supervisors || 0;
+                    document.getElementById('global-sales').textContent = (stats.total_sales || 0).toLocaleString() + ' HTG';
+                    document.getElementById('global-profit').textContent = (stats.total_profit || 0).toLocaleString() + ' HTG';
+                    
+                    // Mettre à jour les graphiques
+                    updateGlobalProfitChart(stats);
+                    updateGamesDistributionChart(stats);
+                }
+            } catch (error) {
+                console.error('Erreur chargement stats globales:', error);
+                showNotification('Erreur lors du chargement des statistiques globales', 'error');
+            }
+        }
+        
+        // Mettre à jour le graphique de profit global
+        function updateGlobalProfitChart(stats) {
+            const ctx = document.getElementById('global-profit-chart').getContext('2d');
+            
+            // Données de démo pour les 30 derniers jours
+            const labels = [];
+            const profitData = [];
+            
+            for (let i = 29; i >= 0; i--) {
+                const date = new Date();
+                date.setDate(date.getDate() - i);
+                labels.push(date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }));
+                
+                // Générer des données aléatoires pour la démo
+                const dailyProfit = (stats.total_profit || 10000) * (0.8 + Math.random() * 0.4) / 30;
+                profitData.push(Math.round(dailyProfit));
+            }
+            
+            if (statsChart2) {
+                statsChart2.destroy();
+            }
+            
+            statsChart2 = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Profit quotidien (HTG)',
+                        data: profitData,
+                        borderColor: '#e74c3c',
+                        backgroundColor: 'rgba(231, 76, 60, 0.1)',
+                        borderWidth: 2,
+                        fill: true,
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top'
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return value.toLocaleString() + ' HTG';
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
+        // Mettre à jour le graphique de distribution des jeux
+        function updateGamesDistributionChart(stats) {
+            const ctx = document.getElementById('games-distribution-chart').getContext('2d');
+            
+            // Données de démo
+            const games = ['Borlette', 'Lotto 3', 'Lotto 4', 'Lotto 5', 'Grap', 'Marriage'];
+            const colors = ['#3498db', '#2ecc71', '#f39c12', '#9b59b6', '#e74c3c', '#1abc9c'];
+            
+            // Générer des données aléatoires pour la démo
+            const salesData = games.map(() => Math.floor(Math.random() * 10000) + 5000);
+            
+            if (statsChart3) {
+                statsChart3.destroy();
+            }
+            
+            statsChart3 = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: games,
+                    datasets: [{
+                        data: salesData,
+                        backgroundColor: colors,
+                        borderColor: colors.map(c => c.replace('0.8', '1')),
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const label = context.label || '';
+                                    const value = context.raw || 0;
+                                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                    const percentage = Math.round((value / total) * 100);
+                                    return `${label}: ${value.toLocaleString()} HTG (${percentage}%)`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
         }
         
         // Générer un rapport consolidé
@@ -2720,6 +3433,13 @@
             
             if (document.getElementById('subsystems-section').style.display !== 'none') {
                 loadAllSubsystems();
+            }
+            
+            if (document.getElementById('detailed-stats-section').style.display !== 'none') {
+                const activeTab = document.querySelector('[data-stats-tab].active');
+                if (activeTab) {
+                    switchStatsTab(activeTab.getAttribute('data-stats-tab'));
+                }
             }
             
             // Réactiver le bouton après 2 secondes

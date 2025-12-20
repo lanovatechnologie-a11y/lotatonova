@@ -6,6 +6,10 @@
     <title>LOTATO - Superviseur Niveau 1</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="manifest" href="manifest.json">
+    
+    <!-- Configuration -->
+    <script src="/config.js"></script>
+    
     <style>
         :root {
             --primary-color: #3498db;
@@ -212,6 +216,15 @@
             background-color: #c0392b;
         }
         
+        .btn-info {
+            background-color: #17a2b8;
+            color: white;
+        }
+        
+        .btn-info:hover {
+            background-color: #138496;
+        }
+        
         /* Stats Cards */
         .stats-cards {
             display: grid;
@@ -366,6 +379,16 @@
             color: #856404;
         }
         
+        .status-profit {
+            background-color: #d1ecf1;
+            color: #0c5460;
+        }
+        
+        .status-loss {
+            background-color: #f5c6cb;
+            color: #721c24;
+        }
+        
         /* Action Buttons */
         .action-buttons {
             display: flex;
@@ -435,7 +458,7 @@
             background-color: white;
             border-radius: 10px;
             width: 100%;
-            max-width: 500px;
+            max-width: 800px;
             max-height: 90vh;
             overflow-y: auto;
             box-shadow: 0 10px 30px rgba(0,0,0,0.2);
@@ -775,6 +798,136 @@
             font-size: 0.75rem;
             font-weight: bold;
         }
+        
+        /* Results Container */
+        .results-container {
+            background-color: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.08);
+            margin-top: 20px;
+        }
+        
+        .result-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .result-item:last-child {
+            border-bottom: none;
+        }
+        
+        .result-agent {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .result-agent-avatar {
+            width: 40px;
+            height: 40px;
+            background-color: #3498db;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+        }
+        
+        .result-agent-info h4 {
+            margin: 0;
+            color: var(--secondary-color);
+        }
+        
+        .result-agent-info p {
+            margin: 3px 0 0 0;
+            color: #6c757d;
+            font-size: 0.85rem;
+        }
+        
+        .result-numbers {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+            max-width: 300px;
+        }
+        
+        .result-number {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 2px 8px;
+            font-size: 0.85rem;
+        }
+        
+        .result-winning {
+            background-color: #d4edda;
+            color: #155724;
+            border-color: #c3e6cb;
+        }
+        
+        .result-amounts {
+            display: flex;
+            gap: 20px;
+        }
+        
+        .result-amount {
+            text-align: right;
+        }
+        
+        .result-amount .label {
+            font-size: 0.85rem;
+            color: #6c757d;
+        }
+        
+        .result-amount .value {
+            font-weight: bold;
+            color: var(--secondary-color);
+            font-size: 1.1rem;
+        }
+        
+        .result-total {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+        
+        .result-total-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+        
+        .result-total-row.total {
+            font-weight: bold;
+            font-size: 1.2rem;
+            border-top: 2px solid #dee2e6;
+            padding-top: 10px;
+            margin-top: 10px;
+        }
+        
+        /* Draw Button */
+        .draw-section {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .draw-input-group {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        
+        .draw-input {
+            width: 200px;
+        }
     </style>
 </head>
 <body>
@@ -807,6 +960,10 @@
             <a href="#" class="nav-item" data-section="tickets">
                 <div class="nav-icon"><i class="fas fa-ticket-alt"></i></div>
                 <div class="nav-label">Tickets</div>
+            </a>
+            <a href="#" class="nav-item" data-section="draw">
+                <div class="nav-icon"><i class="fas fa-trophy"></i></div>
+                <div class="nav-label">Tirage & Résultats</div>
             </a>
             <a href="#" class="nav-item" data-section="codes">
                 <div class="nav-icon"><i class="fas fa-key"></i></div>
@@ -1144,6 +1301,110 @@
             </div>
         </div>
         
+        <!-- Draw & Results Section -->
+        <div id="draw-section" class="section-content" style="display: none;">
+            <div class="table-container">
+                <div class="table-header">
+                    <div class="table-title">Tirage & Résultats des Agents</div>
+                    <div style="display: flex; gap: 10px; align-items: center;">
+                        <div class="draw-input-group">
+                            <select class="form-control draw-input" id="draw-date">
+                                <option value="">Sélectionner une date</option>
+                            </select>
+                            <select class="form-control draw-input" id="draw-lottery">
+                                <option value="">Sélectionner une loterie</option>
+                            </select>
+                        </div>
+                        <button class="btn btn-info" id="show-agents-sales-btn">
+                            <i class="fas fa-eye"></i> Voir ventes agents
+                        </button>
+                        <button class="btn btn-success" id="draw-results-btn">
+                            <i class="fas fa-trophy"></i> Effectuer le tirage
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Agents Sales Summary -->
+                <div id="agents-sales-summary" style="display: none; margin-bottom: 20px;">
+                    <h4 style="color: var(--secondary-color); margin-bottom: 15px;">Ventes par Agent</h4>
+                    <div class="loading" id="sales-summary-loading">
+                        <div class="loading-spinner"></div>
+                        <p>Chargement des ventes...</p>
+                    </div>
+                    
+                    <div id="sales-summary-content" style="display: none;">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Agent</th>
+                                    <th>En ligne</th>
+                                    <th>Tickets vendus</th>
+                                    <th>Montant total vendu</th>
+                                    <th>Commission</th>
+                                </tr>
+                            </thead>
+                            <tbody id="sales-summary-body">
+                                <!-- Rempli dynamiquement -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                
+                <!-- Draw Results -->
+                <div id="draw-results-container" style="display: none;">
+                    <h4 style="color: var(--secondary-color); margin-bottom: 15px;">Résultats du Tirage</h4>
+                    
+                    <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                            <h5 style="margin: 0; color: var(--secondary-color);">Nombres gagnants</h5>
+                            <div id="winning-numbers" style="display: flex; gap: 10px;">
+                                <!-- Rempli dynamiquement -->
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="results-container">
+                        <h5 style="color: var(--secondary-color); margin-bottom: 15px;">Résultats par Agent</h5>
+                        
+                        <div class="loading" id="draw-results-loading">
+                            <div class="loading-spinner"></div>
+                            <p>Calcul des résultats...</p>
+                        </div>
+                        
+                        <div id="draw-results-content" style="display: none;">
+                            <div id="agent-results-list">
+                                <!-- Rempli dynamiquement -->
+                            </div>
+                            
+                            <div class="result-total">
+                                <div class="result-total-row">
+                                    <span>Total vendu par tous les agents:</span>
+                                    <span id="total-sales-all" class="value">0 HTG</span>
+                                </div>
+                                <div class="result-total-row">
+                                    <span>Total des fiches gagnantes:</span>
+                                    <span id="total-winning-all" class="value">0 HTG</span>
+                                </div>
+                                <div class="result-total-row total">
+                                    <span>Balance:</span>
+                                    <span id="total-balance" class="value">0 HTG</span>
+                                    <span id="balance-status" class="status-badge" style="margin-left: 10px;"></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="empty-state" id="draw-empty" style="display: none;">
+                    <div class="empty-icon">
+                        <i class="fas fa-trophy"></i>
+                    </div>
+                    <h3>Aucune donnée de tirage</h3>
+                    <p>Sélectionnez une date et une loterie pour voir les résultats</p>
+                </div>
+            </div>
+        </div>
+        
         <!-- Codes Section -->
         <div id="codes-section" class="section-content" style="display: none;">
             <div class="table-container">
@@ -1459,6 +1720,7 @@
         let currentUser = JSON.parse(localStorage.getItem('novaLottoSupervisorL1User') || '{}');
         let currentAssignedAgents = [];
         let selectedTickets = new Set();
+        let lotteryGames = [];
         
         // Initialisation
         document.addEventListener('DOMContentLoaded', function() {
@@ -1476,6 +1738,8 @@
             // Charger les données initiales
             loadDashboardData();
             loadAssignedAgents();
+            loadLotteryGames();
+            loadDrawDates();
             
             // Configurer les événements
             setupEventListeners();
@@ -1565,6 +1829,10 @@
             document.getElementById('export-report').addEventListener('click', exportReport);
             document.getElementById('generate-agent-report').addEventListener('click', generateAgentReport);
             
+            // Tirage et résultats
+            document.getElementById('show-agents-sales-btn').addEventListener('click', showAgentsSalesSummary);
+            document.getElementById('draw-results-btn').addEventListener('click', performDrawAndCalculateResults);
+            
             // Modals
             document.getElementById('close-view-agent').addEventListener('click', hideViewAgentModal);
             document.getElementById('close-agent-details').addEventListener('click', hideViewAgentModal);
@@ -1608,6 +1876,10 @@
                         loadAgentTickets();
                         loadPendingTickets();
                         break;
+                    case 'draw':
+                        loadDrawDates();
+                        loadLotteryGames();
+                        break;
                     case 'codes':
                         loadAgentCodes();
                         break;
@@ -1629,6 +1901,309 @@
             
             // Filtrer les agents selon le tab
             filterAgentsByTab(tabId);
+        }
+        
+        // Charger les jeux de loterie
+        async function loadLotteryGames() {
+            try {
+                const response = await fetch(APP_CONFIG.lotteries, {
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (data.success && data.lotteries) {
+                    lotteryGames = data.lotteries;
+                    const select = document.getElementById('draw-lottery');
+                    select.innerHTML = '<option value="">Sélectionner une loterie</option>';
+                    
+                    lotteryGames.forEach(lottery => {
+                        const option = document.createElement('option');
+                        option.value = lottery.id;
+                        option.textContent = lottery.name;
+                        select.appendChild(option);
+                    });
+                }
+            } catch (error) {
+                console.error('Erreur chargement loteries:', error);
+            }
+        }
+        
+        // Charger les dates de tirage disponibles
+        async function loadDrawDates() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/supervisor-l1/draws/dates`, {
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (data.success && data.dates) {
+                    const select = document.getElementById('draw-date');
+                    select.innerHTML = '<option value="">Sélectionner une date</option>';
+                    
+                    data.dates.forEach(date => {
+                        const option = document.createElement('option');
+                        option.value = date;
+                        option.textContent = new Date(date).toLocaleDateString('fr-FR');
+                        select.appendChild(option);
+                    });
+                }
+            } catch (error) {
+                console.error('Erreur chargement dates:', error);
+            }
+        }
+        
+        // Afficher le résumé des ventes par agent
+        async function showAgentsSalesSummary() {
+            const date = document.getElementById('draw-date').value;
+            const lotteryId = document.getElementById('draw-lottery').value;
+            
+            if (!date || !lotteryId) {
+                showNotification('Veuillez sélectionner une date et une loterie', 'warning');
+                return;
+            }
+            
+            const summary = document.getElementById('agents-sales-summary');
+            const loading = document.getElementById('sales-summary-loading');
+            const content = document.getElementById('sales-summary-content');
+            const body = document.getElementById('sales-summary-body');
+            
+            summary.style.display = 'block';
+            loading.style.display = 'flex';
+            content.style.display = 'none';
+            body.innerHTML = '';
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/supervisor-l1/draws/sales-summary?date=${date}&lottery_id=${lotteryId}`, {
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (data.success && data.sales_summary) {
+                    const summaryData = data.sales_summary;
+                    let totalSales = 0;
+                    let totalCommission = 0;
+                    
+                    summaryData.forEach(agent => {
+                        const row = document.createElement('tr');
+                        const isOnline = agent.status === 'online';
+                        
+                        row.innerHTML = `
+                            <td>
+                                <strong>${agent.full_name}</strong>
+                                <div style="font-size: 0.8rem; color: #6c757d;">${agent.access_code}</div>
+                            </td>
+                            <td>
+                                <span class="status-badge ${isOnline ? 'status-active' : 'status-inactive'}">
+                                    ${isOnline ? 'En ligne' : 'Hors ligne'}
+                                </span>
+                            </td>
+                            <td>${agent.tickets_count || 0}</td>
+                            <td>${(agent.total_amount || 0).toLocaleString()} HTG</td>
+                            <td>${(agent.commission_amount || 0).toLocaleString()} HTG</td>
+                        `;
+                        body.appendChild(row);
+                        
+                        totalSales += agent.total_amount || 0;
+                        totalCommission += agent.commission_amount || 0;
+                    });
+                    
+                    // Ajouter la ligne de total
+                    const totalRow = document.createElement('tr');
+                    totalRow.style.fontWeight = 'bold';
+                    totalRow.style.backgroundColor = '#f8f9fa';
+                    totalRow.innerHTML = `
+                        <td>TOTAL</td>
+                        <td>—</td>
+                        <td>${summaryData.reduce((sum, agent) => sum + (agent.tickets_count || 0), 0)}</td>
+                        <td>${totalSales.toLocaleString()} HTG</td>
+                        <td>${totalCommission.toLocaleString()} HTG</td>
+                    `;
+                    body.appendChild(totalRow);
+                    
+                    loading.style.display = 'none';
+                    content.style.display = 'block';
+                    
+                    showNotification('Résumé des ventes chargé', 'success');
+                } else {
+                    showNotification('Aucune vente trouvée pour cette date', 'info');
+                    loading.style.display = 'none';
+                }
+            } catch (error) {
+                console.error('Erreur chargement résumé ventes:', error);
+                showNotification('Erreur lors du chargement des ventes', 'error');
+                loading.style.display = 'none';
+            }
+        }
+        
+        // Effectuer le tirage et calculer les résultats
+        async function performDrawAndCalculateResults() {
+            const date = document.getElementById('draw-date').value;
+            const lotteryId = document.getElementById('draw-lottery').value;
+            
+            if (!date || !lotteryId) {
+                showNotification('Veuillez sélectionner une date et une loterie', 'warning');
+                return;
+            }
+            
+            if (!confirm('Effectuer le tirage et calculer les résultats ?\n\nCette action déterminera les gagnants et calculera la balance.')) {
+                return;
+            }
+            
+            const container = document.getElementById('draw-results-container');
+            const loading = document.getElementById('draw-results-loading');
+            const content = document.getElementById('draw-results-content');
+            const resultsList = document.getElementById('agent-results-list');
+            const winningNumbersDiv = document.getElementById('winning-numbers');
+            
+            container.style.display = 'block';
+            loading.style.display = 'flex';
+            content.style.display = 'none';
+            resultsList.innerHTML = '';
+            winningNumbersDiv.innerHTML = '';
+            
+            try {
+                // Effectuer le tirage
+                const drawResponse = await fetch(`${API_BASE_URL}/api/supervisor-l1/draws/perform`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        date: date,
+                        lottery_id: lotteryId
+                    })
+                });
+                
+                const drawData = await drawResponse.json();
+                
+                if (drawData.success) {
+                    const results = drawData.results;
+                    const winningNumbers = drawData.winning_numbers || [];
+                    const lottery = lotteryGames.find(l => l.id === lotteryId);
+                    
+                    // Afficher les nombres gagnants
+                    winningNumbers.forEach(number => {
+                        const numDiv = document.createElement('div');
+                        numDiv.style.width = '40px';
+                        numDiv.style.height = '40px';
+                        numDiv.style.backgroundColor = '#2ecc71';
+                        numDiv.style.color = 'white';
+                        numDiv.style.borderRadius = '50%';
+                        numDiv.style.display = 'flex';
+                        numDiv.style.alignItems = 'center';
+                        numDiv.style.justifyContent = 'center';
+                        numDiv.style.fontWeight = 'bold';
+                        numDiv.style.fontSize = '1.1rem';
+                        numDiv.textContent = number;
+                        winningNumbersDiv.appendChild(numDiv);
+                    });
+                    
+                    // Calculer les totaux globaux
+                    let totalSalesAll = 0;
+                    let totalWinningAll = 0;
+                    
+                    // Afficher les résultats par agent
+                    results.forEach(agentResult => {
+                        const agent = currentAssignedAgents.find(a => a.id === agentResult.agent_id);
+                        if (!agent) return;
+                        
+                        const agentSales = agentResult.total_sales || 0;
+                        const agentWinning = agentResult.total_winning || 0;
+                        const agentBalance = agentSales - agentWinning;
+                        
+                        totalSalesAll += agentSales;
+                        totalWinningAll += agentWinning;
+                        
+                        const resultItem = document.createElement('div');
+                        resultItem.className = 'result-item';
+                        
+                        // Créer la liste des nombres gagnants
+                        let winningNumbersHTML = '';
+                        if (agentResult.winning_tickets && agentResult.winning_tickets.length > 0) {
+                            winningNumbersHTML = '<div style="margin-top: 5px;">';
+                            agentResult.winning_tickets.forEach(ticket => {
+                                winningNumbersHTML += `
+                                    <div style="font-size: 0.85rem; color: #6c757d; margin-bottom: 2px;">
+                                        Ticket #${ticket.ticket_number}: ${ticket.numbers?.join(', ')} - ${ticket.amount} HTG
+                                    </div>
+                                `;
+                            });
+                            winningNumbersHTML += '</div>';
+                        }
+                        
+                        resultItem.innerHTML = `
+                            <div class="result-agent">
+                                <div class="result-agent-avatar">${agent.full_name.charAt(0)}</div>
+                                <div class="result-agent-info">
+                                    <h4>${agent.full_name}</h4>
+                                    <p>${agent.access_code}</p>
+                                    ${winningNumbersHTML}
+                                </div>
+                            </div>
+                            <div class="result-amounts">
+                                <div class="result-amount">
+                                    <div class="label">Vendu</div>
+                                    <div class="value">${agentSales.toLocaleString()} HTG</div>
+                                </div>
+                                <div class="result-amount">
+                                    <div class="label">Gagnant</div>
+                                    <div class="value" style="color: ${agentWinning > 0 ? '#e74c3c' : 'var(--secondary-color)'}">
+                                        ${agentWinning.toLocaleString()} HTG
+                                    </div>
+                                </div>
+                                <div class="result-amount">
+                                    <div class="label">Balance</div>
+                                    <div class="value">${agentBalance.toLocaleString()} HTG</div>
+                                    <span class="status-badge ${agentBalance >= 0 ? 'status-profit' : 'status-loss'}" style="margin-top: 3px;">
+                                        ${agentBalance >= 0 ? 'Profit' : 'Perte'}
+                                    </span>
+                                </div>
+                            </div>
+                        `;
+                        resultsList.appendChild(resultItem);
+                    });
+                    
+                    // Calculer la balance totale
+                    const totalBalance = totalSalesAll - totalWinningAll;
+                    
+                    // Mettre à jour les totaux
+                    document.getElementById('total-sales-all').textContent = totalSalesAll.toLocaleString() + ' HTG';
+                    document.getElementById('total-winning-all').textContent = totalWinningAll.toLocaleString() + ' HTG';
+                    document.getElementById('total-balance').textContent = totalBalance.toLocaleString() + ' HTG';
+                    
+                    const balanceStatus = document.getElementById('balance-status');
+                    if (totalBalance >= 0) {
+                        balanceStatus.textContent = 'Profit';
+                        balanceStatus.className = 'status-badge status-profit';
+                    } else {
+                        balanceStatus.textContent = 'Perte';
+                        balanceStatus.className = 'status-badge status-loss';
+                    }
+                    
+                    loading.style.display = 'none';
+                    content.style.display = 'block';
+                    
+                    showNotification(`Tirage effectué avec succès! Balance: ${totalBalance >= 0 ? 'Profit de ' : 'Perte de '}${Math.abs(totalBalance).toLocaleString()} HTG`, 
+                                    totalBalance >= 0 ? 'success' : 'warning');
+                } else {
+                    showNotification(drawData.error || 'Erreur lors du tirage', 'error');
+                    loading.style.display = 'none';
+                }
+            } catch (error) {
+                console.error('Erreur tirage:', error);
+                showNotification('Erreur lors du tirage', 'error');
+                loading.style.display = 'none';
+            }
         }
         
         // Changer l'onglet tickets

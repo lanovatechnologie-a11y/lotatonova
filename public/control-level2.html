@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Nova Lotto - Contrôle Niveau 2</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="/config.js"></script>
     <style>
         :root {
             --primary-color: #3498db;
@@ -708,6 +709,98 @@
             gap: 8px;
             margin-top: 10px;
         }
+        
+        /* Summary Stats Styles */
+        .summary-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+        
+        .summary-stat {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            border-left: 4px solid;
+            transition: transform 0.3s;
+        }
+        
+        .summary-stat:hover {
+            transform: translateY(-2px);
+        }
+        
+        .summary-stat-icon {
+            width: 50px;
+            height: 50px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            color: white;
+        }
+        
+        .summary-stat-info {
+            flex: 1;
+        }
+        
+        .summary-stat-value {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: var(--secondary-color);
+        }
+        
+        .summary-stat-label {
+            font-size: 0.85rem;
+            color: #6c757d;
+            margin-top: 3px;
+        }
+        
+        .summary-stat-change {
+            font-size: 0.75rem;
+            margin-top: 5px;
+        }
+        
+        .positive-change {
+            color: var(--success-color);
+        }
+        
+        .negative-change {
+            color: var(--danger-color);
+        }
+        
+        /* Agent Summary Table */
+        .agent-summary-table th {
+            background-color: #f1f8ff;
+        }
+        
+        .profit-badge {
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: bold;
+            display: inline-block;
+        }
+        
+        .profit-positive {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        
+        .profit-negative {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+        
+        .profit-neutral {
+            background-color: #e2e3e5;
+            color: #383d41;
+        }
     </style>
 </head>
 <body>
@@ -732,6 +825,10 @@
             <a href="#" class="nav-item active" data-section="dashboard">
                 <div class="nav-icon"><i class="fas fa-tachometer-alt"></i></div>
                 <div class="nav-label">Tableau de bord</div>
+            </a>
+            <a href="#" class="nav-item" data-section="summary">
+                <div class="nav-icon"><i class="fas fa-chart-pie"></i></div>
+                <div class="nav-label">Résumé Agents</div>
             </a>
             <a href="#" class="nav-item" data-section="agents">
                 <div class="nav-icon"><i class="fas fa-users"></i></div>
@@ -938,6 +1035,111 @@
                     </div>
                     <h3>Aucun ticket récent</h3>
                     <p>Les tickets des agents apparaîtront ici</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Summary Section -->
+        <div id="summary-section" class="section-content" style="display: none;">
+            <div class="summary-stats">
+                <div class="summary-stat" style="border-left-color: #3498db;">
+                    <div class="summary-stat-icon" style="background-color: #3498db;">
+                        <i class="fas fa-user-check"></i>
+                    </div>
+                    <div class="summary-stat-info">
+                        <div class="summary-stat-value" id="summary-online-agents">0</div>
+                        <div class="summary-stat-label">Agents en ligne</div>
+                        <div class="summary-stat-change positive-change" id="online-change">
+                            <i class="fas fa-arrow-up"></i> 0% vs hier
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="summary-stat" style="border-left-color: #2ecc71;">
+                    <div class="summary-stat-icon" style="background-color: #2ecc71;">
+                        <i class="fas fa-money-bill-wave"></i>
+                    </div>
+                    <div class="summary-stat-info">
+                        <div class="summary-stat-value" id="summary-total-sales">0 HTG</div>
+                        <div class="summary-stat-label">Ventes totales</div>
+                        <div class="summary-stat-change positive-change" id="sales-change">
+                            <i class="fas fa-arrow-up"></i> 0% vs hier
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="summary-stat" style="border-left-color: #f39c12;">
+                    <div class="summary-stat-icon" style="background-color: #f39c12;">
+                        <i class="fas fa-chart-line"></i>
+                    </div>
+                    <div class="summary-stat-info">
+                        <div class="summary-stat-value" id="summary-total-profit">0 HTG</div>
+                        <div class="summary-stat-label">Gains totaux</div>
+                        <div class="summary-stat-change positive-change" id="profit-change">
+                            <i class="fas fa-arrow-up"></i> 0% vs hier
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="summary-stat" style="border-left-color: #e74c3c;">
+                    <div class="summary-stat-icon" style="background-color: #e74c3c;">
+                        <i class="fas fa-chart-area"></i>
+                    </div>
+                    <div class="summary-stat-info">
+                        <div class="summary-stat-value" id="summary-total-loss">0 HTG</div>
+                        <div class="summary-stat-label">Pertes totales</div>
+                        <div class="summary-stat-change negative-change" id="loss-change">
+                            <i class="fas fa-arrow-down"></i> 0% vs hier
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="table-container">
+                <div class="table-header">
+                    <div class="table-title">Résumé des Agents et Superviseurs</div>
+                    <div class="search-box">
+                        <select class="form-control" id="summary-filter" style="width: 150px;">
+                            <option value="all">Tous</option>
+                            <option value="online">En ligne</option>
+                            <option value="agents">Agents seulement</option>
+                            <option value="supervisors">Superviseurs</option>
+                        </select>
+                        <button class="btn btn-primary" id="load-summary">
+                            <i class="fas fa-sync-alt"></i> Actualiser
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="loading" id="summary-loading">
+                    <div class="loading-spinner"></div>
+                    <p>Chargement du résumé...</p>
+                </div>
+                
+                <table class="table agent-summary-table" id="summary-table" style="display: none;">
+                    <thead>
+                        <tr>
+                            <th>Nom</th>
+                            <th>Type</th>
+                            <th>Statut</th>
+                            <th>Ventes</th>
+                            <th>Gains</th>
+                            <th>Pertes</th>
+                            <th>Bénéfice Net</th>
+                            <th>Performance</th>
+                        </tr>
+                    </thead>
+                    <tbody id="summary-table-body">
+                        <!-- Rempli dynamiquement -->
+                    </tbody>
+                </table>
+                
+                <div class="empty-state" id="summary-empty" style="display: none;">
+                    <div class="empty-icon">
+                        <i class="fas fa-chart-pie"></i>
+                    </div>
+                    <h3>Aucune donnée disponible</h3>
+                    <p>Les données des agents et superviseurs apparaîtront ici</p>
                 </div>
             </div>
         </div>
@@ -1253,7 +1455,7 @@
                         }
                         
                         try {
-                            const response = await fetch(API_BASE_URL + '/api/supervisor/login', {
+                            const response = await fetch(APP_CONFIG.login, {
                                 method: 'POST',
                                 headers: { 'Content-Type': 'application/json' },
                                 body: JSON.stringify({ 
@@ -1350,6 +1552,10 @@
             document.getElementById('generate-report').addEventListener('click', generateReport);
             document.getElementById('export-report').addEventListener('click', exportReport);
             
+            // Résumé
+            document.getElementById('load-summary').addEventListener('click', loadSummaryData);
+            document.getElementById('summary-filter').addEventListener('change', loadSummaryData);
+            
             // Modals
             document.getElementById('close-view-ticket').addEventListener('click', hideViewTicketModal);
             document.getElementById('close-ticket-details').addEventListener('click', hideViewTicketModal);
@@ -1378,6 +1584,9 @@
                         loadRecentActivity();
                         loadRecentTickets();
                         break;
+                    case 'summary':
+                        loadSummaryData();
+                        break;
                     case 'agents':
                         loadAgents();
                         break;
@@ -1391,6 +1600,167 @@
                         loadFullActivity();
                         break;
                 }
+            }
+        }
+        
+        // Charger le résumé des agents et superviseurs
+        async function loadSummaryData() {
+            const loading = document.getElementById('summary-loading');
+            const table = document.getElementById('summary-table');
+            const empty = document.getElementById('summary-empty');
+            const tbody = document.getElementById('summary-table-body');
+            
+            loading.style.display = 'flex';
+            table.style.display = 'none';
+            empty.style.display = 'none';
+            
+            try {
+                // Charger les statistiques globales
+                const response = await fetch(APP_CONFIG.statistics, {
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    // Mettre à jour les statistiques de résumé
+                    document.getElementById('summary-online-agents').textContent = 
+                        data.summary?.online_agents || 0;
+                    document.getElementById('summary-total-sales').textContent = 
+                        data.summary?.total_sales ? data.summary.total_sales.toLocaleString() + ' HTG' : '0 HTG';
+                    document.getElementById('summary-total-profit').textContent = 
+                        data.summary?.total_profit ? data.summary.total_profit.toLocaleString() + ' HTG' : '0 HTG';
+                    document.getElementById('summary-total-loss').textContent = 
+                        data.summary?.total_loss ? data.summary.total_loss.toLocaleString() + ' HTG' : '0 HTG';
+                    
+                    // Charger les agents
+                    const agentsResponse = await fetch(APP_CONFIG.agents, {
+                        headers: {
+                            'Authorization': `Bearer ${authToken}`
+                        }
+                    });
+                    
+                    const agentsData = await agentsResponse.json();
+                    
+                    // Charger les superviseurs
+                    const supervisorsResponse = await fetch(APP_CONFIG.users + '?role=supervisor', {
+                        headers: {
+                            'Authorization': `Bearer ${authToken}`
+                        }
+                    });
+                    
+                    const supervisorsData = await supervisorsResponse.json();
+                    
+                    if ((agentsData.success && agentsData.agents && agentsData.agents.length > 0) ||
+                        (supervisorsData.success && supervisorsData.users && supervisorsData.users.length > 0)) {
+                        
+                        // Vider le tableau
+                        tbody.innerHTML = '';
+                        
+                        // Ajouter les superviseurs sous ma responsabilité
+                        if (supervisorsData.success && supervisorsData.users) {
+                            supervisorsData.users.forEach(supervisor => {
+                                // Vérifier si ce superviseur est sous ma responsabilité
+                                if (supervisor.supervisor_id === currentUser.id || supervisor.level < currentUser.level) {
+                                    const row = document.createElement('tr');
+                                    const netProfit = (supervisor.total_profit || 0) - (supervisor.total_loss || 0);
+                                    
+                                    row.innerHTML = `
+                                        <td>
+                                            <strong>${supervisor.full_name}</strong>
+                                            <div style="font-size: 0.8rem; color: #6c757d;">Superviseur Niveau ${supervisor.level || 1}</div>
+                                        </td>
+                                        <td>
+                                            <span class="role-badge role-supervisor">
+                                                Superviseur
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <span class="status-badge ${supervisor.is_online ? 'status-active' : 'status-inactive'}">
+                                                ${supervisor.is_online ? 'En ligne' : 'Hors ligne'}
+                                            </span>
+                                        </td>
+                                        <td>${(supervisor.total_sales || 0).toLocaleString()} HTG</td>
+                                        <td>${(supervisor.total_profit || 0).toLocaleString()} HTG</td>
+                                        <td>${(supervisor.total_loss || 0).toLocaleString()} HTG</td>
+                                        <td>
+                                            <span class="profit-badge ${netProfit > 0 ? 'profit-positive' : netProfit < 0 ? 'profit-negative' : 'profit-neutral'}">
+                                                ${netProfit.toLocaleString()} HTG
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <span class="status-badge ${supervisor.performance >= 80 ? 'status-active' : supervisor.performance >= 50 ? 'status-pending' : 'status-inactive'}">
+                                                ${supervisor.performance || 0}%
+                                            </span>
+                                        </td>
+                                    `;
+                                    tbody.appendChild(row);
+                                }
+                            });
+                        }
+                        
+                        // Ajouter les agents
+                        if (agentsData.success && agentsData.agents) {
+                            const filterType = document.getElementById('summary-filter').value;
+                            
+                            agentsData.agents.forEach(agent => {
+                                // Appliquer le filtre
+                                if (filterType === 'online' && !agent.is_online) return;
+                                if (filterType === 'supervisors') return; // Ne pas afficher les agents
+                                
+                                const row = document.createElement('tr');
+                                const netProfit = (agent.total_profit || 0) - (agent.total_loss || 0);
+                                
+                                row.innerHTML = `
+                                    <td>
+                                        <strong>${agent.full_name}</strong>
+                                        <div style="font-size: 0.8rem; color: #6c757d;">${agent.email || 'Pas d\'email'}</div>
+                                    </td>
+                                    <td>
+                                        <span class="role-badge role-agent">
+                                            Agent
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span class="status-badge ${agent.is_online ? 'status-active' : 'status-inactive'}">
+                                            ${agent.is_online ? 'En ligne' : 'Hors ligne'}
+                                        </span>
+                                    </td>
+                                    <td>${(agent.total_sales || 0).toLocaleString()} HTG</td>
+                                    <td>${(agent.total_profit || 0).toLocaleString()} HTG</td>
+                                    <td>${(agent.total_loss || 0).toLocaleString()} HTG</td>
+                                    <td>
+                                        <span class="profit-badge ${netProfit > 0 ? 'profit-positive' : netProfit < 0 ? 'profit-negative' : 'profit-neutral'}">
+                                            ${netProfit.toLocaleString()} HTG
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span class="status-badge ${agent.performance >= 80 ? 'status-active' : agent.performance >= 50 ? 'status-pending' : 'status-inactive'}">
+                                            ${agent.performance || 0}%
+                                        </span>
+                                    </td>
+                                `;
+                                tbody.appendChild(row);
+                            });
+                        }
+                        
+                        loading.style.display = 'none';
+                        table.style.display = 'table';
+                    } else {
+                        loading.style.display = 'none';
+                        empty.style.display = 'block';
+                    }
+                } else {
+                    loading.style.display = 'none';
+                    empty.style.display = 'block';
+                }
+            } catch (error) {
+                console.error('Erreur chargement résumé:', error);
+                loading.style.display = 'none';
+                empty.style.display = 'block';
+                showNotification('Erreur lors du chargement du résumé', 'error');
             }
         }
         
@@ -1409,7 +1779,7 @@
         // Charger les données du tableau de bord
         async function loadDashboardData() {
             try {
-                const response = await fetch(`${API_BASE_URL}/api/supervisor/dashboard`, {
+                const response = await fetch(APP_CONFIG.statistics, {
                     headers: {
                         'Authorization': `Bearer ${authToken}`
                     }
@@ -1553,7 +1923,7 @@
             empty.style.display = 'none';
             
             try {
-                const response = await fetch(`${API_BASE_URL}/api/supervisor/tickets/recent`, {
+                const response = await fetch(APP_CONFIG.tickets + '/recent', {
                     headers: {
                         'Authorization': `Bearer ${authToken}`
                     }
@@ -1617,7 +1987,7 @@
             
             try {
                 const searchTerm = document.getElementById('search-agents').value;
-                let url = `${API_BASE_URL}/api/supervisor/agents`;
+                let url = APP_CONFIG.agents;
                 
                 if (searchTerm) {
                     url += `?search=${encodeURIComponent(searchTerm)}`;
@@ -1719,7 +2089,7 @@
                 const agentId = document.getElementById('filter-agent-tickets').value;
                 const status = document.getElementById('filter-status').value;
                 
-                let url = `${API_BASE_URL}/api/supervisor/tickets?limit=50`;
+                let url = APP_CONFIG.tickets + '?limit=50';
                 if (filter === 'today') url += '&today=true';
                 if (filter === 'pending') url += '&pending=true';
                 if (agentId) url += `&agent_id=${agentId}`;
@@ -1790,7 +2160,7 @@
             cancelBtn.style.display = 'none';
             
             try {
-                const response = await fetch(`${API_BASE_URL}/api/supervisor/tickets/${ticketId}`, {
+                const response = await fetch(APP_CONFIG.tickets + '/' + ticketId, {
                     headers: {
                         'Authorization': `Bearer ${authToken}`
                     }
@@ -2116,7 +2486,7 @@
             try {
                 const date = document.getElementById('report-date').value || new Date().toISOString().split('T')[0];
                 
-                const response = await fetch(`${API_BASE_URL}/api/supervisor/reports?date=${date}`, {
+                const response = await fetch(APP_CONFIG.sales + `?date=${date}`, {
                     headers: {
                         'Authorization': `Bearer ${authToken}`
                     }

@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -6,15 +7,17 @@
     <title>LOTATO</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="manifest" href="manifest.json">
+    <!-- Configuration API -->
+    <script src="/config.js"></script>
     <style>
         :root {
-            --primary-color: #f500c0ff;
+            --primary-color: #2c3e50;
             --secondary-color: #3498db;
             --accent-color: #e74c3c;
             --success-color: #27ae60;
             --warning-color: #f39c12;
             --light-color: #ecf0f1;
-            --dark-color: #15026b;
+            --dark-color: #2c3e50;
             --miami-color: #e74c3c;
             --georgia-color: #3498db;
             --newyork-color: #9b59b6;
@@ -45,7 +48,7 @@
         }
         
         header {
-            background: linear-gradient(135deg, var(--primary-color), #b40505);
+            background: linear-gradient(135deg, var(--primary-color), #1a2530);
             color: white;
             padding: 15px;
             text-align: center;
@@ -189,12 +192,12 @@
         }
         
         .draw-btn:hover {
-            background-color: #06c716;
+            background-color: #dde4e6;
         }
         
         .draw-btn.active {
             background-color: var(--secondary-color);
-            color: rgb(18, 192, 2);
+            color: white;
         }
         
         .draw-btn.morning {
@@ -277,7 +280,7 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            color: #f30202;
+            color: #7f8c8d;
             font-size: 0.8rem;
             cursor: pointer;
         }
@@ -346,7 +349,7 @@
         
         .multi-draw-option:hover {
             background-color: var(--secondary-color);
-            color: rgb(156, 236, 7);
+            color: white;
         }
         
         .multi-draw-option.selected {
@@ -355,7 +358,7 @@
         }
         
         .multi-draw-form {
-            background-color: #ebfc06;
+            background-color: #f8f9fa;
             padding: 15px;
             border-radius: 8px;
             margin-bottom: 15px;
@@ -455,7 +458,7 @@
         
         .bet-option:hover {
             background-color: var(--secondary-color);
-            color: rgb(45, 231, 8);
+            color: white;
         }
         
         .bet-option-icon {
@@ -526,7 +529,7 @@
         }
         
         .btn-primary:hover {
-            background-color: #d36002;
+            background-color: #2980b9;
         }
         
         .btn-secondary {
@@ -536,7 +539,7 @@
         }
         
         .btn-secondary:hover {
-            background-color: #e78d04;
+            background-color: #dde4e6;
         }
         
         .active-bets {
@@ -739,8 +742,8 @@
         }
         
         .status-connected {
-            background-color: #edf100;
-            color: #01af2a;
+            background-color: #d4edda;
+            color: #155724;
         }
         
         .status-disconnected {
@@ -768,7 +771,7 @@
         .bo-ball {
             background-color: var(--warning-color);
             color: white;
-            padding: 12px;
+            padding: 10px;
             border-radius: 8px;
             text-align: center;
             cursor: pointer;
@@ -825,7 +828,7 @@
         
         .save-ticket {
             background-color: var(--secondary-color);
-            color: rgb(70, 228, 7);
+            color: white;
         }
         
         .save-ticket:hover {
@@ -1009,7 +1012,7 @@
         /* Nouveau style pour le bouton enregistrer et imprimer */
         .save-print-btn {
             background-color: var(--warning-color);
-            color: rgb(7, 20, 201);
+            color: white;
         }
         
         .save-print-btn:hover {
@@ -1023,7 +1026,7 @@
             left: 0;
             right: 0;
             bottom: 0;
-            background: linear-gradient(135deg, var(--primary-color), #c4b002);
+            background: linear-gradient(135deg, var(--primary-color), #1a2530);
             display: flex;
             flex-direction: column;
             justify-content: center;
@@ -1613,7 +1616,7 @@
             </div>
             <div class="connection-status">
                 <div class="status-indicator disconnected" id="supabase-status"></div>
-                <span id="supabase-text">baz done yo: Pa konekte</span>
+                <span id="supabase-text">Database: Pa konekte</span>
             </div>
             <p id="connection-message">Tanpri tann pandan y ap verifye koneksyon yo...</p>
             <div class="bet-actions" style="margin-top: 20px;">
@@ -1629,7 +1632,7 @@
             <button class="back-button" id="back-from-report">
                 <i class="fas fa-arrow-left"></i>
             </button>
-                            <h2 class="screen-title">Rapò Fen Tiraj</h2>
+                            <h2 class="screen-title">Rapò Fin Tiraj</h2>
 
         </div>
         <div class="report-container" id="report-content">
@@ -1659,7 +1662,7 @@
                     </div>
                 </div>
                 <div class="header-text">
-                    <h1>LOTATO</h1>
+                    <h1>Nova Lotto</h1>
                     <p>Chwazi yon Jwet</p>
                 </div>
             </div>
@@ -1835,7 +1838,7 @@
             <button class="back-button" id="back-button">
                 <i class="fas fa-arrow-left"></i>
             </button>
-            <h2 class="betting-title" id="betting-title">AJOUTE PARI</h2>
+            <h2 class="betting-title" id="betting-title">Mete Parye Ou</h2>
         </div>
         
         <!-- Navigation par catégories (optionnelle, affichée seulement pour l'édition) -->
@@ -1912,7 +1915,7 @@
         
         <div class="active-bets" id="active-bets">
             <div class="ticket-actions">
-                <button class="ticket-action-btn save-print-btn" id="save-print-ticket">ENPRIME</button>
+                <button class="ticket-action-btn save-print-btn" id="save-print-ticket">Sove & Enprime Fiche</button>
             </div>
             <h3>Parye Aktif</h3>
             <div id="bets-list">
@@ -1944,7 +1947,7 @@
             </div>
             <div style="margin-top: 10px;">
                 <button class="btn-secondary" id="show-all-tickets">Afiche Tout Fiche</button>
-                <button class="btn-secondary" id="show-pending-tickets">Fiche KI Pokò ALE NAN SANTRAL</button>
+                <button class="btn-secondary" id="show-pending-tickets">Fiche Pokò Synchronize</button>
             </div>
         </div>
         
@@ -1982,7 +1985,7 @@
                 <span id="ticket-total">0 goud</span>
             </div>
             <div class="ticket-footer">
-                <button class="ticket-footer-btn save-ticket" id="save-ticket-only">ANREJISTRE Fiche</button>
+                <button class="ticket-footer-btn save-ticket" id="save-ticket-only">Sove Fiche</button>
                 <button class="ticket-footer-btn print-ticket-btn" id="print-ticket-only">Enprime Fiche</button>
             </div>
         </div>
@@ -1994,7 +1997,7 @@
             <button class="back-button" data-screen="home">
                 <i class="fas fa-arrow-left"></i>
             </button>
-            <h2 class="screen-title">Fiche KI GENYEN</h2>
+            <h2 class="screen-title">Fiche Genyen</h2>
         </div>
         
         <div class="search-history">
@@ -2039,8 +2042,10 @@
     </div>
 
     <script>
-        // Configuration de base
-        const API_BASE_URL = window.location.origin;
+        // Configuration de base avec APP_CONFIG
+        const APP_CONFIG = window.APP_CONFIG || {};
+        const API_BASE_URL = APP_CONFIG.apiBaseUrl || window.location.origin;
+        const FIVE_MINUTES = 5 * 60 * 1000; // 5 minutes en millisecondes
         
         // Données des tirages
         const draws = {
@@ -2425,7 +2430,7 @@
                 case 'boulpe':
                     html = `
                         <label for="multi-draw-number">Nimewo 2 chif</label>
-                        <input type="text" id="multi-draw-number" placeholder="00" maxlength="2" pattern="[0-9]{2}">
+                        <input type="text" id="multi-draw-number" placeholder="00" maxlength="2" pattern="[0-9]{2}" class="auto-focus-input">
                     `;
                     break;
                     
@@ -2433,7 +2438,7 @@
                 case 'grap':
                     html = `
                         <label for="multi-draw-number">Nimewo 3 chif</label>
-                        <input type="text" id="multi-draw-number" placeholder="000" maxlength="3" pattern="[0-9]{3}">
+                        <input type="text" id="multi-draw-number" placeholder="000" maxlength="3" pattern="[0-9]{3}" class="auto-focus-input">
                     `;
                     break;
                     
@@ -2441,8 +2446,8 @@
                     html = `
                         <label>2 Nimewo pou maryaj</label>
                         <div class="number-inputs">
-                            <input type="text" id="multi-draw-number1" placeholder="00" maxlength="2" pattern="[0-9]{2}">
-                            <input type="text" id="multi-draw-number2" placeholder="00" maxlength="2" pattern="[0-9]{2}">
+                            <input type="text" id="multi-draw-number1" placeholder="00" maxlength="2" pattern="[0-9]{2}" class="auto-focus-input">
+                            <input type="text" id="multi-draw-number2" placeholder="00" maxlength="2" pattern="[0-9]{2}" class="auto-focus-input">
                         </div>
                     `;
                     break;
@@ -2451,8 +2456,8 @@
                     html = `
                         <label>2 Boules (2 chif chak)</label>
                         <div class="number-inputs">
-                            <input type="text" id="multi-draw-number1" placeholder="00" maxlength="2" pattern="[0-9]{2}">
-                            <input type="text" id="multi-draw-number2" placeholder="00" maxlength="2" pattern="[0-9]{2}">
+                            <input type="text" id="multi-draw-number1" placeholder="00" maxlength="2" pattern="[0-9]{2}" class="auto-focus-input">
+                            <input type="text" id="multi-draw-number2" placeholder="00" maxlength="2" pattern="[0-9]{2}" class="auto-focus-input">
                         </div>
                     `;
                     break;
@@ -2461,14 +2466,48 @@
                     html = `
                         <label>5 Chif (3+2 boules)</label>
                         <div class="number-inputs">
-                            <input type="text" id="multi-draw-number1" placeholder="000" maxlength="3" pattern="[0-9]{3}">
-                            <input type="text" id="multi-draw-number2" placeholder="00" maxlength="2" pattern="[0-9]{2}">
+                            <input type="text" id="multi-draw-number1" placeholder="000" maxlength="3" pattern="[0-9]{3}" class="auto-focus-input">
+                            <input type="text" id="multi-draw-number2" placeholder="00" maxlength="2" pattern="[0-9]{2}" class="auto-focus-input">
                         </div>
                     `;
                     break;
             }
             
             numberInputs.innerHTML = html;
+            
+            // Appliquer le comportement de focus automatique
+            setupAutoFocusInputs();
+        }
+        
+        // Configurer le focus automatique pour tous les champs numériques
+        function setupAutoFocusInputs() {
+            document.querySelectorAll('.auto-focus-input').forEach(input => {
+                input.addEventListener('input', function(e) {
+                    const maxLength = parseInt(this.getAttribute('maxlength'));
+                    if (this.value.length >= maxLength) {
+                        // Trouver le prochain champ
+                        const allInputs = Array.from(document.querySelectorAll('.auto-focus-input'));
+                        const currentIndex = allInputs.indexOf(this);
+                        if (currentIndex < allInputs.length - 1) {
+                            allInputs[currentIndex + 1].focus();
+                        }
+                    }
+                });
+                
+                // Permettre la navigation avec les flèches
+                input.addEventListener('keydown', function(e) {
+                    const allInputs = Array.from(document.querySelectorAll('.auto-focus-input'));
+                    const currentIndex = allInputs.indexOf(this);
+                    
+                    if (e.key === 'ArrowRight' && currentIndex < allInputs.length - 1) {
+                        e.preventDefault();
+                        allInputs[currentIndex + 1].focus();
+                    } else if (e.key === 'ArrowLeft' && currentIndex > 0) {
+                        e.preventDefault();
+                        allInputs[currentIndex - 1].focus();
+                    }
+                });
+            });
         }
         
         // Afficher/masquer le panneau multi-tirages
@@ -3236,7 +3275,7 @@
                         <h3>${bet.name} - ${bet.description}</h3>
                         <p class="info-text"><small>Chwazi 3 chif (ex: 123, 456, 789)</small></p>
                         <div class="quick-bet-form">
-                            <input type="text" id="lotto3-number" class="quick-number-input" 
+                            <input type="text" id="lotto3-number" class="quick-number-input auto-focus-input" 
                                    placeholder="000" maxlength="3" pattern="[0-9]{3}"
                                    title="Antre 3 chif (0-9)">
                             <input type="number" id="lotto3-amount" class="quick-amount-input" 
@@ -3255,8 +3294,8 @@
                         <div class="form-group">
                             <label>2 Chif yo</label>
                             <div class="number-inputs">
-                                <input type="text" id="marriage-number1" placeholder="00" maxlength="2" pattern="[0-9]{2}">
-                                <input type="text" id="marriage-number2" placeholder="00" maxlength="2" pattern="[0-9]{2}">
+                                <input type="text" id="marriage-number1" placeholder="00" maxlength="2" pattern="[0-9]{2}" class="auto-focus-input">
+                                <input type="text" id="marriage-number2" placeholder="00" maxlength="2" pattern="[0-9]{2}" class="auto-focus-input">
                             </div>
                         </div>
                         <div class="quick-bet-form">
@@ -3273,7 +3312,7 @@
                     formHTML = `
                         <h3>${bet.name} - ${bet.description}</h3>
                         <div class="quick-bet-form">
-                            <input type="text" id="borlette-number" class="quick-number-input" placeholder="00" maxlength="2" pattern="[0-9]{2}">
+                            <input type="text" id="borlette-number" class="quick-number-input auto-focus-input" placeholder="00" maxlength="2" pattern="[0-9]{2}">
                             <input type="number" id="borlette-amount" class="quick-amount-input" placeholder="Kantite" min="1">
                             <button class="btn-primary" id="add-bet">Ajoute</button>
                         </div>
@@ -3299,7 +3338,7 @@
                     formHTML = `
                         <h3>${bet.name} - ${bet.description}</h3>
                         <div class="quick-bet-form">
-                            <input type="text" id="boulpe-number" class="quick-number-input" placeholder="00" maxlength="2" pattern="[0-9]{2}">
+                            <input type="text" id="boulpe-number" class="quick-number-input auto-focus-input" placeholder="00" maxlength="2" pattern="[0-9]{2}">
                             <input type="number" id="boulpe-amount" class="quick-amount-input" placeholder="Kantite" min="1">
                             <button class="btn-primary" id="add-bet">Ajoute</button>
                         </div>
@@ -3329,8 +3368,8 @@
                         <div class="form-group">
                             <label>4 Chif yo (2 boules)</label>
                             <div class="number-inputs">
-                                <input type="text" id="lotto4-number1" placeholder="00" maxlength="2" pattern="[0-9]{2}">
-                                <input type="text" id="lotto4-number2" placeholder="00" maxlength="2" pattern="[0-9]{2}">
+                                <input type="text" id="lotto4-number1" placeholder="00" maxlength="2" pattern="[0-9]{2}" class="auto-focus-input">
+                                <input type="text" id="lotto4-number2" placeholder="00" maxlength="2" pattern="[0-9]{2}" class="auto-focus-input">
                             </div>
                         </div>
                         <div class="quick-bet-form">
@@ -3350,8 +3389,8 @@
                         <div class="form-group">
                             <label>5 Chif yo (3+2 boules)</label>
                             <div class="number-inputs">
-                                <input type="text" id="lotto5-number1" placeholder="000" maxlength="3" pattern="[0-9]{3}">
-                                <input type="text" id="lotto5-number2" placeholder="00" maxlength="2" pattern="[0-9]{2}">
+                                <input type="text" id="lotto5-number1" placeholder="000" maxlength="3" pattern="[0-9]{3}" class="auto-focus-input">
+                                <input type="text" id="lotto5-number2" placeholder="00" maxlength="2" pattern="[0-9]{2}" class="auto-focus-input">
                             </div>
                         </div>
                         <div class="quick-bet-form">
@@ -3405,6 +3444,9 @@
             }
             
             betForm.innerHTML = formHTML;
+            
+            // Configurer le focus automatique
+            setupAutoFocusInputs();
             
             // Configurer les événements
             if (gameType === 'grap') {
@@ -4722,3 +4764,4 @@
     </script>
 </body>
 </html>
+[file content end]

@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Nova Lotto - Connexion</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="/config.js"></script>
     <style>
         :root {
             --primary-color: #3498db;
@@ -291,7 +292,7 @@
             <div class="login-logo">
                 <i class="fas fa-dice"></i>
             </div>
-            <div class="login-title">LOTATO</div>
+            <div class="login-title">NOVA LOTTO</div>
             <div class="login-subtitle">Système de gestion multi-niveaux</div>
         </div>
         
@@ -580,7 +581,7 @@
         // Vérifier le statut du système
         async function checkSystemStatus() {
             try {
-                const response = await fetch(`${API_BASE_URL}/api/health`);
+                const response = await fetch(APP_CONFIG.health);
                 const data = await response.json();
                 
                 const statusDot = document.getElementById('system-status');
@@ -619,7 +620,7 @@
             loginBtn.disabled = true;
             
             try {
-                const response = await fetch(`${API_BASE_URL}/api/agent/login`, {
+                const response = await fetch(APP_CONFIG.login, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ username, password })
@@ -665,7 +666,7 @@
             loginBtn.disabled = true;
             
             try {
-                const response = await fetch(`${API_BASE_URL}/api/supervisor/login`, {
+                const response = await fetch(APP_CONFIG.login, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ 
@@ -718,7 +719,7 @@
             loginBtn.disabled = true;
             
             try {
-                const response = await fetch(`${API_BASE_URL}/api/subsystem/login`, {
+                const response = await fetch(APP_CONFIG.login, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ username, password })
@@ -763,7 +764,7 @@
             loginBtn.disabled = true;
             
             try {
-                const response = await fetch(`${API_BASE_URL}/api/master/login`, {
+                const response = await fetch(APP_CONFIG.login, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ username, password })

@@ -3,8 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Lotato - Administration</title>
+    <title>Nova Lotto - Administration Sous-Système</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="/config.js"></script>
     <style>
         :root {
             --primary-color: #3498db;
@@ -918,6 +919,110 @@
             margin-top: 10px;
             font-size: 0.85rem;
         }
+        
+        /* Stats des agents en ligne */
+        .agent-stats-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+        
+        .agent-stat-card {
+            background-color: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.08);
+            border-top: 4px solid #3498db;
+        }
+        
+        .agent-stat-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 15px;
+        }
+        
+        .agent-avatar {
+            width: 45px;
+            height: 45px;
+            background: linear-gradient(135deg, #3498db, #2c3e50);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 1.1rem;
+        }
+        
+        .agent-name {
+            font-weight: 600;
+            color: var(--secondary-color);
+            font-size: 1rem;
+        }
+        
+        .agent-role {
+            font-size: 0.8rem;
+            color: #6c757d;
+        }
+        
+        .agent-stats {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+        }
+        
+        .agent-stat-item {
+            background-color: #f8f9fa;
+            padding: 10px;
+            border-radius: 6px;
+            text-align: center;
+        }
+        
+        .agent-stat-label {
+            font-size: 0.75rem;
+            color: #6c757d;
+            margin-bottom: 4px;
+        }
+        
+        .agent-stat-value {
+            font-weight: bold;
+            color: var(--secondary-color);
+            font-size: 0.9rem;
+        }
+        
+        .agent-stat-value.positive {
+            color: var(--success-color);
+        }
+        
+        .agent-stat-value.negative {
+            color: var(--danger-color);
+        }
+        
+        .agent-status {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 0.8rem;
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px solid #eee;
+        }
+        
+        .status-indicator {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+        }
+        
+        .status-online {
+            background-color: var(--success-color);
+        }
+        
+        .status-offline {
+            background-color: #95a5a6;
+        }
     </style>
 </head>
 <body>
@@ -943,6 +1048,10 @@
             <a href="#" class="nav-item active" data-section="dashboard">
                 <div class="nav-icon"><i class="fas fa-tachometer-alt"></i></div>
                 <div class="nav-label">Tableau de bord</div>
+            </a>
+            <a href="#" class="nav-item" data-section="agents-online">
+                <div class="nav-icon"><i class="fas fa-user-check"></i></div>
+                <div class="nav-label">Agents en ligne</div>
             </a>
             <a href="#" class="nav-item" data-section="users">
                 <div class="nav-icon"><i class="fas fa-users"></i></div>
@@ -1178,6 +1287,74 @@
                     </div>
                     <h3>Aucun ticket récent</h3>
                     <p>Les tickets vendus apparaîtront ici</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Agents Online Section -->
+        <div id="agents-online-section" class="section-content" style="display: none;">
+            <div class="table-container">
+                <div class="table-header">
+                    <div class="table-title">Agents en ligne et leurs statistiques</div>
+                    <div class="search-box">
+                        <button class="btn btn-success" id="load-agents-stats">
+                            <i class="fas fa-sync-alt"></i> Actualiser
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="loading" id="agents-stats-loading">
+                    <div class="loading-spinner"></div>
+                    <p>Chargement des statistiques des agents...</p>
+                </div>
+                
+                <div class="agent-stats-cards" id="agents-stats-container" style="display: none;">
+                    <!-- Rempli dynamiquement -->
+                </div>
+                
+                <div class="empty-state" id="agents-stats-empty" style="display: none;">
+                    <div class="empty-icon">
+                        <i class="fas fa-user-slash"></i>
+                    </div>
+                    <h3>Aucun agent en ligne</h3>
+                    <p>Aucun agent n'est actuellement connecté</p>
+                </div>
+                
+                <!-- Superviseurs sous ma responsabilité -->
+                <div style="margin-top: 30px;">
+                    <h3 style="color: var(--secondary-color); margin-bottom: 15px;">
+                        <i class="fas fa-user-shield"></i> Superviseurs sous ma responsabilité
+                    </h3>
+                    <div class="loading" id="supervisors-loading">
+                        <div class="loading-spinner"></div>
+                        <p>Chargement des superviseurs...</p>
+                    </div>
+                    
+                    <div class="table-container" id="supervisors-container" style="display: none;">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Nom</th>
+                                    <th>Email</th>
+                                    <th>Statut</th>
+                                    <th>Agents gérés</th>
+                                    <th>Ventes totales</th>
+                                    <th>Dernière connexion</th>
+                                </tr>
+                            </thead>
+                            <tbody id="supervisors-table-body">
+                                <!-- Rempli dynamiquement -->
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <div class="empty-state" id="supervisors-empty" style="display: none;">
+                        <div class="empty-icon">
+                            <i class="fas fa-user-shield"></i>
+                        </div>
+                        <h3>Aucun superviseur</h3>
+                        <p>Aucun superviseur n'est sous votre responsabilité</p>
+                    </div>
                 </div>
             </div>
         </div>
@@ -1969,7 +2146,7 @@
                         const subdomain = '${subdomain}' || window.location.hostname.split('.')[0];
                         
                         try {
-                            const response = await fetch(API_BASE_URL + '/api/' + subdomain + '/auth/login', {
+                            const response = await fetch(APP_CONFIG.login, {
                                 method: 'POST',
                                 headers: { 'Content-Type': 'application/json' },
                                 body: JSON.stringify({ username, password })
@@ -2128,6 +2305,9 @@
             document.getElementById('filter-activity').addEventListener('click', loadFullActivity);
             document.getElementById('filter-agent').addEventListener('change', loadTicketsList);
             document.getElementById('filter-status-ticket').addEventListener('change', loadTicketsList);
+            
+            // Bouton agents en ligne
+            document.getElementById('load-agents-stats').addEventListener('click', loadAgentsStats);
         }
         
         // Afficher une section
@@ -2151,6 +2331,10 @@
                         loadRecentActivity();
                         loadRecentTickets();
                         break;
+                    case 'agents-online':
+                        loadAgentsStats();
+                        loadSupervisorsUnderResponsibility();
+                        break;
                     case 'users':
                         loadUsers();
                         break;
@@ -2171,6 +2355,174 @@
                         loadFullActivity();
                         break;
                 }
+            }
+        }
+        
+        // Charger les statistiques des agents en ligne
+        async function loadAgentsStats() {
+            const loading = document.getElementById('agents-stats-loading');
+            const container = document.getElementById('agents-stats-container');
+            const empty = document.getElementById('agents-stats-empty');
+            
+            loading.style.display = 'flex';
+            container.style.display = 'none';
+            empty.style.display = 'none';
+            
+            try {
+                const response = await fetch(APP_CONFIG.agents);
+                const data = await response.json();
+                
+                if (data.success && data.agents && data.agents.length > 0) {
+                    container.innerHTML = '';
+                    
+                    // Filtrer les agents (seulement ceux avec rôle agent)
+                    const agents = data.agents.filter(agent => 
+                        agent.role_in_subsystem === 'agent' && 
+                        agent.is_online === true
+                    );
+                    
+                    if (agents.length === 0) {
+                        loading.style.display = 'none';
+                        empty.style.display = 'block';
+                        return;
+                    }
+                    
+                    agents.forEach(agent => {
+                        const agentCard = document.createElement('div');
+                        agentCard.className = 'agent-stat-card';
+                        
+                        // Calculer les statistiques
+                        const sales = agent.today_sales || 0;
+                        const wins = agent.today_wins || 0;
+                        const losses = agent.today_losses || 0;
+                        const profit = sales - wins;
+                        const profitClass = profit >= 0 ? 'positive' : 'negative';
+                        
+                        agentCard.innerHTML = `
+                            <div class="agent-stat-header">
+                                <div class="agent-avatar">
+                                    ${agent.full_name?.charAt(0) || agent.username?.charAt(0) || 'A'}
+                                </div>
+                                <div>
+                                    <div class="agent-name">${agent.full_name || agent.username}</div>
+                                    <div class="agent-role">Agent</div>
+                                </div>
+                            </div>
+                            
+                            <div class="agent-stats">
+                                <div class="agent-stat-item">
+                                    <div class="agent-stat-label">Ventes aujourd'hui</div>
+                                    <div class="agent-stat-value">${sales.toLocaleString()} HTG</div>
+                                </div>
+                                <div class="agent-stat-item">
+                                    <div class="agent-stat-label">Gains</div>
+                                    <div class="agent-stat-value positive">${wins.toLocaleString()} HTG</div>
+                                </div>
+                                <div class="agent-stat-item">
+                                    <div class="agent-stat-label">Pertes</div>
+                                    <div class="agent-stat-value negative">${losses.toLocaleString()} HTG</div>
+                                </div>
+                                <div class="agent-stat-item">
+                                    <div class="agent-stat-label">Profit</div>
+                                    <div class="agent-stat-value ${profitClass}">${Math.abs(profit).toLocaleString()} HTG</div>
+                                </div>
+                            </div>
+                            
+                            <div class="agent-status">
+                                <div class="status-indicator status-online"></div>
+                                <div>En ligne</div>
+                                <div style="margin-left: auto; font-size: 0.75rem;">
+                                    ${agent.last_activity ? 
+                                        `Actif il y a ${Math.floor((new Date() - new Date(agent.last_activity)) / 60000)} min` : 
+                                        'Activité récente'}
+                                </div>
+                            </div>
+                        `;
+                        
+                        container.appendChild(agentCard);
+                    });
+                    
+                    loading.style.display = 'none';
+                    container.style.display = 'grid';
+                } else {
+                    loading.style.display = 'none';
+                    empty.style.display = 'block';
+                }
+            } catch (error) {
+                console.error('Erreur chargement stats agents:', error);
+                loading.style.display = 'none';
+                empty.style.display = 'block';
+                showNotification('Erreur lors du chargement des statistiques', 'error');
+            }
+        }
+        
+        // Charger les superviseurs sous ma responsabilité
+        async function loadSupervisorsUnderResponsibility() {
+            const loading = document.getElementById('supervisors-loading');
+            const container = document.getElementById('supervisors-container');
+            const empty = document.getElementById('supervisors-empty');
+            const tbody = document.getElementById('supervisors-table-body');
+            
+            loading.style.display = 'flex';
+            container.style.display = 'none';
+            empty.style.display = 'none';
+            
+            try {
+                const response = await fetch(APP_CONFIG.users);
+                const data = await response.json();
+                
+                if (data.success && data.users && data.users.length > 0) {
+                    // Filtrer les superviseurs
+                    const supervisors = data.users.filter(user => 
+                        user.role_in_subsystem === 'supervisor'
+                    );
+                    
+                    if (supervisors.length === 0) {
+                        loading.style.display = 'none';
+                        empty.style.display = 'block';
+                        return;
+                    }
+                    
+                    tbody.innerHTML = '';
+                    
+                    supervisors.forEach(supervisor => {
+                        const row = document.createElement('tr');
+                        const lastLogin = supervisor.last_login ? 
+                            new Date(supervisor.last_login).toLocaleDateString('fr-FR') : 'Jamais';
+                        const statusClass = supervisor.is_active ? 'status-active' : 'status-inactive';
+                        const statusText = supervisor.is_active ? 'Actif' : 'Inactif';
+                        
+                        row.innerHTML = `
+                            <td><strong>${supervisor.full_name || supervisor.username}</strong></td>
+                            <td>${supervisor.email || 'Non spécifié'}</td>
+                            <td>
+                                <span class="status-badge ${statusClass}">${statusText}</span>
+                            </td>
+                            <td>
+                                <div style="text-align: center;">
+                                    <span style="font-weight: bold;">${supervisor.managed_agents || 0}</span>
+                                </div>
+                            </td>
+                            <td>
+                                <div style="font-weight: bold; color: var(--success-color);">
+                                    ${(supervisor.total_sales || 0).toLocaleString()} HTG
+                                </div>
+                            </td>
+                            <td>${lastLogin}</td>
+                        `;
+                        tbody.appendChild(row);
+                    });
+                    
+                    loading.style.display = 'none';
+                    container.style.display = 'block';
+                } else {
+                    loading.style.display = 'none';
+                    empty.style.display = 'block';
+                }
+            } catch (error) {
+                console.error('Erreur chargement superviseurs:', error);
+                loading.style.display = 'none';
+                empty.style.display = 'block';
             }
         }
         
@@ -2484,7 +2836,7 @@
             try {
                 const subdomain = currentSubsystem.subdomain || window.location.hostname.split('.')[0];
                 
-                const response = await fetch(`${API_BASE_URL}/api/${subdomain}/users`, {
+                const response = await fetch(APP_CONFIG.users, {
                     headers: {
                         'Authorization': `Bearer ${authToken}`
                     }

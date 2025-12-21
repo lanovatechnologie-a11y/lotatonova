@@ -3,12 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Nova Lotto - Connexion</title>
+    <title>lotato - Connexion</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+        <script src="/config.js"></script>
+
     <style>
         :root {
             --primary-color: #3498db;
-            --secondary-color: #2c3e50;
+            --secondary-color: #0611af;
             --success-color: #27ae60;
             --warning-color: #f39c12;
             --danger-color: #e74c3c;
@@ -79,7 +81,7 @@
             border: none;
             font-size: 1rem;
             font-weight: 600;
-            color: #7f8c8d;
+            color: #b802b8;
             cursor: pointer;
             transition: all 0.3s;
             position: relative;
@@ -301,7 +303,7 @@
             <div class="login-logo">
                 <i class="fas fa-dice"></i>
             </div>
-            <div class="login-title">NOVA LOTTO</div>
+            <div class="login-title">NOVA LOTATO</div>
             <div class="login-subtitle">Système de gestion multi-niveaux</div>
         </div>
         
@@ -436,10 +438,8 @@
     
     <script>
         // Configuration des URLs API
+         const API_BASE_URL = window.location.origin;
         const isProduction = window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1';
-        const API_BASE_URL = isProduction 
-            ? 'https://lotatonova.onrender.com/api'  // URL de production sur Render
-            : 'http://localhost:3000/api';           // URL de développement local
             
         console.log('🌍 Environnement:', isProduction ? 'Production' : 'Développement');
         console.log('🔗 URL API:', API_BASE_URL);
@@ -693,7 +693,7 @@
                     
                     // Rediriger vers l'interface agent
                     setTimeout(() => {
-                        window.location.href = 'agent-dashboard.html';
+                        window.location.href = 'lotato.html';
                     }, 500);
                     
                 } else {

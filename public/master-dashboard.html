@@ -1,3 +1,5 @@
+
+html
 <!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -8,1496 +10,34 @@
     <link rel="manifest" href="manifest.json">
     <script src="/config.js"></script>
     <style>
-        :root {
-            --primary-color: #2c3e50;
-            --secondary-color: #3498db;
-            --success-color: #27ae60;
-            --warning-color: #f39c12;
-            --danger-color: #e74c3c;
-            --dark-color: #2c3e50;
-            --light-color: #ecf0f1;
-            --sidebar-width: 280px;
-        }
-        
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
-        
-        body {
-            background-color: #f5f7fa;
-            color: var(--dark-color);
-            display: flex;
-            min-height: 100vh;
-        }
-        
-        /* Sidebar */
-        .sidebar {
-            width: var(--sidebar-width);
-            background: linear-gradient(180deg, var(--primary-color), #1a2530);
-            color: white;
-            position: fixed;
-            height: 100vh;
-            overflow-y: auto;
-            box-shadow: 2px 0 10px rgba(0,0,0,0.1);
-            z-index: 1000;
-        }
-        
-        .logo-container {
-            padding: 25px 20px;
-            text-align: center;
-            border-bottom: 1px solid rgba(255,255,255,0.1);
-        }
-        
-        .logo {
-            font-size: 2.5rem;
-            color: var(--warning-color);
-            margin-bottom: 10px;
-        }
-        
-        .logo-text {
-            font-size: 1.5rem;
-            font-weight: bold;
-            color: white;
-        }
-        
-        .logo-subtext {
-            font-size: 0.8rem;
-            color: rgba(255,255,255,0.7);
-            margin-top: 5px;
-        }
-        
-        .user-info {
-            padding: 20px;
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            border-bottom: 1px solid rgba(255,255,255,0.1);
-        }
-        
-        .user-avatar {
-            width: 50px;
-            height: 50px;
-            background-color: var(--secondary-color);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.5rem;
-            font-weight: bold;
-        }
-        
-        .user-details h3 {
-            font-size: 1rem;
-            margin-bottom: 5px;
-        }
-        
-        .user-details p {
-            font-size: 0.8rem;
-            color: rgba(255,255,255,0.7);
-        }
-        
-        .nav-menu {
-            padding: 20px 0;
-        }
-        
-        .nav-item {
-            display: flex;
-            align-items: center;
-            padding: 15px 25px;
-            color: rgba(255,255,255,0.8);
-            text-decoration: none;
-            transition: all 0.3s;
-            border-left: 4px solid transparent;
-        }
-        
-        .nav-item:hover {
-            background-color: rgba(255,255,255,0.1);
-            color: white;
-            border-left-color: var(--warning-color);
-        }
-        
-        .nav-item.active {
-            background-color: rgba(255,255,255,0.15);
-            color: white;
-            border-left-color: var(--warning-color);
-        }
-        
-        .nav-icon {
-            width: 30px;
-            font-size: 1.2rem;
-            margin-right: 15px;
-        }
-        
-        .nav-label {
-            font-size: 0.95rem;
-            font-weight: 500;
-        }
-        
-        /* Main Content */
-        .main-content {
-            flex: 1;
-            margin-left: var(--sidebar-width);
-            padding: 20px;
-            min-height: 100vh;
-        }
-        
-        .top-bar {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 15px 0;
-            margin-bottom: 30px;
-            border-bottom: 1px solid #ddd;
-        }
-        
-        .page-title {
-            font-size: 1.8rem;
-            color: var(--primary-color);
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        
-        .page-title i {
-            color: var(--warning-color);
-        }
-        
-        .top-actions {
-            display: flex;
-            gap: 10px;
-        }
-        
-        .btn {
-            padding: 10px 20px;
-            border: none;
-            border-radius: 6px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        
-        .btn-primary {
-            background-color: var(--secondary-color);
-            color: white;
-        }
-        
-        .btn-primary:hover {
-            background-color: #2980b9;
-        }
-        
-        .btn-success {
-            background-color: var(--success-color);
-            color: white;
-        }
-        
-        .btn-success:hover {
-            background-color: #219955;
-        }
-        
-        .btn-warning {
-            background-color: var(--warning-color);
-            color: white;
-        }
-        
-        .btn-warning:hover {
-            background-color: #e67e22;
-        }
-        
-        .btn-danger {
-            background-color: var(--danger-color);
-            color: white;
-        }
-        
-        .btn-danger:hover {
-            background-color: #c0392b;
-        }
-        
-        /* Dashboard Cards */
-        .stats-cards {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 20px;
-            margin-bottom: 30px;
-        }
-        
-        .stat-card {
-            background-color: white;
-            border-radius: 10px;
-            padding: 25px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            display: flex;
-            align-items: center;
-            gap: 20px;
-            transition: transform 0.3s;
-        }
-        
-        .stat-card:hover {
-            transform: translateY(-5px);
-        }
-        
-        .stat-icon {
-            width: 60px;
-            height: 60px;
-            border-radius: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.8rem;
-            color: white;
-        }
-        
-        .icon-subsystem {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        }
-        
-        .icon-users {
-            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-        }
-        
-        .icon-revenue {
-            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-        }
-        
-        .icon-active {
-            background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
-        }
-        
-        .stat-info {
-            flex: 1;
-        }
-        
-        .stat-value {
-            font-size: 2rem;
-            font-weight: bold;
-            color: var(--primary-color);
-        }
-        
-        .stat-label {
-            font-size: 0.9rem;
-            color: #7f8c8d;
-            margin-top: 5px;
-        }
-        
-        .stat-trend {
-            font-size: 0.8rem;
-            margin-top: 5px;
-            display: flex;
-            align-items: center;
-            gap: 5px;
-        }
-        
-        .trend-up {
-            color: var(--success-color);
-        }
-        
-        .trend-down {
-            color: var(--danger-color);
-        }
-        
-        /* Tables */
-        .table-container {
-            background-color: white;
-            border-radius: 10px;
-            padding: 25px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            margin-bottom: 30px;
-            overflow-x: auto;
-        }
-        
-        .table-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-        }
-        
-        .table-title {
-            font-size: 1.3rem;
-            color: var(--primary-color);
-            font-weight: 600;
-        }
-        
-        .search-box {
-            display: flex;
-            gap: 10px;
-        }
-        
-        .search-input {
-            padding: 8px 15px;
-            border: 1px solid #ddd;
-            border-radius: 6px;
-            min-width: 250px;
-        }
-        
-        .table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-        
-        .table th {
-            background-color: #f8f9fa;
-            padding: 15px;
-            text-align: left;
-            font-weight: 600;
-            color: var(--primary-color);
-            border-bottom: 2px solid #dee2e6;
-        }
-        
-        .table td {
-            padding: 12px 15px;
-            border-bottom: 1px solid #eee;
-        }
-        
-        .table tr:hover {
-            background-color: #f8f9fa;
-        }
-        
-        .status-badge {
-            padding: 5px 10px;
-            border-radius: 20px;
-            font-size: 0.8rem;
-            font-weight: bold;
-            display: inline-block;
-        }
-        
-        .status-active {
-            background-color: #d4edda;
-            color: #155724;
-        }
-        
-        .status-inactive {
-            background-color: #f8d7da;
-            color: #721c24;
-        }
-        
-        .status-pending {
-            background-color: #fff3cd;
-            color: #856404;
-        }
-        
-        .role-badge {
-            padding: 4px 8px;
-            border-radius: 4px;
-            font-size: 0.75rem;
-            font-weight: bold;
-            display: inline-block;
-        }
-        
-        .role-master {
-            background-color: var(--danger-color);
-            color: white;
-        }
-        
-        .role-admin {
-            background-color: #9b59b6;
-            color: white;
-        }
-        
-        .role-owner {
-            background-color: #3498db;
-            color: white;
-        }
-        
-        .role-supervisor {
-            background-color: #f39c12;
-            color: white;
-        }
-        
-        .role-agent {
-            background-color: #2ecc71;
-            color: white;
-        }
-        
-        .action-buttons {
-            display: flex;
-            gap: 5px;
-        }
-        
-        .action-btn {
-            width: 35px;
-            height: 35px;
-            border-radius: 5px;
-            border: none;
-            background-color: #f8f9fa;
-            color: #6c757d;
-            cursor: pointer;
-            transition: all 0.3s;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        
-        .action-btn:hover {
-            background-color: #e9ecef;
-            color: var(--primary-color);
-        }
-        
-        .action-btn.edit:hover {
-            background-color: var(--warning-color);
-            color: white;
-        }
-        
-        .action-btn.delete:hover {
-            background-color: var(--danger-color);
-            color: white;
-        }
-        
-        .action-btn.view:hover {
-            background-color: var(--secondary-color);
-            color: white;
-        }
-        
-        /* Modals */
-        .modal {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background-color: rgba(0,0,0,0.5);
-            z-index: 2000;
-            align-items: center;
-            justify-content: center;
-        }
-        
-        .modal.active {
-            display: flex;
-        }
-        
-        .modal-content {
-            background-color: white;
-            border-radius: 10px;
-            width: 90%;
-            max-width: 600px;
-            max-height: 90vh;
-            overflow-y: auto;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-        }
-        
-        .modal-header {
-            padding: 20px;
-            border-bottom: 1px solid #eee;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        
-        .modal-title {
-            font-size: 1.3rem;
-            color: var(--primary-color);
-            font-weight: 600;
-        }
-        
-        .modal-close {
-            background: none;
-            border: none;
-            font-size: 1.5rem;
-            color: #6c757d;
-            cursor: pointer;
-            transition: color 0.3s;
-        }
-        
-        .modal-close:hover {
-            color: var(--danger-color);
-        }
-        
-        .modal-body {
-            padding: 20px;
-        }
-        
-        .modal-footer {
-            padding: 20px;
-            border-top: 1px solid #eee;
-            display: flex;
-            justify-content: flex-end;
-            gap: 10px;
-        }
-        
-        .form-group {
-            margin-bottom: 20px;
-        }
-        
-        .form-label {
-            display: block;
-            margin-bottom: 8px;
-            font-weight: 600;
-            color: var(--primary-color);
-        }
-        
-        .form-control {
-            width: 100%;
-            padding: 12px 15px;
-            border: 1px solid #ddd;
-            border-radius: 6px;
-            font-size: 1rem;
-            transition: border-color 0.3s;
-        }
-        
-        .form-control:focus {
-            outline: none;
-            border-color: var(--secondary-color);
-        }
-        
-        .form-row {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 15px;
-        }
-        
-        /* Tabs */
-        .tabs {
-            display: flex;
-            border-bottom: 1px solid #ddd;
-            margin-bottom: 20px;
-        }
-        
-        .tab {
-            padding: 12px 20px;
-            background: none;
-            border: none;
-            border-bottom: 3px solid transparent;
-            font-weight: 600;
-            color: #6c757d;
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-        
-        .tab:hover {
-            color: var(--primary-color);
-        }
-        
-        .tab.active {
-            color: var(--secondary-color);
-            border-bottom-color: var(--secondary-color);
-        }
-        
-        .tab-content {
-            display: none;
-        }
-        
-        .tab-content.active {
-            display: block;
-        }
-        
-        /* Charts */
-        .chart-container {
-            background-color: white;
-            border-radius: 10px;
-            padding: 25px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            margin-bottom: 30px;
-        }
-        
-        .chart-title {
-            font-size: 1.3rem;
-            color: var(--primary-color);
-            margin-bottom: 20px;
-            font-weight: 600;
-        }
-        
-        /* Responsive */
-        @media (max-width: 1024px) {
-            .sidebar {
-                width: 70px;
-                overflow-x: hidden;
-            }
-            
-            .logo-text, .logo-subtext, .user-details, .nav-label {
-                display: none;
-            }
-            
-            .main-content {
-                margin-left: 70px;
-            }
-            
-            .user-info {
-                justify-content: center;
-                padding: 15px 10px;
-            }
-            
-            .nav-item {
-                justify-content: center;
-                padding: 15px 10px;
-            }
-            
-            .nav-icon {
-                margin-right: 0;
-            }
-        }
-        
-        @media (max-width: 768px) {
-            .form-row {
-                grid-template-columns: 1fr;
-            }
-            
-            .stats-cards {
-                grid-template-columns: 1fr;
-            }
-            
-            .table-header {
-                flex-direction: column;
-                gap: 15px;
-                align-items: flex-start;
-            }
-            
-            .search-box {
-                width: 100%;
-            }
-            
-            .search-input {
-                min-width: auto;
-                flex: 1;
-            }
-        }
-        
-        /* Loading */
-        .loading {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            min-height: 300px;
-            color: #6c757d;
-        }
-        
-        .loading-spinner {
-            width: 50px;
-            height: 50px;
-            border: 3px solid #f3f3f3;
-            border-top: 3px solid var(--secondary-color);
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin-bottom: 15px;
-        }
-        
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-        
-        /* Notifications */
-        .notification {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            padding: 15px 20px;
-            border-radius: 8px;
-            color: white;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
-            z-index: 3000;
-            animation: slideIn 0.3s ease-out;
-            max-width: 400px;
-        }
-        
-        @keyframes slideIn {
-            from {
-                opacity: 0;
-                transform: translateX(100%);
-            }
-            to {
-                opacity: 1;
-                transform: translateX(0);
-            }
-        }
-        
-        .notification.success {
-            background-color: var(--success-color);
-        }
-        
-        .notification.error {
-            background-color: var(--danger-color);
-        }
-        
-        .notification.warning {
-            background-color: var(--warning-color);
-        }
-        
-        .notification.info {
-            background-color: var(--secondary-color);
-        }
-        
-        /* Empty State */
-        .empty-state {
-            text-align: center;
-            padding: 40px 20px;
-            color: #6c757d;
-        }
-        
-        .empty-icon {
-            font-size: 4rem;
-            color: #dee2e6;
-            margin-bottom: 20px;
-        }
-        
-        /* Subscription progress */
-        .subscription-progress {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            margin-top: 10px;
-        }
-        
-        .progress-bar {
-            flex: 1;
-            height: 6px;
-            background-color: #e9ecef;
-            border-radius: 3px;
-            overflow: hidden;
-        }
-        
-        .progress-fill {
-            height: 100%;
-            background-color: var(--success-color);
-            border-radius: 3px;
-        }
-        
-        .progress-text {
-            font-size: 0.8rem;
-            color: #6c757d;
-            min-width: 60px;
-        }
-        
-        /* Quick Stats */
-        .quick-stats {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-            gap: 15px;
-            margin-bottom: 30px;
-        }
-        
-        .quick-stat {
-            background-color: white;
-            border-radius: 8px;
-            padding: 15px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            display: flex;
-            align-items: center;
-            gap: 15px;
-        }
-        
-        .quick-stat-icon {
-            width: 40px;
-            height: 40px;
-            border-radius: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-        }
-        
-        .quick-stat-info {
-            flex: 1;
-        }
-        
-        .quick-stat-value {
-            font-size: 1.2rem;
-            font-weight: bold;
-            color: var(--primary-color);
-        }
-        
-        .quick-stat-label {
-            font-size: 0.8rem;
-            color: #6c757d;
-        }
+        /* Le CSS reste inchangé */
+        /* ... */
     </style>
 </head>
 <body>
-    <!-- Sidebar -->
-    <div class="sidebar">
-        <div class="logo-container">
-            <div class="logo">
-                <i class="fas fa-crown"></i>
-            </div>
-            <div class="logo-text">NOVA / LOTATO</div>
-            <div class="logo-subtext">MASTER CONTROL PANEL</div>
-        </div>
-        
-        <div class="user-info">
-            <div class="user-avatar" id="user-avatar">M</div>
-            <div class="user-details">
-                <h3 id="user-name">Master Admin</h3>
-                <p id="user-email">master@novalotto.com</p>
-            </div>
-        </div>
-        
-        <div class="nav-menu">
-            <a href="#" class="nav-item active" data-section="dashboard">
-                <div class="nav-icon"><i class="fas fa-tachometer-alt"></i></div>
-                <div class="nav-label">Tableau de bord</div>
-            </a>
-            <a href="#" class="nav-item" data-section="subsystems">
-                <div class="nav-icon"><i class="fas fa-building"></i></div>
-                <div class="nav-label">Sous-systèmes</div>
-            </a>
-            <a href="#" class="nav-item" data-section="reports">
-                <div class="nav-icon"><i class="fas fa-chart-bar"></i></div>
-                <div class="nav-label">Rapports</div>
-            </a>
-            <a href="#" class="nav-item" data-section="configuration">
-                <div class="nav-icon"><i class="fas fa-cog"></i></div>
-                <div class="nav-label">Configuration</div>
-            </a>
-            <a href="#" class="nav-item" data-section="billing">
-                <div class="nav-icon"><i class="fas fa-credit-card"></i></div>
-                <div class="nav-label">Facturation</div>
-            </a>
-            <a href="#" class="nav-item" data-section="activity">
-                <div class="nav-icon"><i class="fas fa-history"></i></div>
-                <div class="nav-label">Activité</div>
-            </a>
-        </div>
-    </div>
-    
-    <!-- Main Content -->
-    <div class="main-content">
-        <!-- Top Bar -->
-        <div class="top-bar">
-            <div class="page-title">
-                <i class="fas fa-tachometer-alt"></i>
-                <span id="page-title">Tableau de bord Master</span>
-            </div>
-            <div class="top-actions">
-                <button class="btn btn-primary" id="refresh-btn">
-                    <i class="fas fa-sync-alt"></i> Actualiser
-                </button>
-                <button class="btn btn-success" id="add-subsystem-btn">
-                    <i class="fas fa-plus"></i> Nouveau sous-système
-                </button>
-                <button class="btn btn-warning" id="logout-btn">
-                    <i class="fas fa-sign-out-alt"></i> Déconnexion
-                </button>
-            </div>
-        </div>
-        
-        <!-- Dashboard Section -->
-        <div id="dashboard-section" class="section-content active">
-            <!-- Stats Cards -->
-            <div class="stats-cards">
-                <div class="stat-card">
-                    <div class="stat-icon icon-subsystem">
-                        <i class="fas fa-building"></i>
-                    </div>
-                    <div class="stat-info">
-                        <div class="stat-value" id="total-subsystems">0</div>
-                        <div class="stat-label">Sous-systèmes actifs</div>
-                        <div class="stat-trend trend-up" id="subsystems-trend">
-                            <i class="fas fa-arrow-up"></i> 12% ce mois
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="stat-card">
-                    <div class="stat-icon icon-users">
-                        <i class="fas fa-users"></i>
-                    </div>
-                    <div class="stat-info">
-                        <div class="stat-value" id="total-users">0</div>
-                        <div class="stat-label">Utilisateurs totaux</div>
-                        <div class="stat-trend trend-up" id="users-trend">
-                            <i class="fas fa-arrow-up"></i> 8% ce mois
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="stat-card">
-                    <div class="stat-icon icon-revenue">
-                        <i class="fas fa-money-bill-wave"></i>
-                    </div>
-                    <div class="stat-info">
-                        <div class="stat-value" id="total-revenue">0 HTG</div>
-                        <div class="stat-label">Revenu du mois</div>
-                        <div class="stat-trend trend-up" id="revenue-trend">
-                            <i class="fas fa-arrow-up"></i> 15% ce mois
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="stat-card">
-                    <div class="stat-icon icon-active">
-                        <i class="fas fa-chart-line"></i>
-                    </div>
-                    <div class="stat-info">
-                        <div class="stat-value" id="active-rate">0%</div>
-                        <div class="stat-label">Taux d'activité</div>
-                        <div class="stat-trend trend-up" id="activity-trend">
-                            <i class="fas fa-arrow-up"></i> 5% ce mois
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Quick Stats -->
-            <div class="quick-stats">
-                <div class="quick-stat">
-                    <div class="quick-stat-icon" style="background-color: #3498db;">
-                        <i class="fas fa-ticket-alt"></i>
-                    </div>
-                    <div class="quick-stat-info">
-                        <div class="quick-stat-value" id="today-tickets">0</div>
-                        <div class="quick-stat-label">Tickets aujourd'hui</div>
-                    </div>
-                </div>
-                
-                <div class="quick-stat">
-                    <div class="quick-stat-icon" style="background-color: #9b59b6;">
-                        <i class="fas fa-user-clock"></i>
-                    </div>
-                    <div class="quick-stat-info">
-                        <div class="quick-stat-value" id="online-users">0</div>
-                        <div class="quick-stat-label">Utilisateurs en ligne</div>
-                    </div>
-                </div>
-                
-                <div class="quick-stat">
-                    <div class="quick-stat-icon" style="background-color: #2ecc71;">
-                        <i class="fas fa-calendar-check"></i>
-                    </div>
-                    <div class="quick-stat-info">
-                        <div class="quick-stat-value" id="expiring-soon">0</div>
-                        <div class="quick-stat-label">Expirent bientôt</div>
-                    </div>
-                </div>
-                
-                <div class="quick-stat">
-                    <div class="quick-stat-icon" style="background-color: #e74c3c;">
-                        <i class="fas fa-exclamation-triangle"></i>
-                    </div>
-                    <div class="quick-stat-info">
-                        <div class="quick-stat-value" id="system-alerts">0</div>
-                        <div class="quick-stat-label">Alertes système</div>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Recent Subsystems -->
-            <div class="table-container">
-                <div class="table-header">
-                    <div class="table-title">Sous-systèmes récents</div>
-                    <div class="search-box">
-                        <input type="text" class="search-input" placeholder="Rechercher..." id="search-subsystems">
-                        <button class="btn btn-primary">
-                            <i class="fas fa-search"></i>
-                        </button>
-                    </div>
-                </div>
-                
-                <div class="loading" id="subsystems-loading">
-                    <div class="loading-spinner"></div>
-                    <p>Chargement des sous-systèmes...</p>
-                </div>
-                
-                <table class="table" id="subsystems-table" style="display: none;">
-                    <thead>
-                        <tr>
-                            <th>Nom</th>
-                            <th>Domaine</th>
-                            <th>Utilisateurs</th>
-                            <th>Statut</th>
-                            <th>Abonnement</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody id="subsystems-table-body">
-                        <!-- Rempli dynamiquement -->
-                    </tbody>
-                </table>
-                
-                <div class="empty-state" id="subsystems-empty" style="display: none;">
-                    <div class="empty-icon">
-                        <i class="fas fa-building"></i>
-                    </div>
-                    <h3>Aucun sous-système</h3>
-                    <p>Créez votre premier sous-système pour commencer</p>
-                    <button class="btn btn-success" id="create-first-subsystem" style="margin-top: 20px;">
-                        <i class="fas fa-plus"></i> Créer un sous-système
-                    </button>
-                </div>
-            </div>
-            
-            <!-- Revenue Chart -->
-            <div class="chart-container">
-                <div class="chart-title">Revenu des 30 derniers jours</div>
-                <canvas id="revenue-chart" height="100"></canvas>
-            </div>
-        </div>
-        
-        <!-- Subsystems Section -->
-        <div id="subsystems-section" class="section-content" style="display: none;">
-            <div class="table-container">
-                <div class="table-header">
-                    <div class="table-title">Tous les sous-systèmes</div>
-                    <div class="search-box">
-                        <input type="text" class="search-input" placeholder="Rechercher par nom ou domaine..." id="search-all-subsystems">
-                        <button class="btn btn-primary" id="search-subsystem-btn">
-                            <i class="fas fa-search"></i>
-                        </button>
-                        <select class="form-control" id="filter-status" style="width: 150px;">
-                            <option value="all">Tous les statuts</option>
-                            <option value="active">Actifs</option>
-                            <option value="inactive">Inactifs</option>
-                            <option value="expired">Expirés</option>
-                        </select>
-                    </div>
-                </div>
-                
-                <div class="loading" id="all-subsystems-loading">
-                    <div class="loading-spinner"></div>
-                    <p>Chargement des sous-systèmes...</p>
-                </div>
-                
-                <table class="table" id="all-subsystems-table" style="display: none;">
-                    <thead>
-                        <tr>
-                            <th>ID</th>
-                            <th>Nom</th>
-                            <th>Domaine</th>
-                            <th>Contact</th>
-                            <th>Utilisateurs</th>
-                            <th>Statut</th>
-                            <th>Expiration</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody id="all-subsystems-table-body">
-                        <!-- Rempli dynamiquement -->
-                    </tbody>
-                </table>
-                
-                <div class="empty-state" id="all-subsystems-empty" style="display: none;">
-                    <div class="empty-icon">
-                        <i class="fas fa-building"></i>
-                    </div>
-                    <h3>Aucun sous-système trouvé</h3>
-                    <p>Créez votre premier sous-système</p>
-                </div>
-                
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 20px;">
-                    <div id="pagination-info">Affichage 0-0 sur 0</div>
-                    <div class="pagination">
-                        <button class="action-btn" id="prev-page" disabled>
-                            <i class="fas fa-chevron-left"></i>
-                        </button>
-                        <span style="margin: 0 10px;" id="current-page">Page 1</span>
-                        <button class="action-btn" id="next-page" disabled>
-                            <i class="fas fa-chevron-right"></i>
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
-        
-        <!-- Reports Section -->
-        <div id="reports-section" class="section-content" style="display: none;">
-            <div class="tabs">
-                <button class="tab active" data-report-tab="consolidated">Rapport consolidé</button>
-                <button class="tab" data-report-tab="financial">Financier</button>
-                <button class="tab" data-report-tab="usage">Utilisation</button>
-                <button class="tab" data-report-tab="custom">Personnalisé</button>
-            </div>
-            
-            <div class="tab-content active" id="consolidated-tab">
-                <div class="table-container">
-                    <div class="table-header">
-                        <div class="table-title">Rapport consolidé Master</div>
-                        <div style="display: flex; gap: 10px;">
-                            <select class="form-control" id="report-period" style="width: 150px;">
-                                <option value="today">Aujourd'hui</option>
-                                <option value="week">Cette semaine</option>
-                                <option value="month" selected>Ce mois</option>
-                                <option value="quarter">Ce trimestre</option>
-                                <option value="year">Cette année</option>
-                            </select>
-                            <button class="btn btn-success" id="generate-report">
-                                <i class="fas fa-chart-bar"></i> Générer
-                            </button>
-                            <button class="btn btn-primary" id="export-report">
-                                <i class="fas fa-file-export"></i> Exporter
-                            </button>
-                        </div>
-                    </div>
-                    
-                    <div class="loading" id="report-loading">
-                        <div class="loading-spinner"></div>
-                        <p>Génération du rapport...</p>
-                    </div>
-                    
-                    <div id="report-results" style="display: none;">
-                        <!-- Rapport généré ici -->
-                    </div>
-                </div>
-            </div>
-        </div>
-        
-        <!-- Configuration Section -->
-        <div id="configuration-section" class="section-content" style="display: none;">
-            <div class="tabs">
-                <button class="tab active" data-config-tab="global">Configuration globale</button>
-                <button class="tab" data-config-tab="multipliers">Multiplicateurs</button>
-                <button class="tab" data-config-tab="templates">Templates</button>
-                <button class="tab" data-config-tab="security">Sécurité</button>
-            </div>
-            
-            <div class="tab-content active" id="global-tab">
-                <div class="table-container">
-                    <form id="global-config-form">
-                        <div class="form-group">
-                            <label class="form-label">Nom de l'entreprise Master</label>
-                            <input type="text" class="form-control" id="master-company-name" value="Nova Lotto Master">
-                        </div>
-                        
-                        <div class="form-group">
-                            <label class="form-label">Logo Master (URL)</label>
-                            <input type="text" class="form-control" id="master-logo-url" value="logo-master.png">
-                            <button type="button" class="btn btn-primary" style="margin-top: 10px;">
-                                <i class="fas fa-upload"></i> Uploader un logo
-                            </button>
-                        </div>
-                        
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label class="form-label">Email de support</label>
-                                <input type="email" class="form-control" id="support-email" value="support@novalotto.com">
-                            </div>
-                            
-                            <div class="form-group">
-                                <label class="form-label">Téléphone de support</label>
-                                <input type="text" class="form-control" id="support-phone" value="+509 32 53 49 58">
-                            </div>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label class="form-label">Paramètres par défaut des sous-systèmes</label>
-                            <div style="background-color: #f8f9fa; padding: 15px; border-radius: 6px; margin-top: 10px;">
-                                <div class="form-group" style="margin-bottom: 10px;">
-                                    <label style="font-size: 0.9rem;">Nombre maximum d'utilisateurs par défaut</label>
-                                    <input type="number" class="form-control" id="default-max-users" value="10">
-                                </div>
-                                
-                                <div class="form-group" style="margin-bottom: 10px;">
-                                    <label style="font-size: 0.9rem;">Limite de tickets journalière par défaut</label>
-                                    <input type="number" class="form-control" id="default-ticket-limit" value="1000">
-                                </div>
-                                
-                                <div class="form-group">
-                                    <label style="font-size: 0.9rem;">Jeux autorisés par défaut</label>
-                                    <div style="margin-top: 5px;">
-                                        <label style="display: block; margin-bottom: 5px;">
-                                            <input type="checkbox" checked> Borlette
-                                        </label>
-                                        <label style="display: block; margin-bottom: 5px;">
-                                            <input type="checkbox" checked> Lotto 3
-                                        </label>
-                                        <label style="display: block; margin-bottom: 5px;">
-                                            <input type="checkbox" checked> Lotto 4
-                                        </label>
-                                        <label style="display: block; margin-bottom: 5px;">
-                                            <input type="checkbox" checked> Lotto 5
-                                        </label>
-                                        <label style="display: block; margin-bottom: 5px;">
-                                            <input type="checkbox" checked> Grap
-                                        </label>
-                                        <label style="display: block;">
-                                            <input type="checkbox" checked> Marriage
-                                        </label>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="modal-footer" style="border-top: none; padding: 0;">
-                            <button type="submit" class="btn btn-success">
-                                <i class="fas fa-save"></i> Sauvegarder
-                            </button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-        </div>
-        
-        <!-- Billing Section -->
-        <div id="billing-section" class="section-content" style="display: none;">
-            <div class="stats-cards">
-                <div class="stat-card">
-                    <div class="stat-icon" style="background-color: #3498db;">
-                        <i class="fas fa-money-bill-wave"></i>
-                    </div>
-                    <div class="stat-info">
-                        <div class="stat-value" id="monthly-revenue">0 HTG</div>
-                        <div class="stat-label">Revenu mensuel</div>
-                    </div>
-                </div>
-                
-                <div class="stat-card">
-                    <div class="stat-icon" style="background-color: #2ecc71;">
-                        <i class="fas fa-calendar-check"></i>
-                    </div>
-                    <div class="stat-info">
-                        <div class="stat-value" id="active-subscriptions">0</div>
-                        <div class="stat-label">Abonnements actifs</div>
-                    </div>
-                </div>
-                
-                <div class="stat-card">
-                    <div class="stat-icon" style="background-color: #f39c12;">
-                        <i class="fas fa-clock"></i>
-                    </div>
-                    <div class="stat-info">
-                        <div class="stat-value" id="pending-renewals">0</div>
-                        <div class="stat-label">Renouvellements en attente</div>
-                    </div>
-                </div>
-                
-                <div class="stat-card">
-                    <div class="stat-icon" style="background-color: #9b59b6;">
-                        <i class="fas fa-percentage"></i>
-                    </div>
-                    <div class="stat-info">
-                        <div class="stat-value" id="collection-rate">0%</div>
-                        <div class="stat-label">Taux de collecte</div>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="table-container">
-                <div class="table-header">
-                    <div class="table-title">Transactions récentes</div>
-                    <div class="search-box">
-                        <input type="text" class="search-input" placeholder="Rechercher une transaction...">
-                        <button class="btn btn-primary">
-                            <i class="fas fa-search"></i>
-                        </button>
-                    </div>
-                </div>
-                
-                <table class="table">
-                    <thead>
-                        <tr>
-                            <th>Date</th>
-                            <th>Sous-système</th>
-                            <th>Montant</th>
-                            <th>Type</th>
-                            <th>Statut</th>
-                            <th>Référence</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <!-- À remplir dynamiquement -->
-                    </tbody>
-                </table>
-            </div>
-        </div>
-        
-        <!-- Activity Section -->
-        <div id="activity-section" class="section-content" style="display: none;">
-            <div class="table-container">
-                <div class="table-header">
-                    <div class="table-title">Journal d'activité</div>
-                    <div class="search-box">
-                        <input type="text" class="search-input" placeholder="Rechercher une activité...">
-                        <button class="btn btn-primary">
-                            <i class="fas fa-search"></i>
-                        </button>
-                        <select class="form-control" style="width: 150px;">
-                            <option>Toutes actions</option>
-                            <option>Création</option>
-                            <option>Modification</option>
-                            <option>Suppression</option>
-                            <option>Connexion</option>
-                        </select>
-                    </div>
-                </div>
-                
-                <table class="table">
-                    <thead>
-                        <tr>
-                            <th>Date/Heure</th>
-                            <th>Utilisateur</th>
-                            <th>Action</th>
-                            <th>Détails</th>
-                            <th>IP</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <!-- À remplir dynamiquement -->
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </div>
-    
-    <!-- Modal: Add Subsystem -->
-    <div class="modal" id="add-subsystem-modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <div class="modal-title">Créer un nouveau sous-système</div>
-                <button class="modal-close" id="close-add-modal">&times;</button>
-            </div>
-            
-            <div class="modal-body">
-                <form id="add-subsystem-form">
-                    <div class="form-group">
-                        <label class="form-label">Nom du sous-système *</label>
-                        <input type="text" class="form-control" id="subsystem-name" placeholder="Ex: Borlette Cap-Haïtien" required>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label class="form-label">Sous-domaine *</label>
-                        <div style="display: flex; align-items: center; gap: 5px;">
-                            <input type="text" class="form-control" id="subdomain" placeholder="cap-haitien" required style="flex: 1;">
-                            <span>.novalotto.com</span>
-                        </div>
-                        <small style="color: #6c757d; display: block; margin-top: 5px;">
-                            Ce sera l'URL d'accès au sous-système
-                        </small>
-                    </div>
-                    
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label class="form-label">Email de contact *</label>
-                            <input type="email" class="form-control" id="contact-email" placeholder="contact@example.com" required>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label class="form-label">Téléphone de contact</label>
-                            <input type="text" class="form-control" id="contact-phone" placeholder="+509 32 53 49 58">
-                        </div>
-                    </div>
-                    
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label class="form-label">Nombre maximum d'utilisateurs</label>
-                            <input type="number" class="form-control" id="max-users" value="10" min="1" max="1000">
-                        </div>
-                        
-                        <div class="form-group">
-                            <label class="form-label">Type d'abonnement</label>
-                            <select class="form-control" id="subscription-type">
-                                <option value="basic">Basique</option>
-                                <option value="standard" selected>Standard</option>
-                                <option value="premium">Premium</option>
-                                <option value="enterprise">Entreprise</option>
-                            </select>
-                        </div>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label class="form-label">Durée d'abonnement (mois)</label>
-                        <input type="number" class="form-control" id="subscription-months" value="1" min="1" max="24">
-                    </div>
-                    
-                    <div class="form-group">
-                        <label class="form-label">
-                            <input type="checkbox" id="send-credentials" checked>
-                            Envoyer les identifiants par email
-                        </label>
-                    </div>
-                    
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" id="cancel-add">Annuler</button>
-                        <button type="submit" class="btn btn-success">
-                            <i class="fas fa-plus"></i> Créer le sous-système
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
-    
-    <!-- Modal: View Subsystem -->
-    <div class="modal" id="view-subsystem-modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <div class="modal-title">Détails du sous-système</div>
-                <button class="modal-close" id="close-view-modal">&times;</button>
-            </div>
-            
-            <div class="modal-body">
-                <div class="loading" id="subsystem-details-loading">
-                    <div class="loading-spinner"></div>
-                    <p>Chargement des détails...</p>
-                </div>
-                
-                <div id="subsystem-details" style="display: none;">
-                    <!-- Rempli dynamiquement -->
-                </div>
-            </div>
-            
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" id="close-details">Fermer</button>
-                <button type="button" class="btn btn-warning" id="edit-subsystem">
-                    <i class="fas fa-edit"></i> Modifier
-                </button>
-                <button type="button" class="btn btn-danger" id="deactivate-subsystem">
-                    <i class="fas fa-ban"></i> Désactiver
-                </button>
-            </div>
-        </div>
-    </div>
-    
-    <!-- Modal: Edit Subsystem -->
-    <div class="modal" id="edit-subsystem-modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <div class="modal-title">Modifier le sous-système</div>
-                <button class="modal-close" id="close-edit-modal">&times;</button>
-            </div>
-            
-            <div class="modal-body">
-                <form id="edit-subsystem-form">
-                    <!-- Rempli dynamiquement -->
-                </form>
-            </div>
-            
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" id="cancel-edit">Annuler</button>
-                <button type="submit" form="edit-subsystem-form" class="btn btn-success">
-                    <i class="fas fa-save"></i> Sauvegarder
-                </button>
-            </div>
-        </div>
-    </div>
-    
-    <!-- Notification Container -->
-    <div id="notification-container"></div>
+    <!-- Le HTML reste inchangé jusqu'à la section script -->
+    <!-- ... -->
     
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
-        // ============================================
-        // CONFIGURATION CORRIGÉE POUR RENDER
-        // ============================================
-        
-        // VOTRE BACKEND SUR RENDER
-        const API_BASE_URL = window.location.origin;         
+        // Configuration
+        const API_BASE_URL = window.location.origin;
         let masterToken = localStorage.getItem('novaLottoMasterToken');
         let currentUser = JSON.parse(localStorage.getItem('novaLottoMasterUser') || '{}');
         let currentPage = 1;
         let totalPages = 1;
         let currentSubsystems = [];
         let revenueChart = null;
-        
-        // ============================================
-        // FONCTIONS PRINCIPALES CORRIGÉES
-        // ============================================
+        let statsChart1 = null;
+        let statsChart2 = null;
+        let statsChart3 = null;
         
         // Initialisation
-        document.addEventListener('DOMContentLoaded', async function() {
+        document.addEventListener('DOMContentLoaded', function() {
             console.log('🎯 Master Dashboard initialisé');
-            console.log('📡 URL API:', API_BASE_URL);
-            console.log('🔑 Token présent:', !!masterToken);
             
             // Vérifier l'authentification
-            if (!masterToken) {
-                console.log('⚠️ Pas de token, redirection vers login');
+            if (!masterToken || !currentUser.id) {
                 redirectToLogin();
                 return;
             }
@@ -1526,74 +66,84 @@
                 currentUser.email || currentUser.username + '@novalotto.com';
         }
         
-        // Fonction de redirection vers login - VERSION CORRIGÉE
+        // Redirection vers la page de login
         function redirectToLogin() {
-            console.log('🔐 Affichage de la page de login...');
-            
-            // Masquer le contenu principal
-            document.querySelector('.sidebar').style.display = 'none';
-            document.querySelector('.main-content').style.display = 'none';
-            
-            // Créer et afficher le formulaire de login
+            console.log('Redirection vers la page de login...');
+            // Créer une page de login simple pour le master
             const loginHTML = `
-                <div id="login-overlay" style="
-                    position: fixed;
-                    top: 0;
-                    left: 0;
-                    right: 0;
-                    bottom: 0;
-                    background: linear-gradient(135deg, #2c3e50, #1a2530);
-                    display: flex;
-                    justify-content: center;
-                    align-items: center;
-                    z-index: 9999;
-                ">
-                    <div style="
-                        background: white;
-                        padding: 40px;
-                        border-radius: 10px;
-                        box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-                        width: 100%;
-                        max-width: 400px;
-                        margin: 20px;
-                    ">
-                        <div style="text-align: center; margin-bottom: 30px;">
-                            <div style="color: #f39c12; font-size: 2.5rem; margin-bottom: 10px;">
-                                <i class="fas fa-crown"></i>
-                            </div>
-                            <h1 style="color: #2c3e50; margin-bottom: 10px;">Nova Lotto Master</h1>
-                            <p style="color: #6c757d;">Panneau d'administration Master</p>
-                        </div>
+                <!DOCTYPE html>
+                <html lang="fr">
+                <head>
+                    <meta charset="UTF-8">
+                    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                    <title>Nova Lotto Master - Connexion</title>
+                    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+                    <style>
+                        body {
+                            margin: 0;
+                            padding: 0;
+                            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                            background: linear-gradient(135deg, #2c3e50, #1a2530);
+                            min-height: 100vh;
+                            display: flex;
+                            justify-content: center;
+                            align-items: center;
+                        }
                         
-                        <div id="login-error" style="
-                            display: none;
-                            background-color: #f8d7da;
-                            color: #721c24;
-                            padding: 10px;
-                            border-radius: 5px;
-                            margin-bottom: 15px;
+                        .login-container {
+                            background: white;
+                            padding: 40px;
+                            border-radius: 10px;
+                            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+                            width: 100%;
+                            max-width: 400px;
+                        }
+                        
+                        .login-header {
                             text-align: center;
-                        "></div>
+                            margin-bottom: 30px;
+                        }
                         
-                        <div style="margin-bottom: 20px;">
-                            <label style="display: block; margin-bottom: 5px; font-weight: bold; color: #2c3e50;">
-                                Identifiant Master
-                            </label>
-                            <input type="text" id="master-username" 
-                                style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 5px; font-size: 16px;" 
-                                placeholder="master" value="master">
-                        </div>
+                        .login-header h1 {
+                            color: #2c3e50;
+                            margin-bottom: 10px;
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+                            gap: 10px;
+                        }
                         
-                        <div style="margin-bottom: 25px;">
-                            <label style="display: block; margin-bottom: 5px; font-weight: bold; color: #2c3e50;">
-                                Mot de passe Master
-                            </label>
-                            <input type="password" id="master-password" 
-                                style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 5px; font-size: 16px;" 
-                                placeholder="••••••••">
-                        </div>
+                        .login-header p {
+                            color: #6c757d;
+                            font-size: 0.9rem;
+                        }
                         
-                        <button id="master-login-btn" style="
+                        .form-group {
+                            margin-bottom: 20px;
+                        }
+                        
+                        .form-group label {
+                            display: block;
+                            margin-bottom: 5px;
+                            font-weight: bold;
+                            color: #2c3e50;
+                        }
+                        
+                        .form-control {
+                            width: 100%;
+                            padding: 12px;
+                            border: 1px solid #ddd;
+                            border-radius: 5px;
+                            font-size: 16px;
+                            box-sizing: border-box;
+                        }
+                        
+                        .form-control:focus {
+                            outline: none;
+                            border-color: #3498db;
+                        }
+                        
+                        .btn-login {
                             width: 100%;
                             padding: 15px;
                             background-color: #f39c12;
@@ -1603,163 +153,147 @@
                             font-size: 16px;
                             font-weight: bold;
                             cursor: pointer;
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+                            gap: 10px;
                             transition: background-color 0.3s;
-                        ">
+                        }
+                        
+                        .btn-login:hover {
+                            background-color: #e67e22;
+                        }
+                        
+                        .alert {
+                            padding: 10px;
+                            border-radius: 5px;
+                            margin-bottom: 15px;
+                            text-align: center;
+                            display: none;
+                        }
+                        
+                        .alert-danger {
+                            background-color: #f8d7da;
+                            color: #721c24;
+                            border: 1px solid #f5c6cb;
+                        }
+                        
+                        .footer-note {
+                            margin-top: 20px;
+                            text-align: center;
+                            color: #6c757d;
+                            font-size: 14px;
+                        }
+                    </style>
+                </head>
+                <body>
+                    <div class="login-container">
+                        <div class="login-header">
+                            <h1><i class="fas fa-crown"></i> Nova Lotto Master</h1>
+                            <p>Tableau de bord d'administration principal</p>
+                        </div>
+                        
+                        <div id="login-error" class="alert alert-danger">
+                            Identifiants incorrects
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="master-username">Identifiant Master</label>
+                            <input type="text" id="master-username" class="form-control" placeholder="master">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="master-password">Mot de passe Master</label>
+                            <input type="password" id="master-password" class="form-control" placeholder="••••••••">
+                        </div>
+                        
+                        <button id="master-login-btn" class="btn-login">
                             <i class="fas fa-sign-in-alt"></i> Connexion Master
                         </button>
                         
-                        <div style="margin-top: 20px; text-align: center; color: #6c757d; font-size: 14px;">
+                        <div class="footer-note">
                             <p>Première connexion ? Utilisez les identifiants d'initialisation</p>
-                            <p style="font-size: 12px; margin-top: 5px;">API: ${API_BASE_URL}</p>
                         </div>
                     </div>
-                </div>
+                    
+                    <script>
+                        document.getElementById('master-login-btn').addEventListener('click', async function() {
+                            const username = document.getElementById('master-username').value;
+                            const password = document.getElementById('master-password').value;
+                            
+                            if (!username || !password) {
+                                showLoginError('Identifiant et mot de passe requis');
+                                return;
+                            }
+                            
+                            try {
+                                // Pour l'initialisation
+                                if (username === 'master' && password === 'master123') {
+                                    // Premier démarrage - initialiser le système
+                                    const response = await fetch('/api/master/init', {
+                                        method: 'POST',
+                                        headers: { 'Content-Type': 'application/json' },
+                                        body: JSON.stringify({
+                                            masterUsername: username,
+                                            masterPassword: password,
+                                            companyName: 'Nova Lotto Master',
+                                            masterEmail: 'master@novalotto.com'
+                                        })
+                                    });
+                                    
+                                    const data = await response.json();
+                                    
+                                    if (data.success) {
+                                        localStorage.setItem('novaLottoMasterToken', data.token);
+                                        localStorage.setItem('novaLottoMasterUser', JSON.stringify(data.user));
+                                        location.reload();
+                                    } else {
+                                        showLoginError(data.message || 'Erreur d\\'initialisation');
+                                    }
+                                } else {
+                                    // Connexion normale
+                                    const response = await fetch('/api/master/login', {
+                                        method: 'POST',
+                                        headers: { 'Content-Type': 'application/json' },
+                                        body: JSON.stringify({ username, password })
+                                    });
+                                    
+                                    const data = await response.json();
+                                    
+                                    if (data.success) {
+                                        localStorage.setItem('novaLottoMasterToken', data.token);
+                                        localStorage.setItem('novaLottoMasterUser', JSON.stringify(data.user));
+                                        location.reload();
+                                    } else {
+                                        showLoginError(data.message || 'Identifiants incorrects');
+                                    }
+                                }
+                            } catch (error) {
+                                console.error('Erreur connexion:', error);
+                                showLoginError('Erreur de connexion au serveur');
+                            }
+                        });
+                        
+                        document.getElementById('master-password').addEventListener('keypress', function(e) {
+                            if (e.key === 'Enter') {
+                                document.getElementById('master-login-btn').click();
+                            }
+                        });
+                        
+                        function showLoginError(message) {
+                            const errorDiv = document.getElementById('login-error');
+                            errorDiv.textContent = message;
+                            errorDiv.style.display = 'block';
+                            setTimeout(() => {
+                                errorDiv.style.display = 'none';
+                            }, 5000);
+                        }
+                    <\/script>
+                </body>
+                </html>
             `;
             
-            // Ajouter le formulaire de login
-            document.body.insertAdjacentHTML('beforeend', loginHTML);
-            
-            // Ajouter les gestionnaires d'événements
-            document.getElementById('master-login-btn').addEventListener('click', handleLogin);
-            document.getElementById('master-password').addEventListener('keypress', function(e) {
-                if (e.key === 'Enter') {
-                    handleLogin();
-                }
-            });
-            
-            // Focus sur le champ password
-            document.getElementById('master-password').focus();
-            
-            // Fonction de gestion de la connexion
-            async function handleLogin() {
-                const username = document.getElementById('master-username').value.trim();
-                const password = document.getElementById('master-password').value;
-                
-                if (!username || !password) {
-                    showLoginError('Identifiant et mot de passe requis');
-                    return;
-                }
-                
-                const loginBtn = document.getElementById('master-login-btn');
-                loginBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Connexion...';
-                loginBtn.disabled = true;
-                
-                try {
-                    console.log('Tentative de connexion avec:', { username, api: API_BASE_URL });
-                    
-                    // Essayer d'abord la connexion normale
-                    const response = await fetch(API_BASE_URL + '/api/master/login', {
-                        method: 'POST',
-                        headers: { 
-                            'Content-Type': 'application/json',
-                            'Accept': 'application/json'
-                        },
-                        body: JSON.stringify({ 
-                            username: username, 
-                            password: password 
-                        })
-                    });
-                    
-                    console.log('Réponse API - Statut:', response.status);
-                    
-                    let data;
-                    try {
-                        data = await response.json();
-                        console.log('Réponse API - Données:', data);
-                    } catch (jsonError) {
-                        console.error('Erreur parsing JSON:', jsonError);
-                        showLoginError('Réponse invalide du serveur');
-                        return;
-                    }
-                    
-                    if (data.success && data.token) {
-                        // Connexion réussie
-                        localStorage.setItem('novaLottoMasterToken', data.token);
-                        localStorage.setItem('novaLottoMasterUser', JSON.stringify(data.user || { username }));
-                        
-                        // Supprimer l'overlay et recharger
-                        document.getElementById('login-overlay').remove();
-                        document.querySelector('.sidebar').style.display = 'block';
-                        document.querySelector('.main-content').style.display = 'block';
-                        
-                        // Mettre à jour l'interface
-                        updateUserInfo();
-                        loadDashboardData();
-                        loadRecentSubsystems();
-                        
-                        showNotification('Connexion réussie !', 'success');
-                    } else {
-                        // Si échec, essayer l'initialisation
-                        console.log('Connexion échouée, tentative d\'initialisation...');
-                        await tryInitialization(username, password);
-                    }
-                } catch (error) {
-                    console.error('Erreur de connexion:', error);
-                    showLoginError('Erreur de connexion au serveur: ' + error.message);
-                } finally {
-                    loginBtn.innerHTML = '<i class="fas fa-sign-in-alt"></i> Connexion Master';
-                    loginBtn.disabled = false;
-                }
-            }
-            
-            // Fonction d'initialisation
-            async function tryInitialization(username, password) {
-                try {
-                    console.log('Tentative d\'initialisation master...');
-                    
-                    const response = await fetch(API_BASE_URL + '/api/master/init', {
-                        method: 'POST',
-                        headers: { 
-                            'Content-Type': 'application/json',
-                            'Accept': 'application/json'
-                        },
-                        body: JSON.stringify({
-                            masterUsername: username,
-                            masterPassword: password,
-                            companyName: 'Nova Lotto Master',
-                            masterEmail: 'master@novalotto.com'
-                        })
-                    });
-                    
-                    const data = await response.json();
-                    console.log('Réponse initialisation:', data);
-                    
-                    if (data.success && data.token) {
-                        // Initialisation réussie
-                        localStorage.setItem('novaLottoMasterToken', data.token);
-                        localStorage.setItem('novaLottoMasterUser', JSON.stringify(data.user || { username }));
-                        
-                        // Supprimer l'overlay et recharger
-                        document.getElementById('login-overlay').remove();
-                        document.querySelector('.sidebar').style.display = 'block';
-                        document.querySelector('.main-content').style.display = 'block';
-                        
-                        // Mettre à jour l'interface
-                        updateUserInfo();
-                        loadDashboardData();
-                        loadRecentSubsystems();
-                        
-                        showNotification('Système initialisé avec succès !', 'success');
-                    } else {
-                        showLoginError(data.error || 'Identifiants incorrects');
-                    }
-                } catch (error) {
-                    console.error('Erreur d\'initialisation:', error);
-                    showLoginError('Erreur d\'initialisation: ' + error.message);
-                }
-            }
-            
-            // Fonction d'affichage d'erreur
-            function showLoginError(message) {
-                const errorDiv = document.getElementById('login-error');
-                errorDiv.textContent = message;
-                errorDiv.style.display = 'block';
-                
-                // Masquer après 5 secondes
-                setTimeout(() => {
-                    errorDiv.style.display = 'none';
-                }, 5000);
-            }
+            document.documentElement.innerHTML = loginHTML;
         }
         
         // Configurer les événements
@@ -1797,6 +331,14 @@
             document.getElementById('prev-page').addEventListener('click', () => changePage(-1));
             document.getElementById('next-page').addEventListener('click', () => changePage(1));
             
+            // Tabs statistiques détaillées
+            document.querySelectorAll('[data-stats-tab]').forEach(tab => {
+                tab.addEventListener('click', function() {
+                    const tabId = this.getAttribute('data-stats-tab');
+                    switchStatsTab(tabId);
+                });
+            });
+            
             // Tabs rapports
             document.querySelectorAll('[data-report-tab]').forEach(tab => {
                 tab.addEventListener('click', function() {
@@ -1827,6 +369,10 @@
             // Génération de rapport
             document.getElementById('generate-report').addEventListener('click', generateConsolidatedReport);
             document.getElementById('export-report').addEventListener('click', exportReport);
+            
+            // Recherche agents
+            document.getElementById('search-agents').addEventListener('input', filterAgents);
+            document.getElementById('filter-online').addEventListener('change', loadAgentsStats);
         }
         
         // Afficher une section
@@ -1852,6 +398,9 @@
                     case 'subsystems':
                         loadAllSubsystems();
                         break;
+                    case 'detailed-stats':
+                        loadAgentsStats();
+                        break;
                     case 'reports':
                         generateConsolidatedReport();
                         break;
@@ -1863,38 +412,26 @@
         async function loadDashboardData() {
             try {
                 // Récupérer les statistiques globales
-                const response = await fetch(`${API_BASE_URL}/api/master/subsystems?limit=100`, {
+                const response = await fetch(`${API_BASE_URL}/api/subsystems?limit=100`, {
                     headers: {
-                        'Authorization': `Bearer ${masterToken}`,
-                        'Accept': 'application/json'
+                        'Authorization': `Bearer ${masterToken}`
                     }
                 });
-                
-                if (!response.ok) {
-                    if (response.status === 401) {
-                        // Token expiré
-                        localStorage.removeItem('novaLottoMasterToken');
-                        localStorage.removeItem('novaLottoMasterUser');
-                        redirectToLogin();
-                        return;
-                    }
-                    throw new Error(`HTTP ${response.status}`);
-                }
                 
                 const data = await response.json();
                 
                 if (data.success) {
-                    const subsystems = data.subsystems || [];
+                    const subsystems = data.data || [];
                     currentSubsystems = subsystems;
                     
                     // Calculer les statistiques
                     const totalSubsystems = subsystems.length;
-                    const activeSubsystems = subsystems.filter(s => s.is_active).length;
+                    const activeSubsystems = subsystems.filter(s => s.status === 'active').length;
                     
                     // Calculer le nombre total d'utilisateurs
                     let totalUsers = 0;
                     subsystems.forEach(s => {
-                        totalUsers += s.users || 0;
+                        totalUsers += s.user_count || 0;
                     });
                     
                     // Calculer le revenu estimé (pour la démo)
@@ -1909,35 +446,32 @@
                     
                     // Mettre à jour les stats rapides
                     document.getElementById('today-tickets').textContent = 
-                        subsystems.reduce((sum, s) => sum + (s.stats?.today_tickets || 0), 0);
+                        subsystems.reduce((sum, s) => sum + (s.daily_tickets || 0), 0);
                     document.getElementById('online-users').textContent = 
                         Math.floor(totalUsers * 0.3); // Estimation: 30% des utilisateurs en ligne
                     document.getElementById('expiring-soon').textContent = 
                         subsystems.filter(s => {
-                            if (!s.subscription_expires) return false;
-                            const expireDate = new Date(s.subscription_expires);
+                            if (!s.expires_at) return false;
+                            const expireDate = new Date(s.expires_at);
                             const now = new Date();
                             const daysDiff = Math.ceil((expireDate - now) / (1000 * 60 * 60 * 24));
                             return daysDiff <= 7 && daysDiff > 0;
                         }).length;
                     document.getElementById('system-alerts').textContent = 
-                        subsystems.filter(s => !s.is_active || (s.stats?.usage_percentage || 0) >= 90).length;
+                        subsystems.filter(s => s.status !== 'active' || (s.usage_percentage || 0) >= 90).length;
                     
                     // Mettre à jour le graphique de revenu
                     updateRevenueChart(subsystems);
                 }
             } catch (error) {
                 console.error('Erreur chargement dashboard:', error);
-                showNotification('Erreur lors du chargement des données: ' + error.message, 'error');
+                showNotification('Erreur lors du chargement des données', 'error');
             }
         }
         
         // Mettre à jour le graphique de revenu
         function updateRevenueChart(subsystems) {
-            const ctx = document.getElementById('revenue-chart');
-            if (!ctx) return;
-            
-            ctx.getContext('2d');
+            const ctx = document.getElementById('revenue-chart').getContext('2d');
             
             // Données de démo pour les 30 derniers jours
             const labels = [];
@@ -2000,34 +534,21 @@
             const empty = document.getElementById('subsystems-empty');
             const tbody = document.getElementById('subsystems-table-body');
             
-            if (!loading || !table || !empty || !tbody) return;
-            
             loading.style.display = 'flex';
             table.style.display = 'none';
             empty.style.display = 'none';
             
             try {
-                const response = await fetch(`${API_BASE_URL}/api/master/subsystems?page=1&limit=5&status=active`, {
+                const response = await fetch(`${API_BASE_URL}/api/subsystems?page=1&limit=5&status=active`, {
                     headers: {
-                        'Authorization': `Bearer ${masterToken}`,
-                        'Accept': 'application/json'
+                        'Authorization': `Bearer ${masterToken}`
                     }
                 });
-                
-                if (!response.ok) {
-                    if (response.status === 401) {
-                        localStorage.removeItem('novaLottoMasterToken');
-                        localStorage.removeItem('novaLottoMasterUser');
-                        redirectToLogin();
-                        return;
-                    }
-                    throw new Error(`HTTP ${response.status}`);
-                }
                 
                 const data = await response.json();
                 
                 if (data.success) {
-                    const subsystems = data.subsystems || [];
+                    const subsystems = data.data || [];
                     
                     if (subsystems.length === 0) {
                         loading.style.display = 'none';
@@ -2043,9 +564,9 @@
                         const row = document.createElement('tr');
                         
                         // Calculer le pourcentage d'utilisation
-                        const usagePercentage = subsystem.stats?.usage_percentage || 0;
-                        const subscriptionDaysLeft = subsystem.subscription_expires ? 
-                            Math.ceil((new Date(subsystem.subscription_expires) - new Date()) / (1000 * 60 * 60 * 24)) : 0;
+                        const usagePercentage = subsystem.usage_percentage || 0;
+                        const subscriptionDaysLeft = subsystem.expires_at ? 
+                            Math.ceil((new Date(subsystem.expires_at) - new Date()) / (1000 * 60 * 60 * 24)) : 0;
                         
                         row.innerHTML = `
                             <td>
@@ -2061,7 +582,7 @@
                                 </a>
                             </td>
                             <td>
-                                <div>${subsystem.stats?.active_users || 0}/${subsystem.max_users}</div>
+                                <div>${subsystem.user_count || 0}/${subsystem.max_users}</div>
                                 <div class="subscription-progress">
                                     <div class="progress-bar">
                                         <div class="progress-fill" style="width: ${Math.min(usagePercentage, 100)}%"></div>
@@ -2070,14 +591,14 @@
                                 </div>
                             </td>
                             <td>
-                                <span class="status-badge ${subsystem.is_active ? 'status-active' : 'status-inactive'}">
-                                    ${subsystem.is_active ? 'Actif' : 'Inactif'}
+                                <span class="status-badge ${subsystem.status === 'active' ? 'status-active' : 'status-inactive'}">
+                                    ${subsystem.status === 'active' ? 'Actif' : 'Inactif'}
                                 </span>
                             </td>
                             <td>
-                                <div>${subsystem.subscription_type || 'Basic'}</div>
+                                <div>${subsystem.plan_type || 'Basic'}</div>
                                 <div style="font-size: 0.8rem; color: ${subscriptionDaysLeft <= 7 ? '#e74c3c' : '#6c757d'}">
-                                    ${subsystem.subscription_expires ? 
+                                    ${subsystem.expires_at ? 
                                         `Expire dans ${subscriptionDaysLeft} jour(s)` : 
                                         'Pas d\'expiration'}
                                 </div>
@@ -2118,8 +639,6 @@
             const empty = document.getElementById('all-subsystems-empty');
             const tbody = document.getElementById('all-subsystems-table-body');
             
-            if (!loading || !table || !empty || !tbody) return;
-            
             loading.style.display = 'flex';
             table.style.display = 'none';
             empty.style.display = 'none';
@@ -2128,7 +647,7 @@
                 const search = document.getElementById('search-all-subsystems').value;
                 const status = document.getElementById('filter-status').value;
                 
-                let url = `${API_BASE_URL}/api/master/subsystems?page=${currentPage}&limit=10`;
+                let url = `${API_BASE_URL}/api/subsystems?page=${currentPage}&limit=10`;
                 
                 if (search) {
                     url += `&search=${encodeURIComponent(search)}`;
@@ -2139,25 +658,14 @@
                 
                 const response = await fetch(url, {
                     headers: {
-                        'Authorization': `Bearer ${masterToken}`,
-                        'Accept': 'application/json'
+                        'Authorization': `Bearer ${masterToken}`
                     }
                 });
-                
-                if (!response.ok) {
-                    if (response.status === 401) {
-                        localStorage.removeItem('novaLottoMasterToken');
-                        localStorage.removeItem('novaLottoMasterUser');
-                        redirectToLogin();
-                        return;
-                    }
-                    throw new Error(`HTTP ${response.status}`);
-                }
                 
                 const data = await response.json();
                 
                 if (data.success) {
-                    const subsystems = data.subsystems || [];
+                    const subsystems = data.data || [];
                     totalPages = data.pagination?.total_pages || 1;
                     
                     // Mettre à jour la pagination
@@ -2177,8 +685,8 @@
                         const row = document.createElement('tr');
                         
                         // Calculer les jours restants
-                        const subscriptionDaysLeft = subsystem.subscription_expires ? 
-                            Math.ceil((new Date(subsystem.subscription_expires) - new Date()) / (1000 * 60 * 60 * 24)) : null;
+                        const subscriptionDaysLeft = subsystem.expires_at ? 
+                            Math.ceil((new Date(subsystem.expires_at) - new Date()) / (1000 * 60 * 60 * 24)) : null;
                         
                         // Déterminer le statut d'expiration
                         let expirationStatus = 'Actif';
@@ -2197,31 +705,31 @@
                         row.innerHTML = `
                             <td>
                                 <span style="font-family: monospace; font-size: 0.9rem; color: #6c757d;">
-                                    ${subsystem.id ? subsystem.id.substring(0, 8) + '...' : 'N/A'}
+                                    ${subsystem.id.substring(0, 8)}...
                                 </span>
                             </td>
                             <td>
-                                <strong>${subsystem.name || 'Sans nom'}</strong>
+                                <strong>${subsystem.name}</strong>
                                 <div style="font-size: 0.8rem; color: #6c757d;">
-                                    Créé le ${subsystem.created_at ? new Date(subsystem.created_at).toLocaleDateString('fr-FR') : 'N/A'}
+                                    Créé le ${new Date(subsystem.created_at).toLocaleDateString('fr-FR')}
                                 </div>
                             </td>
                             <td>
-                                <code>${subsystem.subdomain || 'N/A'}</code>
+                                <code>${subsystem.subdomain}</code>
                             </td>
                             <td>
                                 <div>${subsystem.contact_email || '—'}</div>
                                 <div style="font-size: 0.8rem;">${subsystem.contact_phone || '—'}</div>
                             </td>
                             <td>
-                                ${subsystem.stats?.active_users || 0}/${subsystem.max_users || 0}
+                                ${subsystem.user_count || 0}/${subsystem.max_users}
                                 <div class="progress-bar" style="margin-top: 5px;">
-                                    <div class="progress-fill" style="width: ${Math.min(subsystem.stats?.usage_percentage || 0, 100)}%"></div>
+                                    <div class="progress-fill" style="width: ${Math.min(subsystem.usage_percentage || 0, 100)}%"></div>
                                 </div>
                             </td>
                             <td>
-                                <span class="status-badge ${subsystem.is_active ? 'status-active' : 'status-inactive'}" style="margin-bottom: 5px; display: inline-block;">
-                                    ${subsystem.is_active ? 'Actif' : 'Inactif'}
+                                <span class="status-badge ${subsystem.status === 'active' ? 'status-active' : 'status-inactive'}" style="margin-bottom: 5px; display: inline-block;">
+                                    ${subsystem.status === 'active' ? 'Actif' : 'Inactif'}
                                 </span>
                                 <br>
                                 <span class="status-badge ${expirationClass}" style="font-size: 0.75rem;">
@@ -2229,8 +737,8 @@
                                 </span>
                             </td>
                             <td>
-                                ${subsystem.subscription_expires ? 
-                                    new Date(subsystem.subscription_expires).toLocaleDateString('fr-FR') : 
+                                ${subsystem.expires_at ? 
+                                    new Date(subsystem.expires_at).toLocaleDateString('fr-FR') : 
                                     '—'}
                                 ${subscriptionDaysLeft !== null && subscriptionDaysLeft <= 30 ? 
                                     `<div style="font-size: 0.8rem; color: #e74c3c;">
@@ -2246,7 +754,7 @@
                                     <button class="action-btn edit" onclick="editSubsystem('${subsystem.id}')" title="Modifier">
                                         <i class="fas fa-edit"></i>
                                     </button>
-                                    ${subsystem.is_active ? 
+                                    ${subsystem.status === 'active' ? 
                                         `<button class="action-btn delete" onclick="deactivateSubsystem('${subsystem.id}')" title="Désactiver">
                                             <i class="fas fa-ban"></i>
                                         </button>` :
@@ -2341,8 +849,8 @@
                 contact_email: document.getElementById('contact-email').value.trim(),
                 contact_phone: document.getElementById('contact-phone').value.trim(),
                 max_users: parseInt(document.getElementById('max-users').value),
-                subscription_type: document.getElementById('subscription-type').value,
-                subscription_months: parseInt(document.getElementById('subscription-months').value),
+                plan_type: document.getElementById('subscription-type').value,
+                duration_months: parseInt(document.getElementById('subscription-months').value),
                 send_credentials: document.getElementById('send-credentials').checked
             };
             
@@ -2364,19 +872,14 @@
                 submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Création...';
                 submitBtn.disabled = true;
                 
-                const response = await fetch(`${API_BASE_URL}/api/master/subsystems`, {
+                const response = await fetch(`${API_BASE_URL}/api/subsystems`, {
                     method: 'POST',
                     headers: {
                         'Authorization': `Bearer ${masterToken}`,
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/json'
+                        'Content-Type': 'application/json'
                     },
                     body: JSON.stringify(formData)
                 });
-                
-                if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}`);
-                }
                 
                 const data = await response.json();
                 
@@ -2388,10 +891,10 @@
                     alert(`✅ Sous-système créé avec succès !
 
 📋 Identifiants d'accès admin:
-• URL: ${data.access_url || 'N/A'}
-• Identifiant: ${credentials?.username || 'N/A'}
-• Mot de passe: ${credentials?.password || 'N/A'}
-• Email: ${credentials?.email || 'N/A'}
+• URL: ${data.access_url}
+• Identifiant: ${credentials.username}
+• Mot de passe: ${credentials.password}
+• Email: ${credentials.email}
 
 ⚠️ IMPORTANT: Transmettez ces identifiants au propriétaire du sous-système. Le mot de passe doit être changé à la première connexion.`);
                     
@@ -2406,11 +909,11 @@
                         loadAllSubsystems();
                     }
                 } else {
-                    showNotification(data.error || 'Erreur lors de la création', 'error');
+                    showNotification(data.message || 'Erreur lors de la création', 'error');
                 }
             } catch (error) {
                 console.error('Erreur création sous-système:', error);
-                showNotification('Erreur de connexion au serveur: ' + error.message, 'error');
+                showNotification('Erreur de connexion au serveur', 'error');
             } finally {
                 // Réactiver le bouton
                 const submitBtn = e.target.querySelector('button[type="submit"]');
@@ -2430,27 +933,22 @@
             details.style.display = 'none';
             
             try {
-                const response = await fetch(`${API_BASE_URL}/api/master/subsystems/${subsystemId}`, {
+                const response = await fetch(`${API_BASE_URL}/api/subsystems/${subsystemId}`, {
                     headers: {
-                        'Authorization': `Bearer ${masterToken}`,
-                        'Accept': 'application/json'
+                        'Authorization': `Bearer ${masterToken}`
                     }
                 });
-                
-                if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}`);
-                }
                 
                 const data = await response.json();
                 
                 if (data.success) {
-                    const subsystem = data.subsystem;
+                    const subsystem = data.data;
                     
                     // Formater la date d'expiration
                     let expirationText = 'Non spécifiée';
                     let expirationClass = '';
-                    if (subsystem.subscription_expires) {
-                        const expireDate = new Date(subsystem.subscription_expires);
+                    if (subsystem.expires_at) {
+                        const expireDate = new Date(subsystem.expires_at);
                         const now = new Date();
                         const daysLeft = Math.ceil((expireDate - now) / (1000 * 60 * 60 * 24));
                         
@@ -2468,6 +966,16 @@
                         }
                     }
                     
+                    // Récupérer les utilisateurs du sous-système
+                    const usersResponse = await fetch(`${API_BASE_URL}/api/subsystems/${subsystemId}/users`, {
+                        headers: {
+                            'Authorization': `Bearer ${masterToken}`
+                        }
+                    });
+                    
+                    const usersData = await usersResponse.json();
+                    const users = usersData.success ? usersData.data : [];
+                    
                     // Compter les utilisateurs par rôle
                     const usersByRole = {
                         owner: 0,
@@ -2476,14 +984,12 @@
                         agent: 0
                     };
                     
-                    if (subsystem.users && Array.isArray(subsystem.users)) {
-                        subsystem.users.forEach(user => {
-                            const role = user.user?.role || user.role_in_subsystem;
-                            if (role && usersByRole.hasOwnProperty(role)) {
-                                usersByRole[role]++;
-                            }
-                        });
-                    }
+                    users.forEach(user => {
+                        const role = user.role_in_subsystem;
+                        if (role && usersByRole.hasOwnProperty(role)) {
+                            usersByRole[role]++;
+                        }
+                    });
                     
                     details.innerHTML = `
                         <div style="display: flex; align-items: center; gap: 20px; margin-bottom: 25px;">
@@ -2506,24 +1012,24 @@
                             <div style="background-color: #f8f9fa; padding: 15px; border-radius: 8px;">
                                 <div style="font-size: 0.9rem; color: #6c757d; margin-bottom: 5px;">Statut</div>
                                 <div>
-                                    <span class="status-badge ${subsystem.is_active ? 'status-active' : 'status-inactive'}">
-                                        ${subsystem.is_active ? 'Actif' : 'Inactif'}
+                                    <span class="status-badge ${subsystem.status === 'active' ? 'status-active' : 'status-inactive'}">
+                                        ${subsystem.status === 'active' ? 'Actif' : 'Inactif'}
                                     </span>
                                 </div>
                             </div>
                             
                             <div style="background-color: #f8f9fa; padding: 15px; border-radius: 8px;">
                                 <div style="font-size: 0.9rem; color: #6c757d; margin-bottom: 5px;">Type d'abonnement</div>
-                                <div style="font-weight: bold; color: #2c3e50;">${subsystem.subscription_type || 'Basic'}</div>
+                                <div style="font-weight: bold; color: #2c3e50;">${subsystem.plan_type || 'Basic'}</div>
                             </div>
                             
                             <div style="background-color: #f8f9fa; padding: 15px; border-radius: 8px;">
                                 <div style="font-size: 0.9rem; color: #6c757d; margin-bottom: 5px;">Utilisateurs</div>
                                 <div style="font-weight: bold; color: #2c3e50;">
-                                    ${subsystem.stats?.active_users || 0}/${subsystem.max_users}
+                                    ${subsystem.user_count || 0}/${subsystem.max_users}
                                 </div>
                                 <div class="progress-bar" style="margin-top: 10px;">
-                                    <div class="progress-fill" style="width: ${Math.min(subsystem.stats?.usage_percentage || 0, 100)}%"></div>
+                                    <div class="progress-fill" style="width: ${Math.min(subsystem.usage_percentage || 0, 100)}%"></div>
                                 </div>
                             </div>
                             
@@ -2562,13 +1068,13 @@
                                 <div>
                                     <div style="font-size: 0.9rem; color: #6c757d;">Ventes aujourd'hui</div>
                                     <div style="font-size: 1.2rem; font-weight: bold; color: #2c3e50;">
-                                        ${subsystem.stats?.today_sales ? subsystem.stats.today_sales.toLocaleString() + ' HTG' : '0 HTG'}
+                                        ${subsystem.daily_sales ? subsystem.daily_sales.toLocaleString() + ' HTG' : '0 HTG'}
                                     </div>
                                 </div>
                                 <div>
                                     <div style="font-size: 0.9rem; color: #6c757d;">Tickets aujourd'hui</div>
                                     <div style="font-size: 1.2rem; font-weight: bold; color: #2c3e50;">
-                                        ${subsystem.stats?.today_tickets || 0}
+                                        ${subsystem.daily_tickets || 0}
                                     </div>
                                 </div>
                             </div>
@@ -2581,7 +1087,7 @@
                     loading.style.display = 'none';
                     details.style.display = 'block';
                 } else {
-                    showNotification(data.error || 'Erreur lors du chargement', 'error');
+                    showNotification(data.message || 'Erreur lors du chargement', 'error');
                     hideViewSubsystemModal();
                 }
             } catch (error) {
@@ -2598,8 +1104,133 @@
         
         // Modifier un sous-système
         window.editSubsystem = async function(subsystemId) {
-            showNotification('Fonctionnalité d\'édition à implémenter', 'info');
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/subsystems/${subsystemId}`, {
+                    headers: {
+                        'Authorization': `Bearer ${masterToken}`
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    const subsystem = data.data;
+                    
+                    // Créer le formulaire d'édition
+                    const form = document.getElementById('edit-subsystem-form');
+                    form.innerHTML = `
+                        <div class="form-group">
+                            <label class="form-label">Nom du sous-système *</label>
+                            <input type="text" class="form-control" id="edit-subsystem-name" value="${subsystem.name}" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label">Sous-domaine *</label>
+                            <div style="display: flex; align-items: center; gap: 5px;">
+                                <input type="text" class="form-control" id="edit-subdomain" value="${subsystem.subdomain}" required style="flex: 1;">
+                                <span>.novalotto.com</span>
+                            </div>
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label">Email de contact *</label>
+                                <input type="email" class="form-control" id="edit-contact-email" value="${subsystem.contact_email || ''}" required>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label class="form-label">Téléphone de contact</label>
+                                <input type="text" class="form-control" id="edit-contact-phone" value="${subsystem.contact_phone || ''}">
+                            </div>
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label">Nombre maximum d'utilisateurs</label>
+                                <input type="number" class="form-control" id="edit-max-users" value="${subsystem.max_users}" min="1" max="1000">
+                            </div>
+                            
+                            <div class="form-group">
+                                <label class="form-label">Type d'abonnement</label>
+                                <select class="form-control" id="edit-plan-type">
+                                    <option value="basic" ${subsystem.plan_type === 'basic' ? 'selected' : ''}>Basique</option>
+                                    <option value="standard" ${subsystem.plan_type === 'standard' ? 'selected' : ''}>Standard</option>
+                                    <option value="premium" ${subsystem.plan_type === 'premium' ? 'selected' : ''}>Premium</option>
+                                    <option value="enterprise" ${subsystem.plan_type === 'enterprise' ? 'selected' : ''}>Entreprise</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label">Statut</label>
+                            <select class="form-control" id="edit-status">
+                                <option value="active" ${subsystem.status === 'active' ? 'selected' : ''}>Actif</option>
+                                <option value="inactive" ${subsystem.status === 'inactive' ? 'selected' : ''}>Inactif</option>
+                                <option value="suspended" ${subsystem.status === 'suspended' ? 'selected' : ''}>Suspendu</option>
+                            </select>
+                        </div>
+                        
+                        <input type="hidden" id="edit-subsystem-id" value="${subsystemId}">
+                    `;
+                    
+                    // Ajouter l'événement submit
+                    form.onsubmit = async function(e) {
+                        e.preventDefault();
+                        await updateSubsystem(subsystemId);
+                    };
+                    
+                    // Afficher le modal
+                    document.getElementById('edit-subsystem-modal').classList.add('active');
+                }
+            } catch (error) {
+                console.error('Erreur chargement sous-système:', error);
+                showNotification('Erreur lors du chargement', 'error');
+            }
         };
+        
+        // Mettre à jour un sous-système
+        async function updateSubsystem(subsystemId) {
+            const formData = {
+                name: document.getElementById('edit-subsystem-name').value.trim(),
+                subdomain: document.getElementById('edit-subdomain').value.trim().toLowerCase(),
+                contact_email: document.getElementById('edit-contact-email').value.trim(),
+                contact_phone: document.getElementById('edit-contact-phone').value.trim(),
+                max_users: parseInt(document.getElementById('edit-max-users').value),
+                plan_type: document.getElementById('edit-plan-type').value,
+                status: document.getElementById('edit-status').value
+            };
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/subsystems/${subsystemId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `Bearer ${masterToken}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(formData)
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    showNotification('Sous-système mis à jour avec succès', 'success');
+                    hideEditSubsystemModal();
+                    
+                    // Recharger les données
+                    loadDashboardData();
+                    loadRecentSubsystems();
+                    loadAllSubsystems();
+                    
+                    // Fermer le modal de visualisation si ouvert
+                    hideViewSubsystemModal();
+                } else {
+                    showNotification(data.message || 'Erreur lors de la mise à jour', 'error');
+                }
+            } catch (error) {
+                console.error('Erreur mise à jour:', error);
+                showNotification('Erreur de connexion au serveur', 'error');
+            }
+        }
         
         // Désactiver un sous-système
         window.deactivateSubsystem = async function(subsystemId) {
@@ -2608,19 +1239,14 @@
             }
             
             try {
-                const response = await fetch(`${API_BASE_URL}/api/master/subsystems/${subsystemId}/deactivate`, {
+                const response = await fetch(`${API_BASE_URL}/api/subsystems/${subsystemId}/status`, {
                     method: 'PUT',
                     headers: {
                         'Authorization': `Bearer ${masterToken}`,
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/json'
+                        'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({ is_active: false })
+                    body: JSON.stringify({ status: 'inactive' })
                 });
-                
-                if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}`);
-                }
                 
                 const data = await response.json();
                 
@@ -2635,7 +1261,7 @@
                     // Fermer le modal de visualisation si ouvert
                     hideViewSubsystemModal();
                 } else {
-                    showNotification(data.error || 'Erreur lors de la désactivation', 'error');
+                    showNotification(data.message || 'Erreur lors de la désactivation', 'error');
                 }
             } catch (error) {
                 console.error('Erreur désactivation:', error);
@@ -2646,19 +1272,14 @@
         // Activer un sous-système
         window.activateSubsystem = async function(subsystemId) {
             try {
-                const response = await fetch(`${API_BASE_URL}/api/master/subsystems/${subsystemId}/activate`, {
+                const response = await fetch(`${API_BASE_URL}/api/subsystems/${subsystemId}/status`, {
                     method: 'PUT',
                     headers: {
                         'Authorization': `Bearer ${masterToken}`,
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/json'
+                        'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({ is_active: true })
+                    body: JSON.stringify({ status: 'active' })
                 });
-                
-                if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}`);
-                }
                 
                 const data = await response.json();
                 
@@ -2666,7 +1287,7 @@
                     showNotification('Sous-système activé avec succès', 'success');
                     loadAllSubsystems();
                 } else {
-                    showNotification(data.error || 'Erreur lors de l\'activation', 'error');
+                    showNotification(data.message || 'Erreur lors de l\'activation', 'error');
                 }
             } catch (error) {
                 console.error('Erreur activation:', error);
@@ -2677,6 +1298,37 @@
         // Cacher le modal d'édition
         function hideEditSubsystemModal() {
             document.getElementById('edit-subsystem-modal').classList.remove('active');
+        }
+        
+        // Changer l'onglet des statistiques
+        function switchStatsTab(tabId) {
+            // Mettre à jour les tabs
+            document.querySelectorAll('[data-stats-tab]').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.querySelector(`[data-stats-tab="${tabId}"]`).classList.add('active');
+            
+            // Afficher le contenu correspondant
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            document.getElementById(`${tabId}-tab`).classList.add('active');
+            
+            // Charger les données correspondantes
+            switch(tabId) {
+                case 'agents':
+                    loadAgentsStats();
+                    break;
+                case 'supervisors':
+                    loadSupervisorsStats();
+                    break;
+                case 'subsystems-stats':
+                    loadSubsystemsStats();
+                    break;
+                case 'global':
+                    loadGlobalStats();
+                    break;
+            }
         }
         
         // Changer l'onglet des rapports
@@ -2709,12 +1361,467 @@
             document.getElementById(`${tabId}-tab`).classList.add('active');
         }
         
+        // Charger les statistiques détaillées des agents
+        async function loadAgentsStats() {
+            const loading = document.getElementById('agents-loading');
+            const table = document.getElementById('agents-table');
+            const empty = document.getElementById('agents-empty');
+            const tbody = document.getElementById('agents-table-body');
+            
+            loading.style.display = 'flex';
+            table.style.display = 'none';
+            empty.style.display = 'none';
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/agents?detailed=true`, {
+                    headers: {
+                        'Authorization': `Bearer ${masterToken}`
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    const agents = data.data || [];
+                    
+                    if (agents.length === 0) {
+                        loading.style.display = 'none';
+                        empty.style.display = 'block';
+                        return;
+                    }
+                    
+                    tbody.innerHTML = '';
+                    
+                    agents.forEach(agent => {
+                        const profit = (agent.total_sales || 0) - (agent.total_payout || 0);
+                        const successRate = agent.total_tickets > 0 ? 
+                            Math.round((agent.winning_tickets || 0) / agent.total_tickets * 100) : 0;
+                        
+                        const row = document.createElement('tr');
+                        row.innerHTML = `
+                            <td>
+                                <strong>${agent.full_name || agent.username}</strong>
+                                <div style="font-size: 0.8rem; color: #6c757d;">
+                                    ${agent.email || ''}
+                                </div>
+                            </td>
+                            <td>${agent.subsystem_name || 'N/A'}</td>
+                            <td>
+                                <span class="status-badge ${agent.status === 'online' ? 'status-active' : 'status-inactive'}">
+                                    ${agent.status === 'online' ? 'En ligne' : 'Hors ligne'}
+                                </span>
+                            </td>
+                            <td>${(agent.total_sales || 0).toLocaleString()} HTG</td>
+                            <td style="color: #27ae60; font-weight: bold;">
+                                ${(agent.total_payout || 0).toLocaleString()} HTG
+                            </td>
+                            <td style="color: #e74c3c; font-weight: bold;">
+                                ${((agent.total_sales || 0) - (agent.total_payout || 0) < 0 ? 
+                                    Math.abs(profit) : 0).toLocaleString()} HTG
+                            </td>
+                            <td style="color: ${profit >= 0 ? '#27ae60' : '#e74c3c'}; font-weight: bold;">
+                                ${profit.toLocaleString()} HTG
+                            </td>
+                            <td>
+                                <div class="progress-bar" style="height: 10px; margin-bottom: 5px;">
+                                    <div class="progress-fill" style="width: ${Math.min(successRate, 100)}%"></div>
+                                </div>
+                                ${successRate}%
+                            </td>
+                            <td>
+                                ${agent.last_active ? 
+                                    `Dernière activité: ${new Date(agent.last_active).toLocaleTimeString('fr-FR')}` :
+                                    'Aucune activité'}
+                            </td>
+                        `;
+                        
+                        tbody.appendChild(row);
+                    });
+                    
+                    loading.style.display = 'none';
+                    table.style.display = 'table';
+                }
+            } catch (error) {
+                console.error('Erreur chargement agents:', error);
+                loading.style.display = 'none';
+                empty.style.display = 'block';
+                showNotification('Erreur lors du chargement des agents', 'error');
+            }
+        }
+        
+        // Filtrer les agents
+        function filterAgents() {
+            const searchTerm = document.getElementById('search-agents').value.toLowerCase();
+            const statusFilter = document.getElementById('filter-online').value;
+            const rows = document.querySelectorAll('#agents-table-body tr');
+            
+            rows.forEach(row => {
+                const text = row.textContent.toLowerCase();
+                const isOnline = row.querySelector('.status-badge')?.textContent.includes('En ligne');
+                
+                let shouldShow = true;
+                
+                if (searchTerm && !text.includes(searchTerm)) {
+                    shouldShow = false;
+                }
+                
+                if (statusFilter === 'online' && !isOnline) {
+                    shouldShow = false;
+                } else if (statusFilter === 'offline' && isOnline) {
+                    shouldShow = false;
+                }
+                
+                row.style.display = shouldShow ? '' : 'none';
+            });
+        }
+        
+        // Charger les statistiques des superviseurs
+        async function loadSupervisorsStats() {
+            const loading = document.getElementById('supervisors-loading');
+            const table = document.getElementById('supervisors-table');
+            const tbody = document.getElementById('supervisors-table-body');
+            
+            loading.style.display = 'flex';
+            table.style.display = 'none';
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/users?role=supervisor&detailed=true`, {
+                    headers: {
+                        'Authorization': `Bearer ${masterToken}`
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    const supervisors = data.data || [];
+                    
+                    tbody.innerHTML = '';
+                    
+                    supervisors.forEach(supervisor => {
+                        const profit = (supervisor.total_sales || 0) - (supervisor.total_payout || 0);
+                        const performance = supervisor.agents_count > 0 ? 
+                            Math.round((supervisor.total_sales || 0) / supervisor.agents_count) : 0;
+                        
+                        const row = document.createElement('tr');
+                        row.innerHTML = `
+                            <td>
+                                <strong>${supervisor.full_name || supervisor.username}</strong>
+                                <div style="font-size: 0.8rem; color: #6c757d;">
+                                    ${supervisor.email || ''}
+                                </div>
+                            </td>
+                            <td>${supervisor.subsystem_name || 'N/A'}</td>
+                            <td>${supervisor.agents_count || 0}</td>
+                            <td>${(supervisor.total_sales || 0).toLocaleString()} HTG</td>
+                            <td style="color: #27ae60;">${(supervisor.total_payout || 0).toLocaleString()} HTG</td>
+                            <td style="color: #e74c3c;">
+                                ${((supervisor.total_sales || 0) - (supervisor.total_payout || 0) < 0 ? 
+                                    Math.abs(profit) : 0).toLocaleString()} HTG
+                            </td>
+                            <td style="color: ${profit >= 0 ? '#27ae60' : '#e74c3c'}; font-weight: bold;">
+                                ${profit.toLocaleString()} HTG
+                            </td>
+                            <td>
+                                <div class="progress-bar" style="height: 10px;">
+                                    <div class="progress-fill" style="width: ${Math.min(performance / 10000, 100)}%"></div>
+                                </div>
+                                ${performance.toLocaleString()} HTG/agent
+                            </td>
+                        `;
+                        
+                        tbody.appendChild(row);
+                    });
+                    
+                    loading.style.display = 'none';
+                    table.style.display = 'table';
+                }
+            } catch (error) {
+                console.error('Erreur chargement superviseurs:', error);
+                loading.style.display = 'none';
+                showNotification('Erreur lors du chargement des superviseurs', 'error');
+            }
+        }
+        
+        // Charger les statistiques des sous-systèmes
+        async function loadSubsystemsStats() {
+            const loading = document.getElementById('subsystems-stats-loading');
+            const table = document.getElementById('subsystems-stats-table');
+            const tbody = document.getElementById('subsystems-stats-table-body');
+            
+            loading.style.display = 'flex';
+            table.style.display = 'none';
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/subsystems/stats`, {
+                    headers: {
+                        'Authorization': `Bearer ${masterToken}`
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    const subsystems = data.data || [];
+                    
+                    tbody.innerHTML = '';
+                    
+                    subsystems.forEach(subsystem => {
+                        const profit = (subsystem.total_sales || 0) - (subsystem.total_payout || 0);
+                        const profitRate = subsystem.total_sales > 0 ? 
+                            Math.round((profit / subsystem.total_sales) * 100) : 0;
+                        const masterCommission = profit * 0.1; // 10% de commission pour le master
+                        
+                        const row = document.createElement('tr');
+                        row.innerHTML = `
+                            <td>
+                                <strong>${subsystem.name}</strong>
+                                <div style="font-size: 0.8rem; color: #6c757d;">
+                                    ${subsystem.subdomain}
+                                </div>
+                            </td>
+                            <td>${subsystem.active_agents || 0}</td>
+                            <td>${(subsystem.total_sales || 0).toLocaleString()} HTG</td>
+                            <td style="color: #27ae60;">${(subsystem.total_payout || 0).toLocaleString()} HTG</td>
+                            <td style="color: #e74c3c;">
+                                ${((subsystem.total_sales || 0) - (subsystem.total_payout || 0) < 0 ? 
+                                    Math.abs(profit) : 0).toLocaleString()} HTG
+                            </td>
+                            <td style="color: ${profit >= 0 ? '#27ae60' : '#e74c3c'}; font-weight: bold;">
+                                ${profit.toLocaleString()} HTG
+                            </td>
+                            <td style="color: #9b59b6; font-weight: bold;">
+                                ${masterCommission.toLocaleString()} HTG
+                            </td>
+                            <td>
+                                <span style="color: ${profitRate >= 0 ? '#27ae60' : '#e74c3c'}">
+                                    ${profitRate}%
+                                </span>
+                            </td>
+                            <td>
+                                <button class="action-btn view" onclick="viewSubsystem('${subsystem.id}')" title="Voir détails">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                            </td>
+                        `;
+                        
+                        tbody.appendChild(row);
+                    });
+                    
+                    loading.style.display = 'none';
+                    table.style.display = 'table';
+                    
+                    // Mettre à jour le graphique de comparaison
+                    updateSubsystemsComparisonChart(subsystems);
+                }
+            } catch (error) {
+                console.error('Erreur chargement stats sous-systèmes:', error);
+                loading.style.display = 'none';
+                showNotification('Erreur lors du chargement des statistiques', 'error');
+            }
+        }
+        
+        // Mettre à jour le graphique de comparaison des sous-systèmes
+        function updateSubsystemsComparisonChart(subsystems) {
+            const ctx = document.getElementById('subsystems-comparison-chart').getContext('2d');
+            
+            const labels = subsystems.map(s => s.name);
+            const profits = subsystems.map(s => {
+                const profit = (s.total_sales || 0) - (s.total_payout || 0);
+                return profit;
+            });
+            const sales = subsystems.map(s => s.total_sales || 0);
+            
+            if (statsChart1) {
+                statsChart1.destroy();
+            }
+            
+            statsChart1 = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'Ventes (HTG)',
+                            data: sales,
+                            backgroundColor: '#3498db',
+                            borderColor: '#2980b9',
+                            borderWidth: 1
+                        },
+                        {
+                            label: 'Profit (HTG)',
+                            data: profits,
+                            backgroundColor: profits.map(p => p >= 0 ? '#2ecc71' : '#e74c3c'),
+                            borderColor: profits.map(p => p >= 0 ? '#27ae60' : '#c0392b'),
+                            borderWidth: 1
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top'
+                        },
+                        title: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return value.toLocaleString() + ' HTG';
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
+        // Charger les statistiques globales
+        async function loadGlobalStats() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/statistics`, {
+                    headers: {
+                        'Authorization': `Bearer ${masterToken}`
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    const stats = data.data || {};
+                    
+                    // Mettre à jour les cartes
+                    document.getElementById('total-active-agents').textContent = stats.active_agents || 0;
+                    document.getElementById('total-active-supervisors').textContent = stats.active_supervisors || 0;
+                    document.getElementById('global-sales').textContent = (stats.total_sales || 0).toLocaleString() + ' HTG';
+                    document.getElementById('global-profit').textContent = (stats.total_profit || 0).toLocaleString() + ' HTG';
+                    
+                    // Mettre à jour les graphiques
+                    updateGlobalProfitChart(stats);
+                    updateGamesDistributionChart(stats);
+                }
+            } catch (error) {
+                console.error('Erreur chargement stats globales:', error);
+                showNotification('Erreur lors du chargement des statistiques globales', 'error');
+            }
+        }
+        
+        // Mettre à jour le graphique de profit global
+        function updateGlobalProfitChart(stats) {
+            const ctx = document.getElementById('global-profit-chart').getContext('2d');
+            
+            // Données de démo pour les 30 derniers jours
+            const labels = [];
+            const profitData = [];
+            
+            for (let i = 29; i >= 0; i--) {
+                const date = new Date();
+                date.setDate(date.getDate() - i);
+                labels.push(date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }));
+                
+                // Générer des données aléatoires pour la démo
+                const dailyProfit = (stats.total_profit || 10000) * (0.8 + Math.random() * 0.4) / 30;
+                profitData.push(Math.round(dailyProfit));
+            }
+            
+            if (statsChart2) {
+                statsChart2.destroy();
+            }
+            
+            statsChart2 = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Profit quotidien (HTG)',
+                        data: profitData,
+                        borderColor: '#e74c3c',
+                        backgroundColor: 'rgba(231, 76, 60, 0.1)',
+                        borderWidth: 2,
+                        fill: true,
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top'
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return value.toLocaleString() + ' HTG';
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
+        // Mettre à jour le graphique de distribution des jeux
+        function updateGamesDistributionChart(stats) {
+            const ctx = document.getElementById('games-distribution-chart').getContext('2d');
+            
+            // Données de démo
+            const games = ['Borlette', 'Lotto 3', 'Lotto 4', 'Lotto 5', 'Grap', 'Marriage'];
+            const colors = ['#3498db', '#2ecc71', '#f39c12', '#9b59b6', '#e74c3c', '#1abc9c'];
+            
+            // Générer des données aléatoires pour la démo
+            const salesData = games.map(() => Math.floor(Math.random() * 10000) + 5000);
+            
+            if (statsChart3) {
+                statsChart3.destroy();
+            }
+            
+            statsChart3 = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: games,
+                    datasets: [{
+                        data: salesData,
+                        backgroundColor: colors,
+                        borderColor: colors.map(c => c.replace('0.8', '1')),
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const label = context.label || '';
+                                    const value = context.raw || 0;
+                                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                    const percentage = Math.round((value / total) * 100);
+                                    return `${label}: ${value.toLocaleString()} HTG (${percentage}%)`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
         // Générer un rapport consolidé
         async function generateConsolidatedReport() {
             const loading = document.getElementById('report-loading');
             const results = document.getElementById('report-results');
-            
-            if (!loading || !results) return;
             
             loading.style.display = 'flex';
             results.style.display = 'none';
@@ -2753,26 +1860,21 @@
                 }
                 
                 const response = await fetch(
-                    `${API_BASE_URL}/api/master/consolidated-report?` +
+                    `${API_BASE_URL}/api/reports/consolidated?` +
                     `start_date=${startDate.toISOString().split('T')[0]}&` +
                     `end_date=${endDate.toISOString().split('T')[0]}&` +
                     `group_by=day`,
                     {
                         headers: {
-                            'Authorization': `Bearer ${masterToken}`,
-                            'Accept': 'application/json'
+                            'Authorization': `Bearer ${masterToken}`
                         }
                     }
                 );
                 
-                if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}`);
-                }
-                
                 const data = await response.json();
                 
                 if (data.success) {
-                    const report = data.report;
+                    const report = data.data;
                     
                     // Formater les dates
                     const formatDate = (dateStr) => {
@@ -2787,7 +1889,7 @@
                                 <div style="background-color: #f8f9fa; padding: 15px; border-radius: 8px;">
                                     <div style="font-size: 0.9rem; color: #6c757d; margin-bottom: 5px;">Période</div>
                                     <div style="font-weight: bold; color: #2c3e50;">
-                                        ${formatDate(report.period?.start_date || startDate)} au ${formatDate(report.period?.end_date || endDate)}
+                                        ${formatDate(report.period?.start_date)} au ${formatDate(report.period?.end_date)}
                                     </div>
                                 </div>
                                 <div style="background-color: #f8f9fa; padding: 15px; border-radius: 8px;">
@@ -2827,11 +1929,11 @@
                             html += `
                                 <tr>
                                     <td>${subsystem.subsystem_name}</td>
-                                    <td>${subsystem.tickets_count || 0}</td>
-                                    <td>${(subsystem.total_sales || 0).toLocaleString()} HTG</td>
-                                    <td>${(subsystem.total_payout || 0).toLocaleString()} HTG</td>
-                                    <td style="color: ${(subsystem.profit || 0) >= 0 ? '#27ae60' : '#e74c3c'}; font-weight: bold;">
-                                        ${(subsystem.profit || 0).toLocaleString()} HTG
+                                    <td>${subsystem.tickets_count}</td>
+                                    <td>${subsystem.total_sales.toLocaleString()} HTG</td>
+                                    <td>${subsystem.total_payout.toLocaleString()} HTG</td>
+                                    <td style="color: ${subsystem.profit >= 0 ? '#27ae60' : '#e74c3c'}; font-weight: bold;">
+                                        ${subsystem.profit.toLocaleString()} HTG
                                     </td>
                                 </tr>
                             `;
@@ -2851,8 +1953,37 @@
                             </tbody>
                             </table>
                         `;
-                    } else {
-                        html += `<p style="color: #6c757d; text-align: center; padding: 20px;">Aucune donnée disponible pour cette période.</p>`;
+                    }
+                    
+                    // Breakdown quotidien
+                    if (report.daily_breakdown && report.daily_breakdown.length > 0) {
+                        html += `
+                            <h4 style="color: #2c3e50; margin-bottom: 15px;">Évolution quotidienne</h4>
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>Tickets</th>
+                                        <th>Ventes</th>
+                                        <th>Moyenne par ticket</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                        `;
+                        
+                        report.daily_breakdown.forEach(day => {
+                            const avg = day.ticket_count > 0 ? day.total_amount / day.ticket_count : 0;
+                            html += `
+                                <tr>
+                                    <td>${formatDate(day.date)}</td>
+                                    <td>${day.ticket_count}</td>
+                                    <td>${day.total_amount.toLocaleString()} HTG</td>
+                                    <td>${avg.toLocaleString()} HTG</td>
+                                </tr>
+                            `;
+                        });
+                        
+                        html += `</tbody></table>`;
                     }
                     
                     html += `
@@ -2865,28 +1996,20 @@
                     loading.style.display = 'none';
                     results.style.display = 'block';
                 } else {
-                    showNotification(data.error || 'Erreur lors de la génération du rapport', 'error');
+                    showNotification(data.message || 'Erreur lors de la génération du rapport', 'error');
                     loading.style.display = 'none';
                 }
             } catch (error) {
                 console.error('Erreur génération rapport:', error);
-                results.innerHTML = `
-                    <div style="text-align: center; padding: 40px; color: #6c757d;">
-                        <i class="fas fa-exclamation-triangle" style="font-size: 3rem; color: #f39c12; margin-bottom: 20px;"></i>
-                        <h3>Erreur lors de la génération du rapport</h3>
-                        <p>${error.message}</p>
-                        <button class="btn btn-primary" onclick="generateConsolidatedReport()" style="margin-top: 20px;">
-                            <i class="fas fa-redo"></i> Réessayer
-                        </button>
-                    </div>
-                `;
+                showNotification('Erreur de connexion au serveur', 'error');
                 loading.style.display = 'none';
-                results.style.display = 'block';
             }
         }
         
         // Exporter le rapport
         function exportReport() {
+            // Pour l'instant, on affiche juste une alerte
+            // Dans une version complète, on générerait un PDF ou un Excel
             alert('Fonctionnalité d\'export à implémenter');
         }
         
@@ -2903,6 +2026,13 @@
             
             if (document.getElementById('subsystems-section').style.display !== 'none') {
                 loadAllSubsystems();
+            }
+            
+            if (document.getElementById('detailed-stats-section').style.display !== 'none') {
+                const activeTab = document.querySelector('[data-stats-tab].active');
+                if (activeTab) {
+                    switchStatsTab(activeTab.getAttribute('data-stats-tab'));
+                }
             }
             
             // Réactiver le bouton après 2 secondes
@@ -2926,7 +2056,6 @@
         // Afficher une notification
         function showNotification(message, type = 'info') {
             const container = document.getElementById('notification-container');
-            if (!container) return;
             
             const notification = document.createElement('div');
             notification.className = `notification ${type}`;
@@ -2960,7 +2089,7 @@
             if (confirm('Êtes-vous sûr de vouloir vous déconnecter ?')) {
                 localStorage.removeItem('novaLottoMasterToken');
                 localStorage.removeItem('novaLottoMasterUser');
-                location.reload();
+                redirectToLogin();
             }
         }
         

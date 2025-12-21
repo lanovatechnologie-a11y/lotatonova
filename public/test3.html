@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html>
+<body>
+  <h1>TEST SIMPLE</h1>
+  <button onclick="testRedirection()">Test Redirection Master</button>
+  <button onclick="testAPI()">Test API</button>
+  
+  <script>
+    function testRedirection() {
+      window.location.href = '/master-dashboard';
+    }
+    
+    async function testAPI() {
+      try {
+        const response = await fetch('/api/health');
+        const data = await response.json();
+        alert('API OK: ' + JSON.stringify(data));
+      } catch (error) {
+        alert('API ERROR: ' + error.message);
+      }
+    }
+  </script>
+</body>
+</html>

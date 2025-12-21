@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html>
+<body>
+  <h1>DEBUG PAGE</h1>
+  <div id="errors"></div>
+  
+  <script>
+    // Capture toutes les erreurs
+    window.onerror = function(msg, url, line) {
+      document.getElementById('errors').innerHTML += 
+        `<div style="color:red;margin:10px;padding:10px;border:1px solid red;">
+          ERREUR: ${msg}<br>Fichier: ${url}<br>Ligne: ${line}
+        </div>`;
+    };
+    
+    // Teste les pages
+    setTimeout(() => {
+      window.location.href = '/master-dashboard';
+    }, 2000);
+  </script>
+</body>
+</html>

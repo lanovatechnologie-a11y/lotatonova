@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Nova Lotto - Connexion</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <script src="/config.js"></script>
     <style>
         :root {
             --primary-color: #3498db;
@@ -284,6 +283,16 @@
             cursor: pointer;
             font-size: 1rem;
         }
+        
+        .debug-info {
+            font-size: 0.7rem;
+            color: #666;
+            text-align: center;
+            margin-top: 10px;
+            padding: 5px;
+            background: #f5f5f5;
+            border-radius: 3px;
+        }
     </style>
 </head>
 <body>
@@ -414,26 +423,35 @@
             <div class="login-footer">
                 <div class="system-status">
                     <div class="status-dot" id="system-status"></div>
-                    <span id="status-text">Système opérationnel</span>
+                    <span id="status-text">Vérification du système...</span>
                 </div>
                 <div class="login-help">
                     En cas de problème, contactez le support technique
                 </div>
             </div>
+            
+            <div class="debug-info" id="debug-info"></div>
         </div>
     </div>
     
     <script>
-        // Configuration
-        const API_BASE_URL = window.location.origin;
+        // Configuration des URLs API
+        const isProduction = window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1';
+        const API_BASE_URL = isProduction 
+            ? 'https://lotatonova.onrender.com/api'  // URL de production sur Render
+            : 'http://localhost:3000/api';           // URL de développement local
+            
+        console.log('🌍 Environnement:', isProduction ? 'Production' : 'Développement');
+        console.log('🔗 URL API:', API_BASE_URL);
+        console.log('📍 Hostname:', window.location.hostname);
         
         // Détecter automatiquement le type de connexion
         const detectConnectionType = () => {
             const hostname = window.location.hostname;
             const pathname = window.location.pathname;
             
-            console.log('Hostname:', hostname);
-            console.log('Pathname:', pathname);
+            console.log('🔍 Détection - Hostname:', hostname);
+            console.log('🔍 Détection - Pathname:', pathname);
             
             // Si on accède directement à un fichier spécifique
             if (pathname.includes('master-dashboard')) {
@@ -442,7 +460,7 @@
                 return 'subsystem';
             } else if (pathname.includes('control-level')) {
                 return 'supervisor';
-            } else if (pathname.includes('index.html') || pathname === '/') {
+            } else if (pathname.includes('index.html') || pathname === '/' || pathname === '') {
                 return 'agent';
             }
             
@@ -464,9 +482,13 @@
         document.addEventListener('DOMContentLoaded', function() {
             console.log('🔑 Page de connexion initialisée');
             
+            // Afficher les infos de débogage
+            document.getElementById('debug-info').textContent = 
+                `API: ${API_BASE_URL} | Env: ${isProduction ? 'Production' : 'Dev'}`;
+            
             // Détection automatique
             const detectedType = detectConnectionType();
-            console.log('Type détecté:', detectedType);
+            console.log('🎯 Type détecté:', detectedType);
             
             // Afficher l'info de détection si nécessaire
             if (detectedType !== 'agent') {
@@ -581,8 +603,14 @@
         // Vérifier le statut du système
         async function checkSystemStatus() {
             try {
-                const response = await fetch(APP_CONFIG.health);
+                console.log('🔍 Vérification du statut du système...');
+                const response = await fetch(`${API_BASE_URL}/health`, {
+                    method: 'GET',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                
                 const data = await response.json();
+                console.log('📊 Statut système:', data);
                 
                 const statusDot = document.getElementById('system-status');
                 const statusText = document.getElementById('status-text');
@@ -595,11 +623,43 @@
                     statusText.textContent = 'Système en maintenance';
                 }
             } catch (error) {
-                console.error('Erreur vérification statut:', error);
+                console.error('❌ Erreur vérification statut:', error);
                 const statusDot = document.getElementById('system-status');
                 const statusText = document.getElementById('status-text');
                 statusDot.className = 'status-dot danger';
                 statusText.textContent = 'Connexion serveur impossible';
+            }
+        }
+        
+        // Fonction utilitaire pour les appels API
+        async function makeApiRequest(endpoint, method, body = null) {
+            const url = `${API_BASE_URL}${endpoint}`;
+            console.log(`🌐 Appel API: ${method} ${url}`);
+            
+            const options = {
+                method: method,
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                credentials: 'include' // Important pour les cookies de session
+            };
+            
+            if (body) {
+                options.body = JSON.stringify(body);
+                console.log('📦 Corps de la requête:', body);
+            }
+            
+            try {
+                const response = await fetch(url, options);
+                console.log(`📨 Réponse API: ${response.status} ${response.statusText}`);
+                
+                const data = await response.json();
+                console.log('📄 Données reçues:', data);
+                
+                return { response, data };
+            } catch (error) {
+                console.error('❌ Erreur réseau:', error);
+                throw error;
             }
         }
         
@@ -614,33 +674,35 @@
                 return;
             }
             
+            console.log('👤 Tentative connexion Agent:', username);
+            
             // Désactiver le bouton et afficher le spinner
             const originalHtml = loginBtn.innerHTML;
             loginBtn.innerHTML = '<div class="loading-spinner"></div>';
             loginBtn.disabled = true;
             
             try {
-                const response = await fetch(APP_CONFIG.login, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ username, password })
-                });
+                const { response, data } = await makeApiRequest('/agent/login', 'POST', { username, password });
                 
-                const data = await response.json();
-                
-                if (data.success) {
+                if (response.ok && data.success) {
+                    console.log('✅ Connexion Agent réussie');
+                    
                     // Stocker le token et rediriger
                     localStorage.setItem('novaLottoAgentToken', data.token);
                     localStorage.setItem('novaLottoAgentUser', JSON.stringify(data.user));
                     
                     // Rediriger vers l'interface agent
-                    window.location.href = 'index.html';
+                    setTimeout(() => {
+                        window.location.href = 'agent-dashboard.html';
+                    }, 500);
+                    
                 } else {
                     showError(data.error || 'Identifiants incorrects');
+                    console.error('❌ Connexion Agent échouée:', data.error);
                 }
             } catch (error) {
-                console.error('Erreur connexion agent:', error);
-                showError('Erreur de connexion au serveur');
+                console.error('❌ Erreur connexion agent:', error);
+                showError('Erreur de connexion au serveur. Vérifiez votre connexion internet.');
             } finally {
                 // Réactiver le bouton
                 loginBtn.innerHTML = originalHtml;
@@ -660,41 +722,44 @@
                 return;
             }
             
+            console.log('👤 Tentative connexion Superviseur:', username, 'Niveau:', level);
+            
             // Désactiver le bouton et afficher le spinner
             const originalHtml = loginBtn.innerHTML;
             loginBtn.innerHTML = '<div class="loading-spinner"></div>';
             loginBtn.disabled = true;
             
             try {
-                const response = await fetch(APP_CONFIG.login, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ 
-                        username, 
-                        password,
-                        level: parseInt(level) 
-                    })
+                const { response, data } = await makeApiRequest('/supervisor/login', 'POST', { 
+                    username, 
+                    password,
+                    level: parseInt(level) 
                 });
                 
-                const data = await response.json();
-                
-                if (data.success) {
+                if (response.ok && data.success) {
+                    console.log('✅ Connexion Superviseur réussie');
+                    
                     // Stocker le token et rediriger selon le niveau
                     if (level === '1') {
                         localStorage.setItem('novaLottoSupervisorL1Token', data.token);
                         localStorage.setItem('novaLottoSupervisorL1User', JSON.stringify(data.user));
-                        window.location.href = 'control-level1.html';
+                        setTimeout(() => {
+                            window.location.href = 'control-level1.html';
+                        }, 500);
                     } else {
                         localStorage.setItem('novaLottoSupervisorToken', data.token);
                         localStorage.setItem('novaLottoSupervisorUser', JSON.stringify(data.user));
-                        window.location.href = 'control-level2.html';
+                        setTimeout(() => {
+                            window.location.href = 'control-level2.html';
+                        }, 500);
                     }
                 } else {
                     showError(data.error || 'Identifiants incorrects');
+                    console.error('❌ Connexion Superviseur échouée:', data.error);
                 }
             } catch (error) {
-                console.error('Erreur connexion superviseur:', error);
-                showError('Erreur de connexion au serveur');
+                console.error('❌ Erreur connexion superviseur:', error);
+                showError('Erreur de connexion au serveur. Vérifiez votre connexion internet.');
             } finally {
                 // Réactiver le bouton
                 loginBtn.innerHTML = originalHtml;
@@ -713,33 +778,35 @@
                 return;
             }
             
+            console.log('👤 Tentative connexion Admin Sous-Système:', username);
+            
             // Désactiver le bouton et afficher le spinner
             const originalHtml = loginBtn.innerHTML;
             loginBtn.innerHTML = '<div class="loading-spinner"></div>';
             loginBtn.disabled = true;
             
             try {
-                const response = await fetch(APP_CONFIG.login, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ username, password })
-                });
+                const { response, data } = await makeApiRequest('/subsystem/login', 'POST', { username, password });
                 
-                const data = await response.json();
-                
-                if (data.success) {
+                if (response.ok && data.success) {
+                    console.log('✅ Connexion Admin Sous-Système réussie');
+                    
                     // Stocker le token et rediriger
                     localStorage.setItem('novaLottoSubsystemToken', data.token);
                     localStorage.setItem('novaLottoSubsystemUser', JSON.stringify(data.user));
                     localStorage.setItem('novaLottoSubsystem', JSON.stringify(data.subsystem));
                     
-                    window.location.href = 'subsystem-admin.html';
+                    setTimeout(() => {
+                        window.location.href = 'subsystem-admin.html';
+                    }, 500);
+                    
                 } else {
                     showError(data.error || 'Identifiants incorrects');
+                    console.error('❌ Connexion Admin Sous-Système échouée:', data.error);
                 }
             } catch (error) {
-                console.error('Erreur connexion admin sous-système:', error);
-                showError('Erreur de connexion au serveur');
+                console.error('❌ Erreur connexion admin sous-système:', error);
+                showError('Erreur de connexion au serveur. Vérifiez votre connexion internet.');
             } finally {
                 // Réactiver le bouton
                 loginBtn.innerHTML = originalHtml;
@@ -758,32 +825,34 @@
                 return;
             }
             
+            console.log('👤 Tentative connexion Master:', username);
+            
             // Désactiver le bouton et afficher le spinner
             const originalHtml = loginBtn.innerHTML;
             loginBtn.innerHTML = '<div class="loading-spinner"></div>';
             loginBtn.disabled = true;
             
             try {
-                const response = await fetch(APP_CONFIG.login, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ username, password })
-                });
+                const { response, data } = await makeApiRequest('/master/login', 'POST', { username, password });
                 
-                const data = await response.json();
-                
-                if (data.success) {
+                if (response.ok && data.success) {
+                    console.log('✅ Connexion Master réussie');
+                    
                     // Stocker le token et rediriger
                     localStorage.setItem('novaLottoMasterToken', data.token);
                     localStorage.setItem('novaLottoMasterUser', JSON.stringify(data.user));
                     
-                    window.location.href = 'master-dashboard.html';
+                    setTimeout(() => {
+                        window.location.href = 'master-dashboard.html';
+                    }, 500);
+                    
                 } else {
                     showError(data.error || 'Identifiants incorrects');
+                    console.error('❌ Connexion Master échouée:', data.error);
                 }
             } catch (error) {
-                console.error('Erreur connexion master:', error);
-                showError('Erreur de connexion au serveur');
+                console.error('❌ Erreur connexion master:', error);
+                showError('Erreur de connexion au serveur. Vérifiez votre connexion internet.');
             } finally {
                 // Réactiver le bouton
                 loginBtn.innerHTML = originalHtml;

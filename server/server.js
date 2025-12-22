@@ -25,7 +25,19 @@ app.use(cors({
 }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(express.static(path.join(__dirname, '../public')));
+
+// ============ IMPORTANT : CHEMINS CORRIGÉS ============
+// Votre structure : racine/public/
+// server.js est dans : nova-lotto/backend/server/
+// Donc on remonte 3 niveaux pour atteindre la racine
+const ROOT_DIR = path.join(__dirname, '..', '..', '..');
+const PUBLIC_DIR = path.join(ROOT_DIR, 'public');
+
+console.log('Root directory:', ROOT_DIR);
+console.log('Public directory:', PUBLIC_DIR);
+
+// Servir les fichiers statiques depuis public/
+app.use(express.static(PUBLIC_DIR));
 
 // Middleware d'authentification
 const authenticateToken = (req, res, next) => {
@@ -516,13 +528,11 @@ app.get('/api/test/supabase', async (req, res) => {
     }
 });
 
-// Servir les fichiers statiques
-app.use(express.static(path.join(__dirname, '../public')));
-
-// Route fallback pour SPA
+// ============ ROUTE FALLBACK POUR HTML ============
+// Redirige toutes les routes non-API vers index.html (pour SPA)
 app.get('*', (req, res) => {
     if (!req.path.startsWith('/api')) {
-        res.sendFile(path.join(__dirname, '../public/index.html'));
+        res.sendFile(path.join(PUBLIC_DIR, 'index.html'));
     }
 });
 
@@ -541,6 +551,7 @@ app.listen(PORT, () => {
     console.log(`\n${'='.repeat(50)}`);
     console.log(`✅ Nova Lotto Server running on port ${PORT}`);
     console.log(`✅ Supabase URL: ${supabaseUrl}`);
-    console.log(`✅ JWT Secret: Configured ✓`);
+    console.log(`✅ Public directory: ${PUBLIC_DIR}`);
+    console.log(`✅ Static files served from: ${PUBLIC_DIR}`);
     console.log(`${'='.repeat(50)}\n`);
 });

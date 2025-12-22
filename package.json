@@ -1,0 +1,28 @@
+{
+  "name": "nova-lotto",
+  "version": "1.0.0",
+  "description": "Système de gestion de loterie Nova Lotto",
+  "main": "nova-lotto/backend/server/server.js",  // <-- CHANGÉ
+  "scripts": {
+    "start": "node nova-lotto/backend/server/server.js",  // <-- CHANGÉ
+    "dev": "nodemon nova-lotto/backend/server/server.js",  // <-- CHANGÉ
+    "test": "echo \"No tests specified\" && exit 0"
+  },
+  "keywords": ["lottery", "management", "system"],
+  "author": "Nova Lotto Team",
+  "license": "MIT",
+  "dependencies": {
+    "@supabase/supabase-js": "^2.38.0",
+    "bcryptjs": "^2.4.3",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "jsonwebtoken": "^9.0.2"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

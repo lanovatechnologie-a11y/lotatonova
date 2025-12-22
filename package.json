@@ -2,13 +2,17 @@
   "name": "nova-lotto",
   "version": "1.0.0",
   "description": "Système de gestion de loterie Nova Lotto",
-  "main": "nova-lotto/backend/server/server.js",  // <-- CHANGÉ
+  "main": "nova-lotto/backend/server/server.js",
   "scripts": {
-    "start": "node nova-lotto/backend/server/server.js",  // <-- CHANGÉ
-    "dev": "nodemon nova-lotto/backend/server/server.js",  // <-- CHANGÉ
+    "start": "node nova-lotto/backend/server/server.js",
+    "dev": "nodemon nova-lotto/backend/server/server.js",
     "test": "echo \"No tests specified\" && exit 0"
   },
-  "keywords": ["lottery", "management", "system"],
+  "keywords": [
+    "lottery",
+    "management",
+    "system"
+  ],
   "author": "Nova Lotto Team",
   "license": "MIT",
   "dependencies": {

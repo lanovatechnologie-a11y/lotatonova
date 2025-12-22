@@ -2,10 +2,10 @@
   "name": "nova-lotto",
   "version": "1.0.0",
   "description": "Système de gestion de loterie Nova Lotto",
-  "main": "server.js",
+  "main": "server/server.js",  // <-- CHANGÉ ICI
   "scripts": {
-    "start": "node server.js",
-    "dev": "nodemon server.js",
+    "start": "node server/server.js",  // <-- CHANGÉ ICI
+    "dev": "nodemon server/server.js",  // <-- CHANGÉ ICI
     "test": "echo \"No tests specified\" && exit 0"
   },
   "keywords": ["lottery", "management", "system"],

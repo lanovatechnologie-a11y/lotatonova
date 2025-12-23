@@ -25,7 +25,7 @@ app.use(cors({
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// IMPORTANT: Servir les fichiers statiques depuis le dossier courant (racine)
+// Servir les fichiers statiques depuis la racine
 app.use(express.static(__dirname));
 
 // ============ ROUTES API ============
@@ -33,6 +33,7 @@ app.use(express.static(__dirname));
 // 1. Route de santé
 app.get('/api/health', async (req, res) => {
     try {
+        // Tester la connexion Supabase
         const { data, error } = await supabase
             .from('agents')
             .select('*')
@@ -53,7 +54,7 @@ app.get('/api/health', async (req, res) => {
     }
 });
 
-// 2. Route de connexion (CRITIQUE)
+// 2. Route de connexion
 app.post('/api/auth/login', async (req, res) => {
     console.log('Tentative de connexion:', req.body);
     
@@ -101,7 +102,7 @@ app.post('/api/auth/login', async (req, res) => {
         
         const user = users[0];
         
-        // Pour les tests, accepter "agent123" en clair
+        // Vérification du mot de passe (bcrypt ou mot de passe test)
         const isValid = password === 'agent123' || 
                        (user.password_hash && bcrypt.compareSync(password, user.password_hash));
         
@@ -230,11 +231,34 @@ app.get('/api/test/supabase', async (req, res) => {
     }
 });
 
+// 6. Route profil utilisateur (optionnelle)
+app.get('/api/users/profile', async (req, res) => {
+    try {
+        const token = req.headers.authorization?.replace('Bearer ', '');
+        
+        if (!token) {
+            return res.status(401).json({
+                success: false,
+                error: 'Token manquant'
+            });
+        }
+        
+        const decoded = jwt.verify(token, JWT_SECRET);
+        res.json({
+            success: true,
+            user: decoded
+        });
+    } catch (err) {
+        res.status(401).json({
+            success: false,
+            error: 'Token invalide'
+        });
+    }
+});
+
 // ============ ROUTE FALLBACK ============
-// Pour toutes les autres routes, servir le fichier HTML principal
 app.get('*', (req, res) => {
     if (!req.path.startsWith('/api')) {
-        // Si ce n'est pas une route API, servir lotato.html
         res.sendFile(path.join(__dirname, 'lotato.html'));
     } else {
         res.status(404).json({
@@ -244,17 +268,7 @@ app.get('*', (req, res) => {
     }
 });
 
-// Gestion des erreurs
-app.use((err, req, res, next) => {
-    console.error('Erreur serveur:', err);
-    res.status(500).json({
-        success: false,
-        error: 'Erreur serveur interne',
-        message: err.message
-    });
-});
-
-// Démarrer le serveur
+// ============ DÉMARRAGE SERVEUR ============
 app.listen(PORT, () => {
     console.log(`\n${'='.repeat(50)}`);
     console.log(`🚀 Serveur Nova Lotto démarré sur le port ${PORT}`);
@@ -266,5 +280,6 @@ app.listen(PORT, () => {
     console.log(`  • POST /api/tickets/create`);
     console.log(`  • GET  /api/tickets/pending`);
     console.log(`  • GET  /api/test/supabase`);
+    console.log(`  • GET  /api/users/profile`);
     console.log(`${'='.repeat(50)}\n`);
 });

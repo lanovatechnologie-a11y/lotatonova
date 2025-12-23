@@ -1,29 +1,21 @@
 // Configuration de l'API
 const API_BASE_URL = window.location.origin;
 const APP_CONFIG = {
-    // Base URLs
     apiBaseUrl: API_BASE_URL,
-    
-    // API Endpoints
     health: `${API_BASE_URL}/api/health`,
     login: `${API_BASE_URL}/api/auth/login`,
     profile: `${API_BASE_URL}/api/users/profile`,
     agents: `${API_BASE_URL}/api/users/agents`,
-    
-    // Tickets
     tickets: `${API_BASE_URL}/api/tickets`,
     validateTicket: `${API_BASE_URL}/api/tickets/validate`,
     pendingTickets: `${API_BASE_URL}/api/tickets/pending`,
     createTicket: `${API_BASE_URL}/api/tickets/create`,
-    
-    // Test
     testSupabase: `${API_BASE_URL}/api/test/supabase`
 };
 
-// Exposer la configuration globalement
 window.APP_CONFIG = APP_CONFIG;
 
-// Classe API Client simplifiée
+// Classe API Client
 class ApiClient {
     constructor() {
         this.baseURL = API_BASE_URL;
@@ -79,31 +71,11 @@ class ApiClient {
             localStorage.setItem('novaLottoToken', response.token);
             localStorage.setItem('novaLottoUser', JSON.stringify(response.user));
             
-            // Stocker également dans sessionStorage pour compatibilité
             sessionStorage.setItem('auth_token', response.token);
             sessionStorage.setItem('user', JSON.stringify(response.user));
         }
         
         return response;
-    }
-    
-    async getProfile() {
-        return this.request('/api/users/profile');
-    }
-    
-    async validateTicket(ticketId) {
-        return this.request('/api/tickets/validate', {
-            method: 'POST',
-            body: JSON.stringify({ ticketId })
-        });
-    }
-    
-    async getPendingTickets() {
-        return this.request('/api/tickets/pending');
-    }
-    
-    async getAgents() {
-        return this.request('/api/users/agents');
     }
     
     async createTicket(ticketData) {
@@ -113,6 +85,10 @@ class ApiClient {
         });
     }
     
+    async getPendingTickets() {
+        return this.request('/api/tickets/pending');
+    }
+    
     logout() {
         this.token = null;
         this.user = null;
@@ -120,7 +96,7 @@ class ApiClient {
         localStorage.removeItem('novaLottoUser');
         sessionStorage.removeItem('auth_token');
         sessionStorage.removeItem('user');
-        window.location.href = '/index.html';
+        window.location.href = '/';
     }
     
     isAuthenticated() {

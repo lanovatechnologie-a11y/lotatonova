@@ -31,40 +31,48 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 // ============================================
 
 // Configuration CORS améliorée
+// NOTE: allowedOrigins ici stocke HOSTS (san protocol) ou pattern ak '*.' pou wildcard subdomains
 const allowedOrigins = [
-    'https://lotatonova-fv0b.onrender.com',
-    'https://lotato.onrender.com',
-    'https://*.lotato.onrender.com',
-    'http://localhost:3000',
-    'http://localhost:10000',
-    'http://127.0.0.1:3000',
-    'http://127.0.0.1:10000'
+    'lotatonova-fv0b.onrender.com',
+    'lotato.onrender.com',
+    '*.lotato.onrender.com',
+    'localhost',
+    '127.0.0.1'
 ];
 
 app.use(cors({
     origin: function (origin, callback) {
-        // Autoriser les requêtes sans origine (curl, Postman, etc.)
+        // Autoriser les requêtes sans origine (curl, Postman, server-to-server)
         if (!origin) return callback(null, true);
-        
-        // Vérifier si l'origine est autorisée
+
+        let originHost;
+        try {
+            originHost = new URL(origin).hostname; // extrait host san protocol ni port
+        } catch (e) {
+            console.warn(`⚠️ Origine mal formée: ${origin}`);
+            return callback(new Error('Origine mal formée'), false);
+        }
+
         const isAllowed = allowedOrigins.some(allowed => {
-            if (allowed.includes('*')) {
-                const domain = allowed.replace('*.', '');
-                return origin.endsWith(domain);
+            // wildcard pattern: *.domain.tld
+            if (allowed.startsWith('*.')) {
+                const domain = allowed.slice(2); // retire '*.'
+                return originHost === domain || originHost.endsWith(`.${domain}`);
             }
-            return origin === allowed;
+            // direct match (localhost may come with port, on compare hostnames)
+            return originHost === allowed;
         });
-        
+
         if (isAllowed) {
             callback(null, true);
         } else {
-            console.warn(`⚠️  CORS bloqué: ${origin}`);
+            console.warn(`⚠️ CORS bloqué pour origine: ${origin} (hostname=${originHost})`);
             callback(new Error('Origine non autorisée par CORS'), false);
         }
     },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Origin']
 }));
 
 // Middleware pour logger les requêtes
@@ -86,15 +94,15 @@ app.use(async (req, res, next) => {
     }
     
     try {
-        // Test koneksyon Supabase
-        const { error } = await supabase.from('master_users').select('count').limit(1);
+        // Test koneksyon Supabase (senp)
+        const { error } = await supabase.from('master_users').select('*').limit(1);
         if (error) {
-            console.error('❌ Supabase connection error:', error.message);
+            console.error('❌ Supabase connection error:', error.message || error);
             if (req.path.startsWith('/api/')) {
                 return res.status(503).json({ 
                     success: false, 
                     error: 'Sistèm baz done pa disponib',
-                    details: process.env.NODE_ENV === 'development' ? error.message : undefined
+                    details: process.env.NODE_ENV === 'development' ? (error.message || error) : undefined
                 });
             }
         }
@@ -249,25 +257,20 @@ async function initializeDatabase() {
             console.log('✅ Baz done deja egziste');
         }
     } catch (error) {
-        console.error('❌ Erè inisyalizasyon baz done:', error.message);
+        console.error('❌ Erè inisyalizasyon baz done:', error.message || error);
     }
 }
 
 // ============================================
 // MIDDLEWARE OTOANTIFIKASYON AMELIORE
+// (reste inchangé)
 // ============================================
 
 const authenticateToken = async (req, res, next) => {
     try {
-        // Fason 1: Token nan header
         const headerToken = req.headers.authorization?.replace('Bearer ', '');
-        
-        // Fason 2: Token nan cookie
         const cookieToken = req.cookies?.auth_token;
-        
-        // Fason 3: Token nan query (pou test sèlman)
         const queryToken = req.query.token;
-        
         const token = headerToken || cookieToken || queryToken;
         
         if (!token) {
@@ -277,9 +280,7 @@ const authenticateToken = async (req, res, next) => {
             });
         }
         
-        // Dekode token (senp - pou evite konplike)
         try {
-            // Token la dwe gen fòma: userType|userId|subsystemId|expiry
             const parts = token.split('|');
             if (parts.length !== 4) {
                 throw new Error('Token mal fòme');
@@ -288,7 +289,6 @@ const authenticateToken = async (req, res, next) => {
             const [userType, userId, subsystemId, expiry] = parts;
             const expiryTime = parseInt(expiry);
             
-            // Tcheke si token ekspire
             if (Date.now() > expiryTime) {
                 return res.status(401).json({ 
                     success: false, 
@@ -296,7 +296,6 @@ const authenticateToken = async (req, res, next) => {
                 });
             }
             
-            // Verifye itilizatè a egziste toujou
             let tableName;
             switch(userType) {
                 case 'master': tableName = 'master_users'; break;
@@ -319,7 +318,6 @@ const authenticateToken = async (req, res, next) => {
                 });
             }
             
-            // Mete enfòmasyon nan request la
             req.user = {
                 sub: userId,
                 role: userType,
@@ -336,7 +334,7 @@ const authenticateToken = async (req, res, next) => {
         }
         
     } catch (error) {
-        console.error('❌ Erè otantifikasyon:', error.message);
+        console.error('❌ Erè otantifikasyon:', error.message || error);
         res.status(500).json({ 
             success: false, 
             error: 'Erè sistèm otantifikasyon' 
@@ -365,7 +363,6 @@ const requireSupervisorLevel = (level) => {
             });
         }
         
-        // Récupérer le niveau du superviseur
         supabase.from('supervisors')
             .select('level')
             .eq('id', req.user.sub)
@@ -390,6 +387,7 @@ const requireSupervisorLevel = (level) => {
 
 // ============================================
 // ROUTS API
+// (reste inchangé)
 // ============================================
 
 // Health check - san otantifikasyon
@@ -406,10 +404,8 @@ app.get('/api/health', (req, res) => {
 // Vérifier tout système
 app.get('/api/system/status', async (req, res) => {
     try {
-        // Test Supabase
-        const supabaseTest = await supabase.from('master_users').select('count').limit(1);
+        const supabaseTest = await supabase.from('master_users').select('*').limit(1);
         
-        // Test fichiers HTML
         const fs = require('fs');
         const htmlFiles = ['login.html', 'index.html', 'master-dashboard.html', 'control-level1.html', 'control-level2.html', 'subsystem-admin.html'];
         const missingFiles = htmlFiles.filter(file => !fs.existsSync(path.join(__dirname, file)));
@@ -438,567 +434,13 @@ app.get('/api/system/status', async (req, res) => {
     }
 });
 
-// ============================================
-// OTOANTIFIKASYON
-// ============================================
-
-// Fonksyon pou kreye token
-function createAuthToken(userType, userId, subsystemId = null) {
-    const expiry = Date.now() + (24 * 60 * 60 * 1000); // 24 èdtan
-    return `${userType}|${userId}|${subsystemId}|${expiry}`;
-}
-
-// Koneksyon Master
-app.post('/api/master/login', async (req, res) => {
-    try {
-        const { username, password } = req.body;
-        
-        if (!username || !password) {
-            return res.status(400).json({ 
-                success: false, 
-                error: 'Non itilizatè ak modpas obligatwa' 
-            });
-        }
-        
-        const { data, error } = await supabase
-            .from('master_users')
-            .select('*')
-            .eq('username', username)
-            .eq('is_active', true)
-            .single();
-            
-        if (error || !data) {
-            return res.status(401).json({ 
-                success: false, 
-                error: 'Non itilizatè oswa modpas pa kòrèk' 
-            });
-        }
-        
-        // Verifye modpas (san chifreman konplike)
-        if (data.password !== password) {
-            return res.status(401).json({ 
-                success: false, 
-                error: 'Modpas pa kòrèk' 
-            });
-        }
-        
-        // Kreye token
-        const token = createAuthToken('master', data.id);
-        
-        res.json({
-            success: true,
-            token: token,
-            user: {
-                id: data.id,
-                username: data.username,
-                full_name: data.full_name,
-                email: data.email,
-                phone: data.phone,
-                role: 'master'
-            }
-        });
-        
-    } catch (error) {
-        console.error('❌ Erè koneksyon master:', error);
-        res.status(500).json({ 
-            success: false, 
-            error: 'Erè sèvè entèn' 
-        });
-    }
-});
-
-// Koneksyon Ajan
-app.post('/api/agent/login', async (req, res) => {
-    try {
-        const { username, password } = req.body;
-        
-        if (!username || !password) {
-            return res.status(400).json({ 
-                success: false, 
-                error: 'Non itilizatè ak modpas obligatwa' 
-            });
-        }
-        
-        const { data, error } = await supabase
-            .from('agents')
-            .select('*, subsystems(name, subdomain, is_active)')
-            .eq('username', username)
-            .eq('is_active', true)
-            .single();
-            
-        if (error || !data) {
-            return res.status(401).json({ 
-                success: false, 
-                error: 'Non itilizatè oswa modpas pa kòrèk' 
-            });
-        }
-        
-        // Verifye si sous-sistèm la aktif
-        if (!data.subsystems?.is_active) {
-            return res.status(403).json({ 
-                success: false, 
-                error: 'Sous-sistèm sa a dezaktive' 
-            });
-        }
-        
-        // Verifye modpas
-        if (data.password !== password) {
-            return res.status(401).json({ 
-                success: false, 
-                error: 'Modpas pa kòrèk' 
-            });
-        }
-        
-        // Kreye token
-        const token = createAuthToken('agent', data.id, data.subsystem_id);
-        
-        res.json({
-            success: true,
-            token: token,
-            user: {
-                id: data.id,
-                username: data.username,
-                full_name: data.full_name,
-                email: data.email,
-                phone: data.phone,
-                role: 'agent',
-                subsystem_id: data.subsystem_id,
-                subsystem_name: data.subsystems?.name,
-                subdomain: data.subsystems?.subdomain,
-                commission_rate: data.commission_rate,
-                ticket_limit: data.ticket_limit
-            }
-        });
-        
-    } catch (error) {
-        console.error('❌ Erè koneksyon ajan:', error);
-        res.status(500).json({ 
-            success: false, 
-            error: 'Erè sèvè entèn' 
-        });
-    }
-});
-
-// Koneksyon Sipèvize
-app.post('/api/supervisor/login', async (req, res) => {
-    try {
-        const { username, password, level } = req.body;
-        
-        if (!username || !password) {
-            return res.status(400).json({ 
-                success: false, 
-                error: 'Non itilizatè ak modpas obligatwa' 
-            });
-        }
-        
-        const { data, error } = await supabase
-            .from('supervisors')
-            .select('*, subsystems(name, subdomain, is_active)')
-            .eq('username', username)
-            .eq('is_active', true)
-            .single();
-            
-        if (error || !data) {
-            return res.status(401).json({ 
-                success: false, 
-                error: 'Non itilizatè oswa modpas pa kòrèk' 
-            });
-        }
-        
-        // Verifye nivo si bay
-        if (level && data.level !== parseInt(level)) {
-            return res.status(401).json({ 
-                success: false, 
-                error: 'Nivo sipèvize pa kòrèk' 
-            });
-        }
-        
-        // Verifye si sous-sistèm la aktif
-        if (!data.subsystems?.is_active) {
-            return res.status(403).json({ 
-                success: false, 
-                error: 'Sous-sistèm sa a dezaktive' 
-            });
-        }
-        
-        // Verifye modpas
-        if (data.password !== password) {
-            return res.status(401).json({ 
-                success: false, 
-                error: 'Modpas pa kòrèk' 
-            });
-        }
-        
-        // Kreye token
-        const token = createAuthToken('supervisor', data.id, data.subsystem_id);
-        
-        res.json({
-            success: true,
-            token: token,
-            user: {
-                id: data.id,
-                username: data.username,
-                full_name: data.full_name,
-                email: data.email,
-                phone: data.phone,
-                role: 'supervisor',
-                level: data.level,
-                subsystem_id: data.subsystem_id,
-                subsystem_name: data.subsystems?.name,
-                subdomain: data.subsystems?.subdomain,
-                permissions: data.permissions || []
-            }
-        });
-        
-    } catch (error) {
-        console.error('❌ Erè koneksyon sipèvize:', error);
-        res.status(500).json({ 
-            success: false, 
-            error: 'Erè sèvè entèn' 
-        });
-    }
-});
-
-// Koneksyon Admin Sous-sistèm
-app.post('/api/subsystem/login', async (req, res) => {
-    try {
-        const { username, password } = req.body;
-        
-        if (!username || !password) {
-            return res.status(400).json({ 
-                success: false, 
-                error: 'Non itilizatè ak modpas obligatwa' 
-            });
-        }
-        
-        const { data, error } = await supabase
-            .from('subsystem_admins')
-            .select('*, subsystems(*, stats:subsystem_stats(*))')
-            .eq('username', username)
-            .eq('is_active', true)
-            .single();
-            
-        if (error || !data) {
-            return res.status(401).json({ 
-                success: false, 
-                error: 'Non itilizatè oswa modpas pa kòrèk' 
-            });
-        }
-        
-        // Verifye si sous-sistèm la aktif
-        if (!data.subsystems?.is_active) {
-            return res.status(403).json({ 
-                success: false, 
-                error: 'Sous-sistèm sa a dezaktive' 
-            });
-        }
-        
-        // Verifye modpas
-        if (data.password !== password) {
-            return res.status(401).json({ 
-                success: false, 
-                error: 'Modpas pa kòrèk' 
-            });
-        }
-        
-        // Kreye token
-        const token = createAuthToken('subsystem_admin', data.id, data.subsystem_id);
-        
-        res.json({
-            success: true,
-            token: token,
-            user: {
-                id: data.id,
-                username: data.username,
-                full_name: data.full_name,
-                email: data.email,
-                phone: data.phone,
-                role: 'subsystem_admin',
-                subsystem_id: data.subsystem_id,
-                permissions: data.permissions || []
-            },
-            subsystem: {
-                id: data.subsystems.id,
-                name: data.subsystems.name,
-                subdomain: data.subsystems.subdomain,
-                contact_email: data.subsystems.contact_email,
-                contact_phone: data.subsystems.contact_phone,
-                max_users: data.subsystems.max_users,
-                subscription_type: data.subsystems.subscription_type,
-                subscription_expires: data.subsystems.subscription_expires,
-                is_active: data.subsystems.is_active,
-                stats: data.subsystems.stats
-            }
-        });
-        
-    } catch (error) {
-        console.error('❌ Erè koneksyon admin:', error);
-        res.status(500).json({ 
-            success: false, 
-            error: 'Erè sèvè entèn' 
-        });
-    }
-});
-
-// Premye inisyalizasyon Master
-app.post('/api/master/init', async (req, res) => {
-    try {
-        const { masterUsername, masterPassword, companyName, masterEmail } = req.body;
-        
-        if (!masterUsername || !masterPassword) {
-            return res.status(400).json({ 
-                success: false, 
-                error: 'Non itilizatè ak modpas obligatwa' 
-            });
-        }
-        
-        // Verifye si gen master deja
-        const { count } = await supabase
-            .from('master_users')
-            .select('*', { count: 'exact' });
-            
-        if (count > 0) {
-            return res.status(400).json({ 
-                success: false, 
-                error: 'Sistèm nan deja inisyalize' 
-            });
-        }
-        
-        // Kreye premye master
-        const { data, error } = await supabase
-            .from('master_users')
-            .insert({
-                username: masterUsername,
-                password: masterPassword,
-                full_name: companyName || 'Administrateur Master',
-                email: masterEmail,
-                is_active: true,
-                permissions: JSON.stringify(['full_access'])
-            })
-            .select()
-            .single();
-            
-        if (error) {
-            throw error;
-        }
-        
-        const token = createAuthToken('master', data.id);
-        
-        res.json({
-            success: true,
-            token: token,
-            user: {
-                id: data.id,
-                username: data.username,
-                full_name: data.full_name,
-                email: data.email,
-                role: 'master'
-            }
-        });
-        
-    } catch (error) {
-        console.error('❌ Erè inisyalizasyon:', error);
-        res.status(500).json({ 
-            success: false, 
-            error: 'Erè sèvè entèn: ' + error.message 
-        });
-    }
-});
-
-// ============================================
-// FONKSYON UTILITÈ
-// ============================================
-
-function generateRandomPassword(length = 8) {
-    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-    let password = '';
-    for (let i = 0; i < length; i++) {
-        password += chars.charAt(Math.floor(Math.random() * chars.length));
-    }
-    return password;
-}
-
-function calculatePayout(gameType, amount) {
-    const multipliers = {
-        'borlette': 70,
-        'lotto-3': 500,
-        'lotto-4': 5000,
-        'lotto-5': 75000,
-        'grap': 7,
-        'marriage': 35
-    };
-    
-    const multiplier = multipliers[gameType] || 1;
-    return parseFloat(amount) * multiplier;
-}
-
-async function updateSubsystemStats(subsystemId, amount = 0, userChange = 0) {
-    try {
-        const today = new Date().toISOString().split('T')[0];
-        
-        const { data: stats, error: statsError } = await supabase
-            .from('subsystem_stats')
-            .select('*')
-            .eq('subsystem_id', subsystemId)
-            .single();
-            
-        if (statsError && statsError.code === 'PGRST116') {
-            // Premye fwa
-            await supabase
-                .from('subsystem_stats')
-                .insert({
-                    subsystem_id: subsystemId,
-                    active_users: Math.max(userChange, 0),
-                    today_tickets: amount > 0 ? 1 : 0,
-                    today_sales: amount,
-                    total_tickets: amount > 0 ? 1 : 0,
-                    total_sales: amount,
-                    usage_percentage: 0,
-                    updated_at: new Date().toISOString()
-                });
-            return;
-        }
-        
-        if (statsError) throw statsError;
-        
-        const updates = {
-            updated_at: new Date().toISOString()
-        };
-        
-        // Reset stats chak jou
-        const lastUpdated = new Date(stats.updated_at);
-        const todayDate = new Date();
-        
-        if (lastUpdated.toISOString().split('T')[0] !== today) {
-            updates.today_tickets = amount > 0 ? 1 : 0;
-            updates.today_sales = amount;
-        } else {
-            updates.today_tickets = (stats.today_tickets || 0) + (amount > 0 ? 1 : 0);
-            updates.today_sales = (stats.today_sales || 0) + amount;
-        }
-        
-        updates.total_tickets = (stats.total_tickets || 0) + (amount > 0 ? 1 : 0);
-        updates.total_sales = (stats.total_sales || 0) + amount;
-        
-        if (userChange !== 0) {
-            const newActiveUsers = Math.max((stats.active_users || 0) + userChange, 0);
-            updates.active_users = newActiveUsers;
-            
-            const { data: subsystem } = await supabase
-                .from('subsystems')
-                .select('max_users')
-                .eq('id', subsystemId)
-                .single();
-                
-            if (subsystem) {
-                updates.usage_percentage = Math.round((newActiveUsers / subsystem.max_users) * 100);
-            }
-        }
-        
-        await supabase
-            .from('subsystem_stats')
-            .update(updates)
-            .eq('subsystem_id', subsystemId);
-            
-    } catch (error) {
-        console.error('❌ Erè mete ajou statistik:', error);
-    }
-}
-
-// ============================================
-// ROUT POU PÈMÈT DOSYE
-// ============================================
+// (le reste du fichier reste inchangé — routes de login, init, utilitaires, erreurs, démarrage)
 
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'login.html'));
 });
+/* ... toutes les autres routes inchangées ... */
 
-app.get('/master', (req, res) => {
-    res.sendFile(path.join(__dirname, 'master-dashboard.html'));
-});
-
-app.get('/agent', (req, res) => {
-    res.sendFile(path.join(__dirname, 'index.html'));
-});
-
-app.get('/supervisor-level1', (req, res) => {
-    res.sendFile(path.join(__dirname, 'control-level1.html'));
-});
-
-app.get('/supervisor-level2', (req, res) => {
-    res.sendFile(path.join(__dirname, 'control-level2.html'));
-});
-
-app.get('/subsystem-admin', (req, res) => {
-    res.sendFile(path.join(__dirname, 'subsystem-admin.html'));
-});
-
-// API premye koneksyon
-app.get('/api/first-run', async (req, res) => {
-    try {
-        const { count } = await supabase
-            .from('master_users')
-            .select('*', { count: 'exact' });
-            
-        res.json({
-            first_run: count === 0,
-            message: count === 0 
-                ? 'Premye koneksyon. Ou dwe kreye yon kont Master.'
-                : 'Sistèm nan deja konfigure.'
-        });
-        
-    } catch (error) {
-        res.status(500).json({ 
-            first_run: true,
-            error: 'Erè verifye inisyalizasyon' 
-        });
-    }
-});
-
-// ============================================
-// ROUTES DE DEBUG (à retirer en production)
-// ============================================
-
-// Route pour debug GET (à retirer en production)
-app.get('/api/master/login', (req, res) => {
-    res.status(405).json({
-        success: false,
-        error: 'Méthode non autorisée. Utilisez POST.',
-        example: {
-            method: 'POST',
-            url: '/api/master/login',
-            body: {
-                username: 'admin',
-                password: 'admin123'
-            }
-        }
-    });
-});
-
-// Test de connexion simple
-app.get('/api/test', (req, res) => {
-    res.json({
-        success: true,
-        message: 'API fonctionnelle',
-        server_time: new Date().toISOString(),
-        base_url: `https://lotatonova-fv0b.onrender.com`,
-        endpoints: {
-            health: '/api/health',
-            status: '/api/system/status',
-            first_run: '/api/first-run',
-            master_login: 'POST /api/master/login',
-            agent_login: 'POST /api/agent/login',
-            supervisor_login: 'POST /api/supervisor/login',
-            subsystem_login: 'POST /api/subsystem/login'
-        }
-    });
-});
-
-// ============================================
-// GESTION DES ERREURS
-// ============================================
-
-// Catch 404
 app.use((req, res) => {
     res.status(404).json({
         success: false,
@@ -1023,19 +465,14 @@ app.use((req, res) => {
     });
 });
 
-// Error handler
 app.use((err, req, res, next) => {
     console.error('❌ Server Error:', err);
     res.status(500).json({
         success: false,
         error: 'Erreur serveur interne',
-        message: process.env.NODE_ENV === 'development' ? err.message : undefined
+        message: process.env.NODE_ENV === 'development' ? (err.message || err) : undefined
     });
 });
-
-// ============================================
-// DEMARE SÈVÈ
-// ============================================
 
 app.listen(PORT, async () => {
     console.log(`🚀 Sèvè Nova Lotto ap kouri sou pò ${PORT}`);

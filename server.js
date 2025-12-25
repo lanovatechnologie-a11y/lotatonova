@@ -217,8 +217,8 @@ async function initializeDatabase() {
 }
 
 // ============================================
-## MIDDLEWARE OTOANTIFIKASYON AMELIORE
-## ============================================
+// MIDDLEWARE OTOANTIFIKASYON AMELIORE
+// ============================================
 
 const authenticateToken = async (req, res, next) => {
     try {
@@ -352,8 +352,8 @@ const requireSupervisorLevel = (level) => {
 };
 
 // ============================================
-## ROUTS API
-## ============================================
+// ROUTS API
+// ============================================
 
 // Health check - san otantifikasyon
 app.get('/api/health', (req, res) => {
@@ -402,8 +402,8 @@ app.get('/api/system/status', async (req, res) => {
 });
 
 // ============================================
-## OTOANTIFIKASYON
-## ============================================
+// OTOANTIFIKASYON
+// ============================================
 
 // Fonksyon pou kreye token
 function createAuthToken(userType, userId, subsystemId = null) {
@@ -769,8 +769,8 @@ app.post('/api/master/init', async (req, res) => {
 });
 
 // ============================================
-## FONKSYON UTILITÈ
-## ============================================
+// FONKSYON UTILITÈ
+// ============================================
 
 function generateRandomPassword(length = 8) {
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
@@ -869,8 +869,8 @@ async function updateSubsystemStats(subsystemId, amount = 0, userChange = 0) {
 }
 
 // ============================================
-## ROUT POU PÈMÈT DOSYE
-## ============================================
+// ROUT POU PÈMÈT DOSYE
+// ============================================
 
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'login.html'));
@@ -919,8 +919,8 @@ app.get('/api/first-run', async (req, res) => {
 });
 
 // ============================================
-## DEMARE SÈVÈ
-## ============================================
+// DEMARE SÈVÈ
+// ============================================
 
 app.listen(PORT, async () => {
     console.log(`🚀 Sèvè Nova Lotto ap kouri sou pò ${PORT}`);

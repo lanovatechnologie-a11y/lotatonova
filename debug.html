@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html>
+<body>
+    <h1>Debug Page</h1>
+    
+    <div>
+        <h3>Test API Calls:</h3>
+        <button onclick="test('health')">Test /api/health</button>
+        <button onclick="test('first-run')">Test /api/first-run</button>
+        <button onclick="test('master-login')">Test /api/master/login (POST)</button>
+        <button onclick="test('agent-login')">Test /api/agent/login (POST)</button>
+    </div>
+    
+    <div id="result" style="margin:20px; padding:10px; border:1px solid #ccc;"></div>
+    
+    <script>
+    async function test(type) {
+        const result = document.getElementById('result');
+        result.innerHTML = 'Testing...';
+        
+        try {
+            let url, options = {};
+            
+            switch(type) {
+                case 'health':
+                    url = '/api/health';
+                    break;
+                case 'first-run':
+                    url = '/api/first-run';
+                    break;
+                case 'master-login':
+                    url = '/api/master/login';
+                    options = {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({username: 'admin', password: 'admin123'})
+                    };
+                    break;
+                case 'agent-login':
+                    url = '/api/agent/login';
+                    options = {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({username: 'agent1', password: 'agent123'})
+                    };
+                    break;
+            }
+            
+            const response = await fetch(url, options);
+            const data = await response.json();
+            
+            result.innerHTML = `
+                <h4>✅ ${type.toUpperCase()} SUCCESS</h4>
+                <pre style="background:#f5f5f5; padding:10px;">${JSON.stringify(data, null, 2)}</pre>
+            `;
+            
+        } catch (error) {
+            result.innerHTML = `
+                <h4 style="color:red">❌ ${type.toUpperCase()} ERROR</h4>
+                <p>${error.message}</p>
+            `;
+        }
+    }
+    </script>
+</body>
+</html>

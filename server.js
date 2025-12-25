@@ -27,15 +27,52 @@ if (!supabaseUrl || !supabaseKey) {
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 // ============================================
-// MIDDLEWARE
+// MIDDLEWARE AMELIORE
 // ============================================
 
+// Configuration CORS améliorée
+const allowedOrigins = [
+    'https://lotatonova-fv0b.onrender.com',
+    'https://lotato.onrender.com',
+    'https://*.lotato.onrender.com',
+    'http://localhost:3000',
+    'http://localhost:10000',
+    'http://127.0.0.1:3000',
+    'http://127.0.0.1:10000'
+];
+
 app.use(cors({
-    origin: process.env.NODE_ENV === 'production' 
-        ? ['https://lotato.onrender.com', 'https://*.lotato.onrender.com']
-        : '*',
-    credentials: true
+    origin: function (origin, callback) {
+        // Autoriser les requêtes sans origine (curl, Postman, etc.)
+        if (!origin) return callback(null, true);
+        
+        // Vérifier si l'origine est autorisée
+        const isAllowed = allowedOrigins.some(allowed => {
+            if (allowed.includes('*')) {
+                const domain = allowed.replace('*.', '');
+                return origin.endsWith(domain);
+            }
+            return origin === allowed;
+        });
+        
+        if (isAllowed) {
+            callback(null, true);
+        } else {
+            console.warn(`⚠️  CORS bloqué: ${origin}`);
+            callback(new Error('Origine non autorisée par CORS'), false);
+        }
+    },
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
 }));
+
+// Middleware pour logger les requêtes
+app.use((req, res, next) => {
+    console.log(`[${new Date().toISOString()}] ${req.method} ${req.path}`);
+    console.log('  Origin:', req.headers.origin || 'none');
+    next();
+});
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -374,7 +411,7 @@ app.get('/api/system/status', async (req, res) => {
         
         // Test fichiers HTML
         const fs = require('fs');
-        const htmlFiles = ['login.html', 'index.html', 'master-dashboard.html'];
+        const htmlFiles = ['login.html', 'index.html', 'master-dashboard.html', 'control-level1.html', 'control-level2.html', 'subsystem-admin.html'];
         const missingFiles = htmlFiles.filter(file => !fs.existsSync(path.join(__dirname, file)));
         
         res.json({
@@ -919,6 +956,84 @@ app.get('/api/first-run', async (req, res) => {
 });
 
 // ============================================
+// ROUTES DE DEBUG (à retirer en production)
+// ============================================
+
+// Route pour debug GET (à retirer en production)
+app.get('/api/master/login', (req, res) => {
+    res.status(405).json({
+        success: false,
+        error: 'Méthode non autorisée. Utilisez POST.',
+        example: {
+            method: 'POST',
+            url: '/api/master/login',
+            body: {
+                username: 'admin',
+                password: 'admin123'
+            }
+        }
+    });
+});
+
+// Test de connexion simple
+app.get('/api/test', (req, res) => {
+    res.json({
+        success: true,
+        message: 'API fonctionnelle',
+        server_time: new Date().toISOString(),
+        base_url: `https://lotatonova-fv0b.onrender.com`,
+        endpoints: {
+            health: '/api/health',
+            status: '/api/system/status',
+            first_run: '/api/first-run',
+            master_login: 'POST /api/master/login',
+            agent_login: 'POST /api/agent/login',
+            supervisor_login: 'POST /api/supervisor/login',
+            subsystem_login: 'POST /api/subsystem/login'
+        }
+    });
+});
+
+// ============================================
+// GESTION DES ERREURS
+// ============================================
+
+// Catch 404
+app.use((req, res) => {
+    res.status(404).json({
+        success: false,
+        error: 'Route non trouvée',
+        path: req.path,
+        available_routes: [
+            'GET  /',
+            'GET  /master',
+            'GET  /agent',
+            'GET  /supervisor-level1',
+            'GET  /supervisor-level2',
+            'GET  /subsystem-admin',
+            'GET  /api/health',
+            'GET  /api/system/status',
+            'GET  /api/first-run',
+            'POST /api/master/login',
+            'POST /api/agent/login',
+            'POST /api/supervisor/login',
+            'POST /api/subsystem/login',
+            'POST /api/master/init'
+        ]
+    });
+});
+
+// Error handler
+app.use((err, req, res, next) => {
+    console.error('❌ Server Error:', err);
+    res.status(500).json({
+        success: false,
+        error: 'Erreur serveur interne',
+        message: process.env.NODE_ENV === 'development' ? err.message : undefined
+    });
+});
+
+// ============================================
 // DEMARE SÈVÈ
 // ============================================
 
@@ -929,6 +1044,7 @@ app.listen(PORT, async () => {
     console.log(`   • Akèy: http://localhost:${PORT}/`);
     console.log(`   • API Health: http://localhost:${PORT}/api/health`);
     console.log(`   • API Status: http://localhost:${PORT}/api/system/status`);
+    console.log(`   • Test API: http://localhost:${PORT}/api/test`);
     
     // Inisyalize baz done
     await initializeDatabase();

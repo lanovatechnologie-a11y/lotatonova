@@ -6,7 +6,6 @@
     <title>Nova / LOTATO - Administration Master</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="manifest" href="manifest.json">
-    <script src="/config.js"></script>
     <style>
         :root {
             --primary-color: #2c3e50;
@@ -1679,7 +1678,12 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
         // Configuration
-        const API_BASE_URL = window.location.origin; 
+        const API_BASE_URL = 'https://lotatonova-fv0b.onrender.com'; 
+        // Configuration API Backend
+const APP_CONFIG = {
+    health: `${API_BASE_URL}/api/health`,
+    login: `${API_BASE_URL}/api/auth/login`
+};
         let masterToken = localStorage.getItem('novaLottoMasterToken');
         let currentUser = JSON.parse(localStorage.getItem('novaLottoMasterUser') || '{}');
         let currentPage = 1;

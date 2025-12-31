@@ -1,8 +1,13 @@
-const express = require("express");
-const path = require("path");
-const cors = require("cors");
-const bodyParser = require("body-parser");
-const { createClient } = require("@supabase/supabase-js");
+import express from "express";
+import path from "path";
+import cors from "cors";
+import bodyParser from "body-parser";
+import { createClient } from "@supabase/supabase-js";
+import { fileURLToPath } from "url";
+
+// === FIX __dirname en ES Module ===
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const app = express();
 app.use(cors());
@@ -12,17 +17,23 @@ app.use(bodyParser.json());
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
+console.log("=== CHECK ENV ===");
+console.log("SUPABASE_URL :", SUPABASE_URL ? "OK" : "MISSING");
+console.log("SERVICE KEY :", SUPABASE_SERVICE_ROLE_KEY ? "OK" : "MISSING");
+console.log("================");
+
 if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
   console.log("❌ Supabase non configuré");
   process.exit(1);
 }
 
+// ===== SUPABASE =====
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
-// =============== STATIC FILES ============
-app.use(express.static(path.join(__dirname)));
+// ===== STATIC FRONTEND =====
+app.use(express.static(__dirname));
 
-// =============== HEALTH ==================
+// ===== HEALTH CHECK =====
 app.get("/status", (req, res) => {
   res.json({
     status: "OK",
@@ -31,7 +42,7 @@ app.get("/status", (req, res) => {
   });
 });
 
-// =============== LOGIN MASTER ============
+// ===== MASTER LOGIN =====
 app.post("/api/master-login", async (req, res) => {
   const { username, password } = req.body;
 
@@ -46,18 +57,26 @@ app.post("/api/master-login", async (req, res) => {
     .single();
 
   if (error || !data)
-    return res.status(401).json({ ok: false, message: "Identifiants incorrects" });
+    return res.status(401).json({
+      ok: false,
+      message: "Identifiants incorrects"
+    });
 
-  res.json({ ok: true, message: "Connexion réussie", user: data });
+  res.json({
+    ok: true,
+    message: "Connexion réussie",
+    user: data
+  });
 });
 
-// ========= DEFAULT ROUTE =========
+// ========= CATCH ALL (SERVE INDEX) =========
 app.get("*", (req, res) => {
   res.sendFile(path.join(__dirname, "index.html"));
 });
 
 // ========= START SERVER ===========
 const PORT = process.env.PORT || 10000;
+
 app.listen(PORT, () => {
   console.log("🚀 Nova Lotto running on port", PORT);
 });

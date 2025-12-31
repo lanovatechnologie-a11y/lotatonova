@@ -10,7 +10,9 @@ dotenv.config();
 
 const app = express();
 
-// Obligatoire pour ESModule
+// =============================
+// CONFIG ES MODULE PATHS
+// =============================
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
@@ -31,19 +33,16 @@ if (!SUPABASE_URL || !SUPABASE_KEY) {
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // =============================
-// MIDDLEWARES
+// MIDDLEWARE
 // =============================
 app.use(cors());
 app.use(express.json());
 
 // =============================
-// SERVIR TES HTML
+// SERVIR FRONTEND
 // =============================
-
-// Sert tous les fichiers de la racine
 app.use(express.static(__dirname));
 
-// Route par défaut -> index.html
 app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "index.html"));
 });
@@ -53,8 +52,7 @@ app.get("/", (req, res) => {
 // =============================
 app.get("/api/health", async (req, res) => {
   try {
-    const { data, error } = await supabase.from("master_users").select("id").limit(1);
-
+    const { error } = await supabase.from("master_users").select("id").limit(1);
     if (error) throw error;
 
     res.json({
@@ -73,7 +71,7 @@ app.get("/api/health", async (req, res) => {
 });
 
 // =============================
-// AUTH LOGIN (MASTER, SUB, AGENTS etc ensuite tu complètes)
+// AUTH LOGIN
 // =============================
 app.post("/api/auth/login", async (req, res) => {
   const { username, password, role } = req.body;
@@ -112,9 +110,14 @@ app.post("/api/auth/login", async (req, res) => {
   if (error || !data)
     return res.status(401).json({ message: "Utilisateur introuvable" });
 
-  // ⚠️ TEMPORAIRE : mot de passe en clair (car tu as demandé simple)
-  if (data.password !== password)
+  // =============================
+  // MOT DE PASSE SIMPLE POUR TES TESTS
+  // =============================
+  const storedPassword = data.password || data.password_hash;
+
+  if (!storedPassword || storedPassword !== password) {
     return res.status(401).json({ message: "Mot de passe incorrect" });
+  }
 
   const token = jwt.sign(
     { id: data.id, role },
@@ -122,12 +125,16 @@ app.post("/api/auth/login", async (req, res) => {
     { expiresIn: "24h" }
   );
 
-  res.json({ message: "success", token, user: data });
+  res.json({
+    message: "success",
+    token,
+    user: data
+  });
 });
 
 // =============================
-// LANCEMENT SERVEUR
+// START SERVER
 // =============================
 app.listen(PORT, () => {
-  console.log(`🚀 Nova Lotto backend running on port ${PORT}`);
+  console.log(`🚀 Serveur Nova Lotto fonctionnant sur le port ${PORT}`);
 });

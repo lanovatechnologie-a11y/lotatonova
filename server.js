@@ -5,7 +5,7 @@ import bodyParser from "body-parser";
 import { createClient } from "@supabase/supabase-js";
 import { fileURLToPath } from "url";
 
-// === FIX __dirname en ES Module ===
+// === __dirname fix ===
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
@@ -13,24 +13,28 @@ const app = express();
 app.use(cors());
 app.use(bodyParser.json());
 
-// ================= ENV ==================
+// ===== ENV =====
 const SUPABASE_URL = process.env.SUPABASE_URL;
-const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+// accepte les DEUX noms pour éviter erreurs
+const SERVICE_KEY =
+  process.env.SUPABASE_SERVICE_ROLE_KEY ||
+  process.env.SUPABASE_SERVICE_KEY;
 
 console.log("=== CHECK ENV ===");
 console.log("SUPABASE_URL :", SUPABASE_URL ? "OK" : "MISSING");
-console.log("SERVICE KEY :", SUPABASE_SERVICE_ROLE_KEY ? "OK" : "MISSING");
+console.log("SERVICE KEY :", SERVICE_KEY ? "OK" : "MISSING");
 console.log("================");
 
-if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
-  console.log("❌ Supabase non configuré");
+if (!SUPABASE_URL || !SERVICE_KEY) {
+  console.log("❌ Supabase non configuré !");
   process.exit(1);
 }
 
 // ===== SUPABASE =====
-const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+const supabase = createClient(SUPABASE_URL, SERVICE_KEY);
 
-// ===== STATIC FRONTEND =====
+// ===== SERVE HTML ROOT =====
 app.use(express.static(__dirname));
 
 // ===== HEALTH CHECK =====
@@ -69,14 +73,11 @@ app.post("/api/master-login", async (req, res) => {
   });
 });
 
-// ========= CATCH ALL (SERVE INDEX) =========
+// ===== SERVE index.html FOR EVERYTHING ELSE =====
 app.get("*", (req, res) => {
   res.sendFile(path.join(__dirname, "index.html"));
 });
 
-// ========= START SERVER ===========
+// ===== START =====
 const PORT = process.env.PORT || 10000;
-
-app.listen(PORT, () => {
-  console.log("🚀 Nova Lotto running on port", PORT);
-});
+app.listen(PORT, () => console.log("🚀 Nova Lotto running on port", PORT));

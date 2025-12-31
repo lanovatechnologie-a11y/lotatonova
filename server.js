@@ -1,83 +1,152 @@
-import express from "express";
-import path from "path";
-import cors from "cors";
-import bodyParser from "body-parser";
-import { createClient } from "@supabase/supabase-js";
-import { fileURLToPath } from "url";
-
-// === __dirname fix ===
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const express = require("express");
+const cors = require("cors");
+const bcrypt = require("bcryptjs");
+const { createClient } = require("@supabase/supabase-js");
 
 const app = express();
 app.use(cors());
-app.use(bodyParser.json());
+app.use(express.json());
 
-// ===== ENV =====
+// ENV
 const SUPABASE_URL = process.env.SUPABASE_URL;
+const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-// accepte les DEUX noms pour éviter erreurs
-const SERVICE_KEY =
-  process.env.SUPABASE_SERVICE_ROLE_KEY ||
-  process.env.SUPABASE_SERVICE_KEY;
+const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
-console.log("=== CHECK ENV ===");
-console.log("SUPABASE_URL :", SUPABASE_URL ? "OK" : "MISSING");
-console.log("SERVICE KEY :", SERVICE_KEY ? "OK" : "MISSING");
-console.log("================");
-
-if (!SUPABASE_URL || !SERVICE_KEY) {
-  console.log("❌ Supabase non configuré !");
-  process.exit(1);
-}
-
-// ===== SUPABASE =====
-const supabase = createClient(SUPABASE_URL, SERVICE_KEY);
-
-// ===== SERVE HTML ROOT =====
-app.use(express.static(__dirname));
-
-// ===== HEALTH CHECK =====
-app.get("/status", (req, res) => {
+// ==============================
+// TEST SERVER
+// ==============================
+app.get("/", (req, res) => {
   res.json({
-    status: "OK",
-    supabase: "Configured",
-    time: new Date()
+    status: "BACKEND OK",
+    supabase_url: SUPABASE_URL ? "detecté" : "ABSENT",
+    time: new Date().toISOString(),
   });
 });
 
-// ===== MASTER LOGIN =====
-app.post("/api/master-login", async (req, res) => {
+// ==============================
+// LOGIN MASTER
+// TABLE : "maîtres"
+// COLONNES : username , password
+// ==============================
+app.post("/login-master", async (req, res) => {
   const { username, password } = req.body;
 
-  if (!username || !password)
-    return res.status(400).json({ ok: false, message: "Champs manquants" });
-
   const { data, error } = await supabase
-    .from("masters")
+    .from('"maîtres"')     // <<< OBLIGATOIRE EXACT
     .select("*")
     .eq("username", username)
-    .eq("password", password)
     .single();
 
-  if (error || !data)
-    return res.status(401).json({
-      ok: false,
-      message: "Identifiants incorrects"
-    });
+  if (error || !data) {
+    return res.status(401).json({ success: false, message: "Identifiants incorrects" });
+  }
+
+  const match = await bcrypt.compare(password, data.password);
+
+  if (!match) {
+    return res.status(401).json({ success: false, message: "Identifiants incorrects" });
+  }
 
   res.json({
-    ok: true,
+    success: true,
     message: "Connexion réussie",
-    user: data
+    master: {
+      id: data.id,
+      username: data.username
+    }
   });
 });
 
-// ===== SERVE index.html FOR EVERYTHING ELSE =====
-app.get("*", (req, res) => {
-  res.sendFile(path.join(__dirname, "index.html"));
+// ==============================
+// LOGIN ADMIN SOUS SYSTEME
+// TABLE : "administrateurs_de_sous-système"
+// ==============================
+app.post("/login-admin", async (req, res) => {
+  const { username, password } = req.body;
+
+  const { data, error } = await supabase
+    .from('"administrateurs_de_sous-système"')
+    .select("*")
+    .eq("username", username)
+    .single();
+
+  if (error || !data) return res.status(401).json({ success: false });
+
+  const ok = await bcrypt.compare(password, data.password);
+  if (!ok) return res.status(401).json({ success: false });
+
+  res.json({ success: true, admin: data });
 });
 
-// ===== START =====
+// ==============================
+// LOGIN SUPERVISEUR NIVEAU 1
+// TABLE : "superviseurs_niveau1"
+// ==============================
+app.post("/login-superviseur1", async (req, res) => {
+  const { username, password } = req.body;
+
+  const { data, error } = await supabase
+    .from('"superviseurs_niveau1"')
+    .select("*")
+    .eq("username", username)
+    .single();
+
+  if (error || !data) return res.status(401).json({ success: false });
+
+  const ok = await bcrypt.compare(password, data.password);
+  if (!ok) return res.status(401).json({ success: false });
+
+  res.json({ success: true, superviseur: data });
+});
+
+// ==============================
+// LOGIN SUPERVISEUR NIVEAU 2
+// TABLE : "superviseurs_niveau2"
+// ==============================
+app.post("/login-superviseur2", async (req, res) => {
+  const { username, password } = req.body;
+
+  const { data, error } = await supabase
+    .from('"superviseurs_niveau2"')
+    .select("*")
+    .eq("username", username)
+    .single();
+
+  if (error || !data) return res.status(401).json({ success: false });
+
+  const ok = await bcrypt.compare(password, data.password);
+  if (!ok) return res.status(401).json({ success: false });
+
+  res.json({ success: true, superviseur: data });
+});
+
+// ==============================
+// LOGIN AGENT
+// TABLE : "agents"
+// ==============================
+app.post("/login-agent", async (req, res) => {
+  const { username, password } = req.body;
+
+  const { data, error } = await supabase
+    .from('"agents"')
+    .select("*")
+    .eq("username", username)
+    .single();
+
+  if (error || !data) return res.status(401).json({ success: false });
+
+  const ok = await bcrypt.compare(password, data.password);
+  if (!ok) return res.status(401).json({ success: false });
+
+  res.json({ success: true, agent: data });
+});
+
+
+// ==============================
+// RUN SERVER
+// ==============================
 const PORT = process.env.PORT || 10000;
-app.listen(PORT, () => console.log("🚀 Nova Lotto running on port", PORT));
+app.listen(PORT, () => {
+  console.log("🚀 Backend Nova Lotto RUNNING on port " + PORT);
+});

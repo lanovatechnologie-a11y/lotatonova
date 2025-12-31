@@ -1,59 +1,83 @@
 import express from "express";
+import path from "path";
 import cors from "cors";
+import bodyParser from "body-parser";
 import { createClient } from "@supabase/supabase-js";
+import { fileURLToPath } from "url";
+
+// === __dirname fix ===
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const app = express();
 app.use(cors());
-app.use(express.json());
+app.use(bodyParser.json());
 
 // ===== ENV =====
 const SUPABASE_URL = process.env.SUPABASE_URL;
-const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-console.log("=== ENV CHECK ===");
-console.log("SUPABASE_URL:", SUPABASE_URL ? "OK" : "MISSING");
-console.log("SERVICE KEY:", SUPABASE_SERVICE_ROLE_KEY ? "OK" : "MISSING");
-console.log("=================");
+// accepte les DEUX noms pour éviter erreurs
+const SERVICE_KEY =
+  process.env.SUPABASE_SERVICE_ROLE_KEY ||
+  process.env.SUPABASE_SERVICE_KEY;
 
-if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
-  console.error("❌ Supabase non configuré !");
+console.log("=== CHECK ENV ===");
+console.log("SUPABASE_URL :", SUPABASE_URL ? "OK" : "MISSING");
+console.log("SERVICE KEY :", SERVICE_KEY ? "OK" : "MISSING");
+console.log("================");
+
+if (!SUPABASE_URL || !SERVICE_KEY) {
+  console.log("❌ Supabase non configuré !");
   process.exit(1);
 }
 
 // ===== SUPABASE =====
-const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+const supabase = createClient(SUPABASE_URL, SERVICE_KEY);
+
+// ===== SERVE HTML ROOT =====
+app.use(express.static(__dirname));
 
 // ===== HEALTH CHECK =====
 app.get("/status", (req, res) => {
   res.json({
     status: "OK",
-    time: new Date().toISOString(),
+    supabase: "Configured",
+    time: new Date()
   });
 });
 
-// ===== LOGIN MASTER (table FR) =====
-// TABLE SUPABASE : "maîtres"
-app.post("/login-master", async (req, res) => {
+// ===== MASTER LOGIN =====
+app.post("/api/master-login", async (req, res) => {
   const { username, password } = req.body;
 
+  if (!username || !password)
+    return res.status(400).json({ ok: false, message: "Champs manquants" });
+
   const { data, error } = await supabase
-    .from('"maîtres"') // ⚠️ EXACT AVEC GUILLEMETS
+    .from("masters")
     .select("*")
     .eq("username", username)
     .eq("password", password)
     .single();
 
   if (error || !data)
-    return res.status(401).json({ success: false, message: "Identifiants incorrects" });
+    return res.status(401).json({
+      ok: false,
+      message: "Identifiants incorrects"
+    });
 
   res.json({
-    success: true,
-    user: {
-      id: data.id,
-      username: data.username
-    }
+    ok: true,
+    message: "Connexion réussie",
+    user: data
   });
 });
 
+// ===== SERVE index.html FOR EVERYTHING ELSE =====
+app.get("*", (req, res) => {
+  res.sendFile(path.join(__dirname, "index.html"));
+});
+
+// ===== START =====
 const PORT = process.env.PORT || 10000;
-app.listen(PORT, () => console.log("🚀 Backend running on port", PORT));
+app.listen(PORT, () => console.log("🚀 Nova Lotto running on port", PORT));

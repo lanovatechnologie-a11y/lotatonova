@@ -1,14 +1,22 @@
 // ================================
-// Nova Lotto Backend - Server.js
+// Nova Lotto Backend + Frontend
 // ================================
 import express from "express";
 import cors from "cors";
 import jwt from "jsonwebtoken";
 import { createClient } from "@supabase/supabase-js";
+import path from "path";
+import { fileURLToPath } from "url";
 
 const app = express();
 app.use(cors());
 app.use(express.json());
+
+// ================================
+// PATH CONFIG
+// ================================
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // ================================
 // ENV CHECK
@@ -65,9 +73,6 @@ app.post("/api/login", async (req, res) => {
 
     let table = null;
 
-    // ================================
-    // ROLE DETECTION
-    // ================================
     if (role === "master") table = "master_users";
     else if (role === "subsystem_admin") table = "subsystem_admins";
     else if (level === "1") table = "supervisors_level1";
@@ -80,9 +85,6 @@ app.post("/api/login", async (req, res) => {
 
     console.log("🔍 Tentative login:", { username, table });
 
-    // ================================
-    // FETCH USER
-    // ================================
     const { data: user, error } = await supabase
       .from(table)
       .select("*")
@@ -94,18 +96,11 @@ app.post("/api/login", async (req, res) => {
       return res.json({ success: false, error: "Identifiants incorrects" });
     }
 
-    // ================================
-    // SIMPLE PASSWORD MATCH
-    // (PAS DE HASH POUR CETTE VERSION)
-    // ================================
     if (user.password_hash !== password) {
       console.log("❌ Mauvais mot de passe");
       return res.json({ success: false, error: "Identifiants incorrects" });
     }
 
-    // ================================
-    // JWT TOKEN
-    // ================================
     const token = jwt.sign(
       {
         id: user.id,
@@ -126,6 +121,16 @@ app.post("/api/login", async (req, res) => {
     console.error("🔥 ERREUR LOGIN:", err);
     res.json({ success: false, error: "Erreur serveur" });
   }
+});
+
+// ================================
+// FRONTEND STATIC FILES
+// ================================
+app.use(express.static(__dirname));
+
+// PAGE D’ACCUEIL
+app.get("/", (req, res) => {
+  res.sendFile(path.join(__dirname, "index.html"));
 });
 
 // ================================

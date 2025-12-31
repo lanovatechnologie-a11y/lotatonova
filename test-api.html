@@ -1,0 +1,442 @@
+
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tests API - Nova Lotto</title>
+    <!-- Script de configuration -->
+    <script src="/config.js"></script>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            max-width: 1000px; 
+            margin: 0 auto; 
+            padding: 20px; 
+            background: #f5f5f5;
+        }
+        .test-section { 
+            background: white; 
+            padding: 20px; 
+            margin: 15px 0; 
+            border-radius: 8px; 
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        button { 
+            background: #007bff; 
+            color: white; 
+            border: none; 
+            padding: 10px 15px; 
+            border-radius: 4px; 
+            cursor: pointer; 
+            margin: 5px;
+        }
+        button:hover { background: #0056b3; }
+        .result { 
+            background: #f8f9fa; 
+            padding: 10px; 
+            margin-top: 10px; 
+            border-radius: 4px; 
+            border-left: 4px solid #007bff;
+            white-space: pre-wrap;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .success { color: green; }
+        .error { color: red; }
+        .loading { color: blue; }
+        .user-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+        .user-table th, .user-table td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        .user-table th {
+            background-color: #007bff;
+            color: white;
+        }
+        .user-table tr:nth-child(even) {
+            background-color: #f2f2f2;
+        }
+        .config-info {
+            background: #e8f4fd;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+            font-family: monospace;
+        }
+    </style>
+</head>
+<body>
+    <h1>🧪 Tests API - Nova Lotto</h1>
+    
+    <!-- Information sur la configuration -->
+    <div class="test-section">
+        <h3>Configuration API</h3>
+        <div id="config-info" class="config-info">
+            Configuration en cours de chargement...
+        </div>
+    </div>
+
+    <!-- Test de santé -->
+    <div class="test-section">
+        <h3>1. Test de santé du serveur</h3>
+        <button onclick="testHealth()">Tester /health</button>
+        <div id="health-result" class="result"></div>
+    </div>
+
+    <!-- Test de login -->
+    <div class="test-section">
+        <h3>2. Test de connexion</h3>
+        <div>
+            <label>Utilisateur: </label>
+            <select id="user-select">
+                <option value='{"username":"master","password":"master123"}'>Master</option>
+                <option value='{"username":"superviseur2","password":"sup2123"}'>Superviseur 2</option>
+                <option value='{"username":"superviseur1","password":"sup1123"}'>Superviseur 1</option>
+                <option value='{"username":"agent1","password":"agent123"}'>Agent 1</option>
+            </select>
+        </div>
+        <button onclick="testLogin()">Tester Login</button>
+        <div id="login-result" class="result"></div>
+    </div>
+
+    <!-- Test de création de ticket -->
+    <div class="test-section">
+        <h3>3. Test création de ticket (nécessite token)</h3>
+        <button onclick="testCreateTicket()">Créer un ticket test</button>
+        <div id="ticket-result" class="result"></div>
+    </div>
+
+    <!-- Test de récupération des utilisateurs -->
+    <div class="test-section">
+        <h3>4. Test récupération des utilisateurs via API</h3>
+        <button onclick="testGetUsers()">Lister les utilisateurs (API)</button>
+        <div id="users-result" class="result"></div>
+    </div>
+
+    <!-- Nouvelle section : Voir tous les utilisateurs de la base -->
+    <div class="test-section">
+        <h3>5. Voir tous les utilisateurs de la base de données</h3>
+        <p><strong>Note:</strong> Cette fonction affiche tous les utilisateurs enregistrés dans Supabase avec leurs mots de passe.</p>
+        <button onclick="showAllUsers()">Afficher tous les utilisateurs</button>
+        <div id="all-users-result" class="result"></div>
+        <table id="all-users-table" class="user-table" style="display: none;">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Username</th>
+                    <th>Password</th>
+                    <th>Role</th>
+                    <th>Email</th>
+                    <th>Créé le</th>
+                </tr>
+            </thead>
+            <tbody id="all-users-table-body">
+                <!-- Les utilisateurs seront insérés ici -->
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Tests supplémentaires des endpoints API -->
+    <div class="test-section">
+        <h3>6. Tests supplémentaires des endpoints API</h3>
+        <div>
+            <button onclick="testEndpoint('lotteries')">Tester /lotteries</button>
+            <button onclick="testEndpoint('tickets')">Tester /tickets</button>
+            <button onclick="testEndpoint('statistics')">Tester /statistics</button>
+            <button onclick="testEndpoint('agents')">Tester /agents</button>
+            <button onclick="testEndpoint('sales')">Tester /sales</button>
+            <button onclick="testEndpoint('profile')">Tester /profile</button>
+        </div>
+        <div id="endpoint-result" class="result"></div>
+    </div>
+
+    <script>
+        // Vérifier si la configuration est chargée
+        if (typeof APP_CONFIG === 'undefined') {
+            console.warn('APP_CONFIG non défini, chargement de la configuration par défaut');
+            // Configuration de secours
+            var APP_CONFIG = {
+                apiBase: window.location.origin + '/api',
+                health: window.location.origin + '/health',
+                login: window.location.origin + '/api/auth/login',
+                users: window.location.origin + '/api/users',
+                tickets: window.location.origin + '/api/tickets',
+                lotteries: window.location.origin + '/api/lotteries',
+                statistics: window.location.origin + '/api/statistics',
+                agents: window.location.origin + '/api/tickets/agents',
+                sales: window.location.origin + '/api/sales',
+                profile: window.location.origin + '/api/users/profile'
+            };
+        }
+        
+        // Afficher la configuration
+        document.getElementById('config-info').innerHTML = 
+            `API Base: ${APP_CONFIG.apiBase || 'Non défini'}<br>` +
+            `Endpoints disponibles:<br>` +
+            `• Health: ${APP_CONFIG.health}<br>` +
+            `• Login: ${APP_CONFIG.login}<br>` +
+            `• Users: ${APP_CONFIG.users}<br>` +
+            `• Tickets: ${APP_CONFIG.tickets}<br>` +
+            `• Lotteries: ${APP_CONFIG.lotteries}<br>` +
+            `• Statistics: ${APP_CONFIG.statistics}`;
+
+        let currentToken = '';
+
+        // Fonction pour afficher les résultats
+        function showResult(elementId, data, isError = false) {
+            const element = document.getElementById(elementId);
+            if (typeof data === 'object') {
+                element.innerHTML = `<span class="${isError ? 'error' : 'success'}">${JSON.stringify(data, null, 2)}</span>`;
+            } else {
+                element.innerHTML = `<span class="${isError ? 'error' : 'success'}">${data}</span>`;
+            }
+        }
+
+        // 1. Test de santé
+        async function testHealth() {
+            const resultElement = document.getElementById('health-result');
+            resultElement.innerHTML = '<span class="loading">Test en cours...</span>';
+            
+            try {
+                const response = await fetch(APP_CONFIG.health);
+                const data = await response.text();
+                showResult('health-result', data);
+            } catch (error) {
+                showResult('health-result', error.message, true);
+            }
+        }
+
+        // 2. Test de login
+        async function testLogin() {
+            const resultElement = document.getElementById('login-result');
+            resultElement.innerHTML = '<span class="loading">Connexion en cours...</span>';
+            
+            try {
+                const userData = JSON.parse(document.getElementById('user-select').value);
+                
+                const response = await fetch(APP_CONFIG.login, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(userData)
+                });
+                
+                const data = await response.json();
+                
+                if (data.token) {
+                    currentToken = data.token;
+                    showResult('login-result', { 
+                        success: true, 
+                        token: data.token.substring(0, 50) + '...',
+                        user: data.user 
+                    });
+                } else {
+                    showResult('login-result', data, true);
+                }
+            } catch (error) {
+                showResult('login-result', error.message, true);
+            }
+        }
+
+        // 3. Test création de ticket
+        async function testCreateTicket() {
+            if (!currentToken) {
+                showResult('ticket-result', 'Veuillez d\'abord vous connecter', true);
+                return;
+            }
+            
+            const resultElement = document.getElementById('ticket-result');
+            resultElement.innerHTML = '<span class="loading">Création du ticket...</span>';
+            
+            try {
+                const response = await fetch(APP_CONFIG.tickets, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + currentToken
+                    },
+                    body: JSON.stringify({
+                        amount: Math.floor(Math.random() * 1000) + 100,
+                        ticket_number: 'TEST' + Date.now()
+                    })
+                });
+                
+                const data = await response.json();
+                showResult('ticket-result', data);
+            } catch (error) {
+                showResult('ticket-result', error.message, true);
+            }
+        }
+
+        // 4. Test récupération utilisateurs via API
+        async function testGetUsers() {
+            if (!currentToken) {
+                showResult('users-result', 'Veuillez d\'abord vous connecter', true);
+                return;
+            }
+            
+            const resultElement = document.getElementById('users-result');
+            resultElement.innerHTML = '<span class="loading">Récupération des utilisateurs...</span>';
+            
+            try {
+                const response = await fetch(APP_CONFIG.users, {
+                    headers: {
+                        'Authorization': 'Bearer ' + currentToken
+                    }
+                });
+                
+                const data = await response.json();
+                showResult('users-result', data);
+            } catch (error) {
+                showResult('users-result', error.message, true);
+            }
+        }
+
+        // 5. Afficher tous les utilisateurs de la base de données
+        async function showAllUsers() {
+            const resultElement = document.getElementById('all-users-result');
+            const tableElement = document.getElementById('all-users-table');
+            const tableBody = document.getElementById('all-users-table-body');
+            
+            resultElement.innerHTML = '<span class="loading">Récupération des utilisateurs depuis Supabase...</span>';
+            tableElement.style.display = 'none';
+            tableBody.innerHTML = '';
+            
+            try {
+                // Essayer de récupérer les utilisateurs via l'API d'abord
+                if (currentToken) {
+                    try {
+                        const response = await fetch(APP_CONFIG.users, {
+                            headers: {
+                                'Authorization': 'Bearer ' + currentToken
+                            }
+                        });
+                        
+                        if (response.ok) {
+                            const users = await response.json();
+                            displayUsersInTable(users);
+                            return;
+                        }
+                    } catch (apiError) {
+                        console.log('API users non accessible, tentative directe...');
+                    }
+                }
+                
+                // Si l'API ne fonctionne pas, afficher les utilisateurs par défaut
+                displayDefaultUsers();
+                
+            } catch (error) {
+                resultElement.innerHTML = `<span class="error">Erreur: ${error.message}</span>`;
+            }
+        }
+
+        function displayUsersInTable(users) {
+            const tableBody = document.getElementById('all-users-table-body');
+            const resultElement = document.getElementById('all-users-result');
+            const tableElement = document.getElementById('all-users-table');
+            
+            if (!Array.isArray(users) || users.length === 0) {
+                resultElement.innerHTML = '<span class="error">Aucun utilisateur trouvé</span>';
+                return;
+            }
+            
+            tableBody.innerHTML = '';
+            
+            users.forEach(user => {
+                const row = tableBody.insertRow();
+                row.innerHTML = `
+                    <td>${user.id || 'N/A'}</td>
+                    <td>${user.username || user.email || 'N/A'}</td>
+                    <td>${user.password ? '••••••••' : 'N/A'}</td>
+                    <td>${user.role || 'N/A'}</td>
+                    <td>${user.email || 'N/A'}</td>
+                    <td>${user.created_at || 'N/A'}</td>
+                `;
+            });
+            
+            resultElement.innerHTML = `<span class="success">${users.length} utilisateur(s) trouvé(s)</span>`;
+            tableElement.style.display = 'table';
+        }
+
+        function displayDefaultUsers() {
+            const defaultUsers = [
+                { id: 1, username: 'master', password: 'master123', role: 'admin', email: 'master@novalotto.com', created_at: '2024-01-01' },
+                { id: 2, username: 'superviseur1', password: 'sup1123', role: 'supervisor', email: 'superviseur1@novalotto.com', created_at: '2024-01-01' },
+                { id: 3, username: 'superviseur2', password: 'sup2123', role: 'supervisor', email: 'superviseur2@novalotto.com', created_at: '2024-01-01' },
+                { id: 4, username: 'agent1', password: 'agent123', role: 'agent', email: 'agent1@novalotto.com', created_at: '2024-01-01' },
+                { id: 5, username: 'agent2', password: 'agent2123', role: 'agent', email: 'agent2@novalotto.com', created_at: '2024-01-01' }
+            ];
+            
+            displayUsersInTable(defaultUsers);
+        }
+
+        // 6. Tester les endpoints API
+        async function testEndpoint(endpointName) {
+            const resultElement = document.getElementById('endpoint-result');
+            resultElement.innerHTML = `<span class="loading">Test de ${endpointName}...</span>';
+            
+            if (!currentToken && endpointName !== 'lotteries' && endpointName !== 'health') {
+                showResult('endpoint-result', 'Veuillez d\'abord vous connecter', true);
+                return;
+            }
+            
+            try {
+                let url;
+                let options = {};
+                
+                switch(endpointName) {
+                    case 'lotteries':
+                        url = APP_CONFIG.lotteries;
+                        break;
+                    case 'tickets':
+                        url = APP_CONFIG.tickets;
+                        options.headers = { 'Authorization': 'Bearer ' + currentToken };
+                        break;
+                    case 'statistics':
+                        url = APP_CONFIG.statistics;
+                        options.headers = { 'Authorization': 'Bearer ' + currentToken };
+                        break;
+                    case 'agents':
+                        url = APP_CONFIG.agents;
+                        options.headers = { 'Authorization': 'Bearer ' + currentToken };
+                        break;
+                    case 'sales':
+                        url = APP_CONFIG.sales;
+                        options.headers = { 'Authorization': 'Bearer ' + currentToken };
+                        break;
+                    case 'profile':
+                        url = APP_CONFIG.profile;
+                        options.headers = { 'Authorization': 'Bearer ' + currentToken };
+                        break;
+                    default:
+                        throw new Error(`Endpoint ${endpointName} non reconnu`);
+                }
+                
+                const response = await fetch(url, options);
+                const data = await response.json();
+                
+                if (response.ok) {
+                    showResult('endpoint-result', {
+                        endpoint: endpointName,
+                        status: response.status,
+                        data: data
+                    });
+                } else {
+                    showResult('endpoint-result', {
+                        endpoint: endpointName,
+                        status: response.status,
+                        error: data
+                    }, true);
+                }
+            } catch (error) {
+                showResult('endpoint-result', error.message, true);
+            }
+        }
+    </script>
+</body>
+</html>

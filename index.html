@@ -186,20 +186,6 @@
             display: block;
         }
         
-        .success-message {
-            background-color: #d4edda;
-            color: #155724;
-            padding: 10px;
-            border-radius: 5px;
-            margin-bottom: 15px;
-            text-align: center;
-            display: none;
-        }
-        
-        .success-message.show {
-            display: block;
-        }
-        
         .login-footer {
             margin-top: 25px;
             text-align: center;
@@ -238,20 +224,14 @@
             background-color: var(--danger-color);
         }
         
-        .password-container {
-            position: relative;
-        }
-        
-        .toggle-password {
-            position: absolute;
-            right: 10px;
-            top: 50%;
-            transform: translateY(-50%);
-            background: none;
-            border: none;
-            color: #7f8c8d;
-            cursor: pointer;
-            font-size: 1rem;
+        @media (max-width: 480px) {
+            .login-container {
+                max-width: 100%;
+            }
+            
+            .login-body {
+                padding: 20px 15px;
+            }
         }
         
         .loading-spinner {
@@ -267,6 +247,43 @@
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
+        
+        .subdomain-info {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            margin-bottom: 15px;
+            padding: 10px;
+            background-color: #f8f9fa;
+            border-radius: 6px;
+            border-left: 4px solid var(--primary-color);
+        }
+        
+        .subdomain-label {
+            color: var(--secondary-color);
+            font-weight: 600;
+        }
+        
+        .subdomain-value {
+            color: var(--primary-color);
+            font-weight: bold;
+        }
+        
+        .password-container {
+            position: relative;
+        }
+        
+        .toggle-password {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            color: #7f8c8d;
+            cursor: pointer;
+            font-size: 1rem;
+        }
     </style>
 </head>
 <body>
@@ -281,26 +298,27 @@
         
         <div class="login-body">
             <div class="error-message" id="error-message"></div>
-            <div class="success-message" id="success-message"></div>
             
-            <div class="login-tabs">
-                <button class="login-tab active" data-tab="agent">Agent</button>
-                <button class="login-tab" data-tab="supervisor">Superviseur</button>
-                <button class="login-tab" data-tab="subsystem">Admin Sous-Système</button>
-                <button class="login-tab" data-tab="master">Master</button>
+            <!-- Détection automatique du type de connexion -->
+            <div class="subdomain-info" id="auto-detect-info" style="display: none;">
+                <i class="fas fa-info-circle"></i>
+                <div>
+                    <div class="subdomain-label">Mode détecté:</div>
+                    <div class="subdomain-value" id="detected-mode">Agent</div>
+                </div>
             </div>
             
             <!-- Agent Login -->
             <div class="tab-content active" id="agent-tab">
                 <div class="form-group">
                     <label class="form-label">Identifiant Agent</label>
-                    <input type="text" class="form-control" id="agent-username" placeholder="agent1" value="agent1">
+                    <input type="text" class="form-control" id="agent-username" placeholder="votre.identifiant" autocomplete="username">
                 </div>
                 
                 <div class="form-group">
                     <label class="form-label">Mot de passe</label>
                     <div class="password-container">
-                        <input type="password" class="form-control" id="agent-password" placeholder="••••••••" value="agent123">
+                        <input type="password" class="form-control" id="agent-password" placeholder="••••••••" autocomplete="current-password">
                         <button type="button" class="toggle-password" data-target="agent-password">
                             <i class="fas fa-eye"></i>
                         </button>
@@ -317,20 +335,20 @@
                 <div class="form-group">
                     <label class="form-label">Niveau de supervision</label>
                     <select class="form-select" id="supervisor-level">
-                        <option value="supervisor1">Niveau 1 - Validation</option>
-                        <option value="supervisor2">Niveau 2 - Gestion</option>
+                        <option value="1">Niveau 1 - Validation</option>
+                        <option value="2">Niveau 2 - Gestion</option>
                     </select>
                 </div>
                 
                 <div class="form-group">
                     <label class="form-label">Identifiant Superviseur</label>
-                    <input type="text" class="form-control" id="supervisor-username" placeholder="superviseur" value="supervisor1">
+                    <input type="text" class="form-control" id="supervisor-username" placeholder="superviseur">
                 </div>
                 
                 <div class="form-group">
                     <label class="form-label">Mot de passe</label>
                     <div class="password-container">
-                        <input type="password" class="form-control" id="supervisor-password" placeholder="••••••••" value="admin123">
+                        <input type="password" class="form-control" id="supervisor-password" placeholder="••••••••">
                         <button type="button" class="toggle-password" data-target="supervisor-password">
                             <i class="fas fa-eye"></i>
                         </button>
@@ -346,13 +364,13 @@
             <div class="tab-content" id="subsystem-tab">
                 <div class="form-group">
                     <label class="form-label">Identifiant Administrateur</label>
-                    <input type="text" class="form-control" id="subsystem-username" placeholder="admin" value="admin">
+                    <input type="text" class="form-control" id="subsystem-username" placeholder="admin">
                 </div>
                 
                 <div class="form-group">
                     <label class="form-label">Mot de passe</label>
                     <div class="password-container">
-                        <input type="password" class="form-control" id="subsystem-password" placeholder="••••••••" value="admin123">
+                        <input type="password" class="form-control" id="subsystem-password" placeholder="••••••••">
                         <button type="button" class="toggle-password" data-target="subsystem-password">
                             <i class="fas fa-eye"></i>
                         </button>
@@ -368,13 +386,13 @@
             <div class="tab-content" id="master-tab">
                 <div class="form-group">
                     <label class="form-label">Identifiant Master</label>
-                    <input type="text" class="form-control" id="master-username" placeholder="master" value="master">
+                    <input type="text" class="form-control" id="master-username" placeholder="master">
                 </div>
                 
                 <div class="form-group">
                     <label class="form-label">Mot de passe Master</label>
                     <div class="password-container">
-                        <input type="password" class="form-control" id="master-password" placeholder="••••••••" value="admin123">
+                        <input type="password" class="form-control" id="master-password" placeholder="••••••••">
                         <button type="button" class="toggle-password" data-target="master-password">
                             <i class="fas fa-eye"></i>
                         </button>
@@ -386,10 +404,17 @@
                 </button>
             </div>
             
+            <div class="login-tabs">
+                <button class="login-tab active" data-tab="agent">Agent</button>
+                <button class="login-tab" data-tab="supervisor">Superviseur</button>
+                <button class="login-tab" data-tab="subsystem">Admin Sous-Système</button>
+                <button class="login-tab" data-tab="master">Master</button>
+            </div>
+            
             <div class="login-footer">
                 <div class="system-status">
                     <div class="status-dot" id="system-status"></div>
-                    <span id="status-text">Vérification du système...</span>
+                    <span id="status-text">Système opérationnel</span>
                 </div>
                 <div class="login-help">
                     En cas de problème, contactez le support technique
@@ -399,12 +424,64 @@
     </div>
     
     <script>
+        // Configuration
+        const API_BASE_URL = 'https://lotatonova-fv0b.onrender.com';
+        // Détecter automatiquement le type de connexion
+        const detectConnectionType = () => {
+            const hostname = window.location.hostname;
+            const pathname = window.location.pathname;
+            
+            console.log('Hostname:', hostname);
+            console.log('Pathname:', pathname);
+            
+            // Si on accède directement à un fichier spécifique
+            if (pathname.includes('master-dashboard')) {
+                return 'master';
+            } else if (pathname.includes('subsystem-admin')) {
+                return 'subsystem';
+            } else if (pathname.includes('control-level')) {
+                return 'supervisor';
+            } else if (pathname.includes('index.html') || pathname === '/') {
+                return 'agent';
+            }
+            
+            // Détection par sous-domaine
+            if (hostname.includes('master.')) {
+                return 'master';
+            } else if (hostname.includes('admin.')) {
+                return 'subsystem';
+            } else if (hostname !== 'localhost' && hostname.split('.').length > 2) {
+                // Sous-domaine personnalisé = sous-système
+                return 'agent';
+            }
+            
+            // Par défaut
+            return 'agent';
+        };
+        
         // Initialisation
         document.addEventListener('DOMContentLoaded', function() {
             console.log('🔑 Page de connexion initialisée');
             
-            // Vérifier si déjà connecté
-            checkExistingSession();
+            // Détection automatique
+            const detectedType = detectConnectionType();
+            console.log('Type détecté:', detectedType);
+            
+            // Afficher l'info de détection si nécessaire
+            if (detectedType !== 'agent') {
+                const modeNames = {
+                    'master': 'Administrateur Master',
+                    'subsystem': 'Administrateur Sous-Système',
+                    'supervisor': 'Superviseur',
+                    'agent': 'Agent'
+                };
+                
+                document.getElementById('auto-detect-info').style.display = 'flex';
+                document.getElementById('detected-mode').textContent = modeNames[detectedType];
+                
+                // Sélectionner automatiquement le bon tab
+                switchTab(detectedType);
+            }
             
             // Configurer les événements
             setupEventListeners();
@@ -441,41 +518,28 @@
             });
             
             // Connexion Agent
-            document.getElementById('agent-login-btn').addEventListener('click', () => login('agent'));
+            document.getElementById('agent-login-btn').addEventListener('click', agentLogin);
             document.getElementById('agent-password').addEventListener('keypress', function(e) {
-                if (e.key === 'Enter') login('agent');
+                if (e.key === 'Enter') agentLogin();
             });
             
             // Connexion Superviseur
-            document.getElementById('supervisor-login-btn').addEventListener('click', () => login('supervisor'));
+            document.getElementById('supervisor-login-btn').addEventListener('click', supervisorLogin);
             document.getElementById('supervisor-password').addEventListener('keypress', function(e) {
-                if (e.key === 'Enter') login('supervisor');
+                if (e.key === 'Enter') supervisorLogin();
             });
             
             // Connexion Subsystem Admin
-            document.getElementById('subsystem-login-btn').addEventListener('click', () => login('subsystem'));
+            document.getElementById('subsystem-login-btn').addEventListener('click', subsystemAdminLogin);
             document.getElementById('subsystem-password').addEventListener('keypress', function(e) {
-                if (e.key === 'Enter') login('subsystem');
+                if (e.key === 'Enter') subsystemAdminLogin();
             });
             
             // Connexion Master
-            document.getElementById('master-login-btn').addEventListener('click', () => login('master'));
+            document.getElementById('master-login-btn').addEventListener('click', masterLogin);
             document.getElementById('master-password').addEventListener('keypress', function(e) {
-                if (e.key === 'Enter') login('master');
+                if (e.key === 'Enter') masterLogin();
             });
-        }
-        
-        // Vérifier la session existante
-        function checkExistingSession() {
-            if (window.apiClient && window.apiClient.isAuthenticated()) {
-                const user = window.apiClient.getUser();
-                showSuccess(`Déjà connecté en tant que ${user.full_name || user.username}`);
-                
-                // Rediriger après 2 secondes
-                setTimeout(() => {
-                    redirectBasedOnRole(user.role);
-                }, 2000);
-            }
         }
         
         // Changer de tab
@@ -492,9 +556,8 @@
             });
             document.getElementById(`${tabId}-tab`).classList.add('active');
             
-            // Réinitialiser les messages
+            // Réinitialiser les erreurs
             hideError();
-            hideSuccess();
         }
         
         // Afficher une erreur
@@ -502,23 +565,16 @@
             const errorDiv = document.getElementById('error-message');
             errorDiv.textContent = message;
             errorDiv.classList.add('show');
+            
+            // Cacher automatiquement après 5 secondes
+            setTimeout(() => {
+                hideError();
+            }, 5000);
         }
         
         // Cacher l'erreur
         function hideError() {
             document.getElementById('error-message').classList.remove('show');
-        }
-        
-        // Afficher un succès
-        function showSuccess(message) {
-            const successDiv = document.getElementById('success-message');
-            successDiv.textContent = message;
-            successDiv.classList.add('show');
-        }
-        
-        // Cacher le succès
-        function hideSuccess() {
-            document.getElementById('success-message').classList.remove('show');
         }
         
         // Vérifier le statut du système
@@ -530,7 +586,7 @@
                 const statusDot = document.getElementById('system-status');
                 const statusText = document.getElementById('status-text');
                 
-                if (data.success) {
+                if (data.status === 'ok') {
                     statusDot.className = 'status-dot';
                     statusText.textContent = 'Système opérationnel';
                 } else {
@@ -546,94 +602,191 @@
             }
         }
         
-        // Fonction de connexion générique
-        async function login(userType) {
-            let username, password, userTypeParam;
-            
-            switch(userType) {
-                case 'agent':
-                    username = document.getElementById('agent-username').value.trim();
-                    password = document.getElementById('agent-password').value;
-                    userTypeParam = 'agent';
-                    break;
-                case 'supervisor':
-                    username = document.getElementById('supervisor-username').value.trim();
-                    password = document.getElementById('supervisor-password').value;
-                    userTypeParam = document.getElementById('supervisor-level').value;
-                    break;
-                case 'subsystem':
-                    username = document.getElementById('subsystem-username').value.trim();
-                    password = document.getElementById('subsystem-password').value;
-                    userTypeParam = 'subsystem';
-                    break;
-                case 'master':
-                    username = document.getElementById('master-username').value.trim();
-                    password = document.getElementById('master-password').value;
-                    userTypeParam = 'master';
-                    break;
-            }
+        // Connexion Agent
+        async function agentLogin() {
+            const username = document.getElementById('agent-username').value.trim();
+            const password = document.getElementById('agent-password').value;
+            const loginBtn = document.getElementById('agent-login-btn');
             
             if (!username || !password) {
                 showError('Identifiant et mot de passe requis');
                 return;
             }
             
-            // Désactiver tous les boutons de connexion
-            const loginButtons = document.querySelectorAll('.login-btn');
-            loginButtons.forEach(btn => {
-                const originalHtml = btn.innerHTML;
-                btn.innerHTML = '<div class="loading-spinner"></div>';
-                btn.disabled = true;
-            });
+            // Désactiver le bouton et afficher le spinner
+            const originalHtml = loginBtn.innerHTML;
+            loginBtn.innerHTML = '<div class="loading-spinner"></div>';
+            loginBtn.disabled = true;
             
             try {
-                const response = await window.apiClient.login(userTypeParam, {
-                    username,
-                    password
+                const response = await fetch(APP_CONFIG.login, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
                 });
                 
-                if (response && response.success) {
-                    showSuccess(`Connexion réussie ! Redirection...`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    // Stocker le token et rediriger
+                    localStorage.setItem('novaLottoAgentToken', data.token);
+                    localStorage.setItem('novaLottoAgentUser', JSON.stringify(data.user));
                     
-                    // Rediriger selon le rôle
-                    setTimeout(() => {
-                        redirectBasedOnRole(userTypeParam);
-                    }, 1500);
-                    
+                    // Rediriger vers l'interface agent
+                    window.location.href = 'index.html';
                 } else {
-                    showError(response?.error || 'Identifiants incorrects');
+                    showError(data.error || 'Identifiants incorrects');
                 }
             } catch (error) {
-                console.error('Erreur connexion:', error);
+                console.error('Erreur connexion agent:', error);
                 showError('Erreur de connexion au serveur');
             } finally {
-                // Réactiver les boutons
-                loginButtons.forEach(btn => {
-                    btn.innerHTML = '<i class="fas fa-sign-in-alt"></i> Connexion';
-                    btn.disabled = false;
-                });
+                // Réactiver le bouton
+                loginBtn.innerHTML = originalHtml;
+                loginBtn.disabled = false;
             }
         }
         
-        // Rediriger selon le rôle
-        function redirectBasedOnRole(role) {
-            switch(role) {
-                case 'master':
-                    window.location.href = '/master-dashboard.html';
-                    break;
-                case 'subsystem':
-                    window.location.href = '/subsystem-admin.html';
-                    break;
-                case 'supervisor2':
-                    window.location.href = '/control-level2.html';
-                    break;
-                case 'supervisor1':
-                    window.location.href = '/control-level1.html';
-                    break;
-                case 'agent':
-                default:
-                    window.location.href = '/lotato.html';
-                    break;
+        // Connexion Superviseur
+        async function supervisorLogin() {
+            const username = document.getElementById('supervisor-username').value.trim();
+            const password = document.getElementById('supervisor-password').value;
+            const level = document.getElementById('supervisor-level').value;
+            const loginBtn = document.getElementById('supervisor-login-btn');
+            
+            if (!username || !password) {
+                showError('Identifiant et mot de passe requis');
+                return;
+            }
+            
+            // Désactiver le bouton et afficher le spinner
+            const originalHtml = loginBtn.innerHTML;
+            loginBtn.innerHTML = '<div class="loading-spinner"></div>';
+            loginBtn.disabled = true;
+            
+            try {
+                const response = await fetch(APP_CONFIG.login, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        username, 
+                        password,
+                        level: parseInt(level) 
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    // Stocker le token et rediriger selon le niveau
+                    if (level === '1') {
+                        localStorage.setItem('novaLottoSupervisorL1Token', data.token);
+                        localStorage.setItem('novaLottoSupervisorL1User', JSON.stringify(data.user));
+                        window.location.href = 'control-level1.html';
+                    } else {
+                        localStorage.setItem('novaLottoSupervisorToken', data.token);
+                        localStorage.setItem('novaLottoSupervisorUser', JSON.stringify(data.user));
+                        window.location.href = 'control-level2.html';
+                    }
+                } else {
+                    showError(data.error || 'Identifiants incorrects');
+                }
+            } catch (error) {
+                console.error('Erreur connexion superviseur:', error);
+                showError('Erreur de connexion au serveur');
+            } finally {
+                // Réactiver le bouton
+                loginBtn.innerHTML = originalHtml;
+                loginBtn.disabled = false;
+            }
+        }
+        
+        // Connexion Subsystem Admin
+        async function subsystemAdminLogin() {
+            const username = document.getElementById('subsystem-username').value.trim();
+            const password = document.getElementById('subsystem-password').value;
+            const loginBtn = document.getElementById('subsystem-login-btn');
+            
+            if (!username || !password) {
+                showError('Identifiant et mot de passe requis');
+                return;
+            }
+            
+            // Désactiver le bouton et afficher le spinner
+            const originalHtml = loginBtn.innerHTML;
+            loginBtn.innerHTML = '<div class="loading-spinner"></div>';
+            loginBtn.disabled = true;
+            
+            try {
+                const response = await fetch(APP_CONFIG.login, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    // Stocker le token et rediriger
+                    localStorage.setItem('novaLottoSubsystemToken', data.token);
+                    localStorage.setItem('novaLottoSubsystemUser', JSON.stringify(data.user));
+                    localStorage.setItem('novaLottoSubsystem', JSON.stringify(data.subsystem));
+                    
+                    window.location.href = 'subsystem-admin.html';
+                } else {
+                    showError(data.error || 'Identifiants incorrects');
+                }
+            } catch (error) {
+                console.error('Erreur connexion admin sous-système:', error);
+                showError('Erreur de connexion au serveur');
+            } finally {
+                // Réactiver le bouton
+                loginBtn.innerHTML = originalHtml;
+                loginBtn.disabled = false;
+            }
+        }
+        
+        // Connexion Master
+        async function masterLogin() {
+            const username = document.getElementById('master-username').value.trim();
+            const password = document.getElementById('master-password').value;
+            const loginBtn = document.getElementById('master-login-btn');
+            
+            if (!username || !password) {
+                showError('Identifiant et mot de passe requis');
+                return;
+            }
+            
+            // Désactiver le bouton et afficher le spinner
+            const originalHtml = loginBtn.innerHTML;
+            loginBtn.innerHTML = '<div class="loading-spinner"></div>';
+            loginBtn.disabled = true;
+            
+            try {
+                const response = await fetch(APP_CONFIG.login, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    // Stocker le token et rediriger
+                    localStorage.setItem('novaLottoMasterToken', data.token);
+                    localStorage.setItem('novaLottoMasterUser', JSON.stringify(data.user));
+                    
+                    window.location.href = 'master-dashboard.html';
+                } else {
+                    showError(data.error || 'Identifiants incorrects');
+                }
+            } catch (error) {
+                console.error('Erreur connexion master:', error);
+                showError('Erreur de connexion au serveur');
+            } finally {
+                // Réactiver le bouton
+                loginBtn.innerHTML = originalHtml;
+                loginBtn.disabled = false;
             }
         }
     </script>

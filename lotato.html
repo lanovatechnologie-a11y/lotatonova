@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -9,19 +10,18 @@
     <!-- Configuration API -->
     <script src="/config.js"></script>
     <style>
-        /* TOUT LE CSS RESTE EXACTEMENT COMME DANS VOTRE VERSION ORIGINALE */
         :root {
-            --primary-color: #2c3e50;
+            --primary-color: #ad00f1;
             --secondary-color: #3498db;
             --accent-color: #e74c3c;
-            --success-color: #27ae60;
-            --warning-color: #f39c12;
+            --success-color: #9000f0;
+            --warning-color: #1cf100;
             --light-color: #ecf0f1;
-            --dark-color: #2c3e50;
+            --dark-color: #0004ff;
             --miami-color: #e74c3c;
             --georgia-color: #3498db;
-            --newyork-color: #9b59b6;
-            --texas-color: #f39c12;
+            --newyork-color: #e99700;
+            --texas-color: #f30000;
             --tunisia-color: #1abc9c;
         }
         
@@ -748,7 +748,7 @@
         
         .status-disconnected {
             background-color: #f8d7da;
-            color: #721c24;
+            color: #e400b2;
         }
         
         .draw-info {
@@ -832,7 +832,7 @@
         }
         
         .save-ticket:hover {
-            background-color: #2980b9;
+            background-color: #2300a0;
         }
         
         .print-ticket-btn {
@@ -1592,11 +1592,11 @@
             </div>
             <div class="form-group">
                 <label for="admin-username">Identifiant</label>
-                <input type="text" id="admin-username" placeholder="agent1" value="agent1">
+                <input type="text" id="admin-username" placeholder="admin">
             </div>
             <div class="form-group">
                 <label for="admin-password">Mot de passe</label>
-                <input type="password" id="admin-password" placeholder="••••••••" value="agent123">
+                <input type="password" id="admin-password" placeholder="••••••••">
             </div>
             <button class="submit-bet" id="login-btn">Konekte</button>
         </div>
@@ -1838,7 +1838,7 @@
             <button class="back-button" id="back-button">
                 <i class="fas fa-arrow-left"></i>
             </button>
-            <h2 class="betting-title" id="betting-title">Mete Parye Ou</h2>
+            <h2 class="betting-title" id="betting-title">Mete Paryaj ou</h2>
         </div>
         
         <!-- Navigation par catégories (optionnelle, affichée seulement pour l'édition) -->
@@ -1915,7 +1915,7 @@
         
         <div class="active-bets" id="active-bets">
             <div class="ticket-actions">
-                <button class="ticket-action-btn save-print-btn" id="save-print-ticket">Sove & Enprime Fiche</button>
+                <button class="ticket-action-btn save-print-btn" id="save-print-ticket">anrejistre</button>
             </div>
             <h3>Parye Aktif</h3>
             <div id="bets-list">
@@ -2040,62 +2040,10 @@
             <!-- L'historique sera chargé dynamiquement -->
         </div>
     </div>
-
     <script>
-        // ==============================================
-        // CORRECTIONS UNIQUEMENT POUR LA COMMUNICATION API
-        // ==============================================
-        
-        // Configuration API - CORRIGÉE pour utiliser le backend
-        const API_BASE_URL = window.location.origin;
-        
-        // Fonction pour vérifier l'authentification
-        async function checkAuth() {
-            if (!window.apiClient || !window.apiClient.isAuthenticated()) {
-                showNotification('Veuillez vous connecter', 'warning');
-                setTimeout(() => {
-                    window.location.href = '/index.html';
-                }, 2000);
-                return false;
-            }
-            
-            return true;
-        }
-        
-        // Fonction pour créer un ticket via API
-        async function createTicketAPI(ticketData) {
-            try {
-                const response = await window.apiClient.createTicket({
-                    ticket_number: ticketData.ticket_number,
-                    amount: ticketData.amount
-                    // Note: Le backend attend ticket_number et amount
-                    // Les autres champs (draw, time) seront gérés côté serveur
-                });
-                
-                return response;
-            } catch (error) {
-                console.error('Erreur création ticket API:', error);
-                return { success: false, error: error.message };
-            }
-        }
-        
-        // Fonction pour obtenir les tickets en attente
-        async function getPendingTicketsAPI() {
-            try {
-                const response = await window.apiClient.getPendingTickets();
-                return response;
-            } catch (error) {
-                console.error('Erreur récupération tickets:', error);
-                return { success: false, error: error.message };
-            }
-        }
-        
-        // ==============================================
-        // VOTRE CODE ORIGINAL SUIVANT - MODIFICATIONS MINIMALES
-        // ==============================================
-        
         // Configuration de base avec APP_CONFIG
-        const APP_CONFIG = window.APP_CONFIG || {};
+        const API_BASE_URL = 'https://lotatonova-fv0b.onrender.com';
+
         const FIVE_MINUTES = 5 * 60 * 1000; // 5 minutes en millisecondes
         
         // Données des tirages
@@ -2322,7 +2270,7 @@
                 document.querySelector('.container').style.display = 'block';
             });
             
-            // Connexion - MODIFIÉ pour utiliser l'API
+            // Connexion
             document.getElementById('login-btn').addEventListener('click', function() {
                 console.log("Bouton login cliqué");
                 adminLogin();
@@ -2399,178 +2347,6 @@
             
             console.log("Initialisation terminée");
         });
-        
-        // ==============================================
-        // FONCTIONS MODIFIÉES POUR L'API
-        // ==============================================
-        
-        // Connexion administrateur - CORRIGÉ pour utiliser l'API
-        async function adminLogin() {
-            console.log("Tentative de connexion");
-            const username = document.getElementById('admin-username').value.trim();
-            const password = document.getElementById('admin-password').value.trim();
-            
-            if (!username || !password) {
-                showLoginError("Tanpri antre identifian ak modpas la");
-                return;
-            }
-            
-            try {
-                // Utiliser l'API client pour se connecter
-                const response = await window.apiClient.login('agent', {
-                    username: username,
-                    password: password
-                });
-                
-                if (response && response.success) {
-                    currentAdmin = response.user;
-                    
-                    // Stocker dans localStorage pour compatibilité
-                    localStorage.setItem('novaLottoAdmin', JSON.stringify(currentAdmin));
-                    
-                    showMainApp();
-                    showNotification("Koneksyon reyisi!", "success");
-                } else {
-                    showLoginError(response?.error || "Identifian oswa modpas la pa kòrèk");
-                }
-            } catch (error) {
-                console.error('Erreur connexion:', error);
-                showLoginError("Erreur de connexion au serveur");
-            }
-        }
-        
-        // Vérifier la session existante - CORRIGÉ pour utiliser l'API
-        function checkExistingSession() {
-            console.log("Vérification session existante");
-            
-            // Vérifier d'abord l'API client
-            if (window.apiClient && window.apiClient.isAuthenticated()) {
-                currentAdmin = window.apiClient.getUser();
-                showMainApp();
-                return;
-            }
-            
-            // Fallback à l'ancien système
-            const savedAdmin = localStorage.getItem('novaLottoAdmin');
-            if (savedAdmin) {
-                try {
-                    currentAdmin = JSON.parse(savedAdmin);
-                    showMainApp();
-                } catch (e) {
-                    console.error("Erreur parsing admin:", e);
-                    localStorage.removeItem('novaLottoAdmin');
-                }
-            }
-        }
-        
-        // Vérifier la connexion avant sauvegarde et impression - AMÉLIORÉ
-        async function checkConnectionBeforeSavePrint() {
-            console.log("Vérification connexion avant sauvegarde/impression");
-            const connectionCheck = document.getElementById('connection-check');
-            connectionCheck.style.display = 'flex';
-            
-            // Vérifier Internet
-            const internetStatus = document.getElementById('internet-status');
-            const internetText = document.getElementById('internet-text');
-            
-            if (navigator.onLine) {
-                internetStatus.className = 'status-indicator connected';
-                internetText.textContent = 'Entènèt: Konekte';
-            } else {
-                internetStatus.className = 'status-indicator disconnected';
-                internetText.textContent = 'Entènèt: Pa konekte';
-                document.getElementById('connection-message').textContent = 'Pa gen koneksyon entènèt. Fiche a pa kapab synchronize.';
-                return;
-            }
-            
-            // Vérifier le serveur
-            try {
-                const response = await fetch(APP_CONFIG.health);
-                if (response.ok) {
-                    document.getElementById('server-status').className = 'status-indicator connected';
-                    document.getElementById('server-text').textContent = 'Sèvè: Konekte';
-                    
-                    // Pour la démo, on simule Supabase
-                    setTimeout(() => {
-                        connectionCheck.style.display = 'none';
-                        saveAndPrintTicket();
-                    }, 1500);
-                } else {
-                    throw new Error('Serveur non disponible');
-                }
-            } catch (error) {
-                document.getElementById('server-status').className = 'status-indicator disconnected';
-                document.getElementById('server-text').textContent = 'Sèvè: Pa konekte';
-                document.getElementById('connection-message').textContent = 'Serveur non disponible. Réessayez plus tard.';
-            }
-        }
-        
-        // Sauvegarder la fiche - AJOUT de l'appel API
-        async function saveTicket() {
-            console.log("Sauvegarder fiche");
-            if (activeBets.length === 0) {
-                showNotification("Pa gen okenn parye pou sove nan fiche a", "warning");
-                return;
-            }
-            
-            const ticket = {
-                id: Date.now().toString(),
-                number: ticketNumber,
-                date: new Date().toISOString(),
-                draw: currentDraw,
-                drawTime: currentDrawTime,
-                bets: [...activeBets],
-                total: activeBets.reduce((sum, bet) => sum + bet.amount, 0),
-                agentName: currentAdmin ? currentAdmin.full_name || currentAdmin.username : 'Agent',
-                agentId: currentAdmin ? currentAdmin.id : 1
-            };
-            
-            // Sauvegarder localement
-            savedTickets.push(ticket);
-            localStorage.setItem('novaLottoTickets', JSON.stringify(savedTickets));
-            localStorage.setItem('novaLottoTicketNumber', (ticketNumber + 1).toString());
-            
-            // Essayer de synchroniser avec l'API si connecté
-            if (navigator.onLine && window.apiClient && window.apiClient.isAuthenticated()) {
-                try {
-                    // Créer un ticket dans l'API
-                    const apiResponse = await createTicketAPI({
-                        ticket_number: `TKT${String(ticketNumber).padStart(6, '0')}`,
-                        amount: ticket.total,
-                        draw: ticket.draw,
-                        time: ticket.drawTime
-                    });
-                    
-                    if (apiResponse && apiResponse.success) {
-                        showNotification("Fiche sove ak synchronize avèk siksè!", "success");
-                    } else {
-                        // Mettre en attente de synchronisation
-                        pendingSyncTickets.push(ticket);
-                        localStorage.setItem('novaLottoPendingSync', JSON.stringify(pendingSyncTickets));
-                        showNotification("Fiche sove lokalman. Ap tann pou synchronize...", "success");
-                    }
-                } catch (error) {
-                    // Mettre en attente de synchronisation
-                    pendingSyncTickets.push(ticket);
-                    localStorage.setItem('novaLottoPendingSync', JSON.stringify(pendingSyncTickets));
-                    showNotification("Fiche sove lokalman. Ap tann pou synchronize...", "success");
-                }
-            } else {
-                // Mettre en attente de synchronisation
-                pendingSyncTickets.push(ticket);
-                localStorage.setItem('novaLottoPendingSync', JSON.stringify(pendingSyncTickets));
-                showNotification("Fiche sove lokalman. Ap tann pou synchronize...", "success");
-            }
-            
-            ticketNumber++;
-            
-            activeBets = [];
-            updateBetsList();
-        }
-        
-        // ==============================================
-        // TOUTES LES AUTRES FONCTIONS RESTENT IDENTIQUES
-        // ==============================================
         
         // Initialiser le panneau multi-tirages
         function initMultiDrawPanel() {
@@ -2846,6 +2622,59 @@
             
             // Réinitialiser le formulaire
             document.getElementById('multi-draw-amount').value = '1';
+        }
+        
+        // Vérifier la session existante
+        function checkExistingSession() {
+            console.log("Vérification session existante");
+            const savedAdmin = localStorage.getItem('novaLottoAdmin');
+            if (savedAdmin) {
+                try {
+                    currentAdmin = JSON.parse(savedAdmin);
+                    showMainApp();
+                } catch (e) {
+                    console.error("Erreur parsing admin:", e);
+                    localStorage.removeItem('novaLottoAdmin');
+                }
+            }
+        }
+        
+        // Connexion administrateur
+        function adminLogin() {
+            console.log("Tentative de connexion");
+            const username = document.getElementById('admin-username').value.trim();
+            const password = document.getElementById('admin-password').value.trim();
+            
+            if (!username || !password) {
+                showLoginError("Tanpri antre identifian ak modpas la");
+                return;
+            }
+            
+            // Pour la démo, accepter admin/admin123
+            const validAccounts = [
+                { username: 'admino', password: 'admin123o', name: 'Administrateur' },
+                { username: 'agent1o', password: 'agent123o', name: 'Agent 1' },
+                { username: 'agent2o', password: 'agent456o', name: 'Agent 2' }
+            ];
+            
+            const account = validAccounts.find(acc => 
+                acc.username === username && acc.password === password
+            );
+            
+            if (account) {
+                currentAdmin = {
+                    id: 1,
+                    username: account.username,
+                    name: account.name,
+                    role: 'agent'
+                };
+                
+                localStorage.setItem('novaLottoAdmin', JSON.stringify(currentAdmin));
+                showMainApp();
+                showNotification("Koneksyon reyisi!", "success");
+            } else {
+                showLoginError("Identifian oswa modpas la pa kòrèk");
+            }
         }
         
         // Afficher l'application principale
@@ -4040,7 +3869,7 @@
             ).map(bet => bet.number);
             
             if (borletteBalls.length < 2) {
-                showNotification("Fò gen omwen 2 boule borlette pou fè Lotto 4 otomatik", "warning");
+                showNotification("Fò gen omwen 2 boul pou fè Lotto 4 otomatik", "warning");
                 return;
             }
             
@@ -4161,6 +3990,33 @@
             }, 300);
         }
         
+        // Vérifier la connexion avant sauvegarde et impression
+        async function checkConnectionBeforeSavePrint() {
+            console.log("Vérification connexion avant sauvegarde/impression");
+            const connectionCheck = document.getElementById('connection-check');
+            connectionCheck.style.display = 'flex';
+            
+            // Vérifier Internet
+            const internetStatus = document.getElementById('internet-status');
+            const internetText = document.getElementById('internet-text');
+            
+            if (navigator.onLine) {
+                internetStatus.className = 'status-indicator connected';
+                internetText.textContent = 'Entènèt: Konekte';
+            } else {
+                internetStatus.className = 'status-indicator disconnected';
+                internetText.textContent = 'Entènèt: Pa konekte';
+                document.getElementById('connection-message').textContent = 'Pa gen koneksyon entènèt. Fiche a pa kapab synchronize.';
+                return;
+            }
+            
+            // Pour la démo, on simule que tout est ok
+            setTimeout(() => {
+                connectionCheck.style.display = 'none';
+                saveAndPrintTicket();
+            }, 1500);
+        }
+        
         // Vérifier la connexion avant impression
         async function checkConnectionBeforePrint() {
             console.log("Vérification connexion avant impression");
@@ -4205,6 +4061,43 @@
             setTimeout(() => {
                 printTicket();
             }, 100);
+        }
+        
+        // Sauvegarder la fiche
+        async function saveTicket() {
+            console.log("Sauvegarder fiche");
+            if (activeBets.length === 0) {
+                showNotification("Pa gen okenn parye pou sove nan fiche a", "warning");
+                return;
+            }
+            
+            const ticket = {
+                id: Date.now().toString(),
+                number: ticketNumber,
+                date: new Date().toISOString(),
+                draw: currentDraw,
+                drawTime: currentDrawTime,
+                bets: [...activeBets],
+                total: activeBets.reduce((sum, bet) => sum + bet.amount, 0),
+                agentName: currentAdmin ? currentAdmin.name : 'Agent',
+                agentId: currentAdmin ? currentAdmin.id : 1
+            };
+            
+            // Sauvegarder localement
+            savedTickets.push(ticket);
+            localStorage.setItem('novaLottoTickets', JSON.stringify(savedTickets));
+            localStorage.setItem('novaLottoTicketNumber', (ticketNumber + 1).toString());
+            
+            // Pour la démo, on simule la synchronisation
+            pendingSyncTickets.push(ticket);
+            localStorage.setItem('novaLottoPendingSync', JSON.stringify(pendingSyncTickets));
+            
+            showNotification("Fiche sove lokalman. Ap tann pou synchronize...", "success");
+            
+            ticketNumber++;
+            
+            activeBets = [];
+            updateBetsList();
         }
         
         // Imprimer la fiche
@@ -4660,7 +4553,7 @@
                 date1: new Date().toISOString().split('T')[0],
                 date2: new Date().toISOString().split('T')[0],
                 printDate: new Date().toLocaleString(),
-                seller: currentAdmin ? currentAdmin.full_name || currentAdmin.username : "Vendeur Inconnu",
+                seller: currentAdmin ? currentAdmin.name : "Vendeur Inconnu",
                 branch: "Central",
                 drawType: "tout",
                 ticketsSold: savedTickets.length,

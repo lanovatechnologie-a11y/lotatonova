@@ -56,8 +56,8 @@ app.post("/api/master-login", async (req, res) => {
   const { data, error } = await supabase
     .from("masters")
     .select("*")
-    .eq("username", username)
-    .eq("password", password)
+    .eq("nom_d'utilisateur", username)
+    .eq("mot_de_passe", password)
     .single();
 
   if (error || !data)

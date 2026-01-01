@@ -74,8 +74,8 @@ app.post("/api/auth/login", async (req, res) => {
         const tablesConfig = {
             'masters': {
                 tableName: 'masters',
-                usernameColumn: 'username',  // ✅ Colonne réelle
-                passwordColumn: 'password'    // ✅ Colonne réelle
+                usernameColumn: 'nom_d\'utilisateur',  // ✅ Avec apostrophe!
+                passwordColumn: 'mot_de_passe'         // ✅ Avec espace!
             },
             'subsystem_admins': {
                 tableName: 'subsystem_admins',

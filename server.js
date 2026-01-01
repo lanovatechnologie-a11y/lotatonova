@@ -70,6 +70,35 @@ app.post("/api/auth/login", async (req, res) => {
             });
         }
 
+        // Configuration des tables et colonnes selon la structure réelle
+        const tablesConfig = {
+            'masters': {
+                tableName: 'masters',
+                usernameColumn: 'username',  // ✅ Colonne réelle
+                passwordColumn: 'password'    // ✅ Colonne réelle
+            },
+            'subsystem_admins': {
+                tableName: 'subsystem_admins',
+                usernameColumn: 'username',
+                passwordColumn: 'password'
+            },
+            'supervisors_level2': {
+                tableName: 'supervisors_level2',
+                usernameColumn: 'username',
+                passwordColumn: 'password'
+            },
+            'supervisors_level1': {
+                tableName: 'supervisors_level1',
+                usernameColumn: 'username',
+                passwordColumn: 'password'
+            },
+            'agents': {
+                tableName: 'agents',
+                usernameColumn: 'username',
+                passwordColumn: 'password'
+            }
+        };
+
         // Tables à vérifier selon le rôle
         let tablesToCheck = [];
         
@@ -79,54 +108,49 @@ app.post("/api/auth/login", async (req, res) => {
             tablesToCheck = ['subsystem_admins'];
         } else {
             // Auto-détection : vérifier toutes les tables
-            tablesToCheck = [
-                'masters',
-                'subsystem_admins', 
-                'supervisors_level2',
-                'supervisors_level1',
-                'agents'
-            ];
+            tablesToCheck = Object.keys(tablesConfig);
         }
 
         // Essayer chaque table
-        for (const table of tablesToCheck) {
-            console.log(`   Vérification dans ${table}...`);
+        for (const tableKey of tablesToCheck) {
+            const config = tablesConfig[tableKey];
+            console.log(`   Vérification dans ${config.tableName}...`);
             
             try {
-                // Chercher l'utilisateur
+                // Chercher l'utilisateur avec la bonne colonne
                 const { data, error } = await supabase
-                    .from(table)
+                    .from(config.tableName)
                     .select("*")
-                    .eq("nom_d'utilisateur", username)
+                    .eq(config.usernameColumn, username)
                     .single();
 
                 if (error) {
-                    console.log(`   ℹ️ Non trouvé dans ${table}`);
+                    console.log(`   ℹ️ Non trouvé dans ${config.tableName}:`, error.message);
                     continue;
                 }
 
                 if (!data) {
+                    console.log(`   ℹ️ Aucune donnée dans ${config.tableName}`);
                     continue;
                 }
 
-                console.log(`   ✓ Utilisateur trouvé dans ${table}`);
+                console.log(`   ✓ Utilisateur trouvé dans ${config.tableName}`);
 
-                // Vérifier le mot de passe
-                // Si vous utilisez bcrypt, décommentez cette section :
+                // Vérifier le mot de passe (comparaison simple)
+                // Pour bcrypt, décommentez cette section et installez bcryptjs
                 /*
-                const bcrypt = await import('bcryptjs');
-                const match = await bcrypt.compare(password, data.mot_de_passe);
-                if (!match) {
-                    console.log(`   ✗ Mot de passe incorrect`);
-                    return res.status(401).json({
-                        success: false,
-                        error: "Identifiants incorrects"
-                    });
-                }
-                */
-
-                // Comparaison simple (TEMPORAIRE - utilisez bcrypt en production)
-                if (data.mot_de_passe !== password) {
+                if (data.password_hash) {
+                    const bcrypt = await import('bcryptjs');
+                    const match = await bcrypt.compare(password, data.password_hash);
+                    if (!match) {
+                        console.log(`   ✗ Mot de passe incorrect`);
+                        return res.status(401).json({
+                            success: false,
+                            error: "Identifiants incorrects"
+                        });
+                    }
+                } else */ 
+                if (data[config.passwordColumn] !== password) {
                     console.log(`   ✗ Mot de passe incorrect`);
                     return res.status(401).json({
                         success: false,
@@ -138,12 +162,12 @@ app.post("/api/auth/login", async (req, res) => {
 
                 // Mettre à jour la dernière connexion
                 await supabase
-                    .from(table)
+                    .from(config.tableName)
                     .update({ last_login: new Date().toISOString() })
                     .eq("id", data.id);
 
                 // Générer un token simple (utilisez JWT en production)
-                const token = Buffer.from(`${data.id}:${table}:${Date.now()}`).toString('base64');
+                const token = Buffer.from(`${data.id}:${tableKey}:${Date.now()}`).toString('base64');
 
                 // Réponse selon le type d'utilisateur
                 const response = {
@@ -151,14 +175,14 @@ app.post("/api/auth/login", async (req, res) => {
                     token: token,
                     user: {
                         id: data.id,
-                        username: data["nom_d'utilisateur"],
-                        role: table,
-                        name: data.nom || data["nom_d'utilisateur"]
+                        username: data[config.usernameColumn],
+                        role: tableKey,
+                        name: data.full_name || data[config.usernameColumn]
                     }
                 };
 
                 // Ajouter les infos spécifiques selon le rôle
-                if (table === 'subsystem_admins' && data.subsystem_id) {
+                if (tableKey === 'subsystem_admins' && data.subsystem_id) {
                     // Récupérer les infos du sous-système
                     const { data: subsystem } = await supabase
                         .from('subsystems')
@@ -175,7 +199,7 @@ app.post("/api/auth/login", async (req, res) => {
                 return res.json(response);
 
             } catch (tableError) {
-                console.error(`   ✗ Erreur dans ${table}:`, tableError.message);
+                console.error(`   ✗ Erreur dans ${config.tableName}:`, tableError.message);
                 continue;
             }
         }
@@ -201,8 +225,8 @@ app.get("/api/test-supabase", async (req, res) => {
     try {
         const { data, error } = await supabase
             .from('masters')
-            .select('nom_d\'utilisateur')
-            .limit(1);
+            .select('username, created_at')
+            .limit(5);
 
         if (error) {
             return res.status(500).json({
@@ -215,7 +239,9 @@ app.get("/api/test-supabase", async (req, res) => {
         res.json({
             success: true,
             message: "Connexion Supabase OK",
-            hasData: data && data.length > 0
+            hasData: data && data.length > 0,
+            count: data ? data.length : 0,
+            users: data ? data.map(u => u.username) : []
         });
     } catch (error) {
         res.status(500).json({

@@ -1,90 +1,110 @@
+// ================== IMPORTS ==================
 import express from "express";
+import path from "path";
 import cors from "cors";
 import bodyParser from "body-parser";
 import { MongoClient } from "mongodb";
+import { fileURLToPath } from "url";
 
+// ================== FIX __dirname ==================
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// ================== APP ==================
 const app = express();
 app.use(cors());
 app.use(bodyParser.json());
 
-// ===== MONGO DB CONFIG =====
+// ================== ENV ==================
 const MONGO_URL = process.env.MONGO_URL;
+const DB_NAME = "nova_lotto";
 
 if (!MONGO_URL) {
-  console.log("❌ MONGO_URL manquant !");
+  console.error("❌ MONGO_URL manquant !");
   process.exit(1);
 }
 
-const client = new MongoClient(MONGO_URL);
+console.log("🔍 Vérification ENV:");
+console.log("MONGO_URL :", MONGO_URL ? "OK" : "MISSING");
+console.log("================================");
+
+// ================== MONGO CLIENT ==================
 let db;
 
-// ===== CONNECT DB =====
 async function connectDB() {
   try {
+    const client = new MongoClient(MONGO_URL, {
+      serverApi: {
+        version: "1",
+        strict: true,
+        deprecationErrors: true,
+      },
+    });
+
     await client.connect();
-    db = client.db("nova"); // database name
-    console.log("✅ MongoDB connecté avec succès !");
+    db = client.db(DB_NAME);
+
+    console.log("✅ MongoDB CONNECTÉ avec succès !");
   } catch (err) {
     console.error("❌ ERREUR MongoDB :", err);
-    process.exit(1);
   }
 }
 
-connectDB();
+await connectDB();
 
-// ===== HEALTH CHECK =====
+// ================== STATIC FRONTEND ==================
+app.use(express.static(__dirname));
+
+// ================== HEALTH CHECK ==================
 app.get("/status", (req, res) => {
   res.json({
     status: "OK",
-    database: db ? "Connected" : "Disconnected",
-    time: new Date()
+    mongo: db ? "Connected" : "Disconnected",
+    time: new Date(),
   });
 });
 
-// ===== MASTER LOGIN =====
+// ================== MASTER LOGIN ==================
 app.post("/api/master-login", async (req, res) => {
-  const { username, password } = req.body;
+  try {
+    const { username, password } = req.body;
 
-  if (!username || !password)
-    return res.status(400).json({ ok: false, message: "Champs manquants" });
+    if (!username || !password)
+      return res.status(400).json({
+        ok: false,
+        message: "Champs manquants",
+      });
 
-  const user = await db.collection("masters").findOne({
-    username,
-    password
-  });
+    const user = await db.collection("masters").findOne({
+      username,
+      password,
+    });
 
-  if (!user)
-    return res.status(401).json({ ok: false, message: "Identifiants invalides" });
+    if (!user)
+      return res.status(401).json({
+        ok: false,
+        message: "Identifiants incorrects",
+      });
 
-  res.json({
-    ok: true,
-    message: "Connexion réussie",
-    user
-  });
+    res.json({
+      ok: true,
+      message: "Connexion réussie",
+      user,
+    });
+  } catch (e) {
+    console.error("LOGIN ERROR:", e);
+    res.status(500).json({ ok: false, message: "Erreur serveur" });
+  }
 });
 
-// ===== SUBSYSTEM ADMIN LOGIN =====
-app.post("/api/subsystem-admin-login", async (req, res) => {
-  const { username, password } = req.body;
-
-  if (!username || !password)
-    return res.status(400).json({ ok: false, message: "Champs manquants" });
-
-  const user = await db.collection("subsystem_admins").findOne({
-    username,
-    password
-  });
-
-  if (!user)
-    return res.status(401).json({ ok: false, message: "Identifiants invalides" });
-
-  res.json({
-    ok: true,
-    message: "Connexion réussie",
-    user
-  });
+// ================== DEFAULT ROUTE ==================
+app.get("*", (req, res) => {
+  res.sendFile(path.join(__dirname, "index.html"));
 });
 
-// ===== START SERVER =====
+// ================== START SERVER ==================
 const PORT = process.env.PORT || 10000;
-app.listen(PORT, () => console.log("🚀 Backend Nova Lotto sur port", PORT));
+
+app.listen(PORT, "0.0.0.0", () => {
+  console.log("🚀 Backend Nova Lotto sur port", PORT);
+});

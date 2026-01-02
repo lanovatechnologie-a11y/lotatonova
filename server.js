@@ -1,11 +1,7 @@
-import express from 'express';
-import mongoose from 'mongoose';
-import cors from 'cors';
-import { fileURLToPath } from 'url';
-import { dirname, join } from 'path';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+const express = require('express');
+const mongoose = require('mongoose');
+const cors = require('cors');
+const path = require('path');
 
 const app = express();
 
@@ -15,10 +11,10 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // Servir les fichiers statiques
-app.use(express.static(join(__dirname, '')));
+app.use(express.static(path.join(__dirname, '')));
 
 // Connexion MongoDB
-mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/novalotto', {
+mongoose.connect(process.env.MONGODB_URI, {
   useNewUrlParser: true,
   useUnifiedTopology: true,
 });
@@ -60,7 +56,7 @@ app.post('/api/auth/login', async (req, res) => {
   try {
     const { username, password, level } = req.body;
     
-    console.log('Tentative connexion:', { username });
+    console.log('Tentative connexion:', username);
     
     const user = await User.findOne({ 
       username: username,
@@ -74,13 +70,7 @@ app.post('/api/auth/login', async (req, res) => {
       });
     }
     
-    if (level && user.role === 'supervisor' && user.level !== parseInt(level)) {
-      return res.status(403).json({
-        success: false,
-        error: 'Niveau de supervision incorrect'
-      });
-    }
-    
+    // SUCCÈS
     const token = `nova_${Date.now()}_${user._id}`;
     
     res.json({
@@ -92,11 +82,7 @@ app.post('/api/auth/login', async (req, res) => {
         name: user.name,
         role: user.role,
         level: user.level || null
-      },
-      subsystem: user.subsystem ? {
-        id: user.subsystem,
-        name: user.subsystemName
-      } : null
+      }
     });
     
   } catch (error) {
@@ -151,17 +137,66 @@ app.get('/api/users', async (req, res) => {
   }
 });
 
-// 5. Route racine
+// 5. Créer des utilisateurs par défaut (pour initialiser)
+app.post('/api/auth/create-default-users', async (req, res) => {
+  try {
+    const defaultUsers = [
+      {
+        username: "maitre01",
+        password: "master123",
+        name: "Maître Principal",
+        role: "master"
+      },
+      {
+        username: "admin",
+        password: "admin123",
+        name: "Administrateur",
+        role: "master"
+      },
+      {
+        username: "agent1",
+        password: "agent123",
+        name: "Agent Test",
+        role: "agent"
+      }
+    ];
+    
+    let createdCount = 0;
+    
+    for (const userData of defaultUsers) {
+      const existing = await User.findOne({ username: userData.username });
+      if (!existing) {
+        const newUser = new User({
+          ...userData,
+          dateCreation: new Date()
+        });
+        await newUser.save();
+        createdCount++;
+      }
+    }
+    
+    res.json({
+      success: true,
+      message: `${createdCount} utilisateurs créés`,
+      total: await User.countDocuments()
+    });
+    
+  } catch (error) {
+    res.status(500).json({ success: false, error: 'Erreur serveur' });
+  }
+});
+
+// Routes HTML
 app.get('/', (req, res) => {
-  res.sendFile(join(__dirname, 'index.html'));
+  res.sendFile(path.join(__dirname, 'index.html'));
 });
 
 app.get('/lotato.html', (req, res) => {
-  res.sendFile(join(__dirname, 'lotato.html'));
+  res.sendFile(path.join(__dirname, 'lotato.html'));
 });
 
 app.get('/lotato2.html', (req, res) => {
-  res.sendFile(join(__dirname, 'lotato2.html'));
+  res.sendFile(path.join(__dirname, 'lotato2.html'));
 });
 
 // Démarrer serveur

@@ -13,7 +13,7 @@ app.use(cors());
 app.use(express.json());
 
 // ------------------ DATABASE ------------------
-const mongoUri = process.env.URL_MONGO;
+const mongoUri = process.env.MONGO_URL;
 
 mongoose.connect(mongoUri)
   .then(() => console.log("✅ MongoDB CONNECTÉ avec succès !"))

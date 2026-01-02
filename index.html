@@ -4,16 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Nova Lotto - Connexion</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        :root {
-            --primary-color: #3498db;
-            --secondary-color: #2c3e50;
-            --success-color: #27ae60;
-            --warning-color: #f39c12;
-            --danger-color: #e74c3c;
-        }
-        
         * {
             margin: 0;
             padding: 0;
@@ -22,7 +13,8 @@
         }
         
         body {
-            background: linear-gradient(135deg, #2c3e50, #1a2530);
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            color: #f8fafc;
             min-height: 100vh;
             display: flex;
             justify-content: center;
@@ -30,460 +22,350 @@
             padding: 20px;
         }
         
-        .login-container {
+        .container {
+            background: rgba(30, 41, 59, 0.9);
+            border-radius: 20px;
+            padding: 40px;
             width: 100%;
-            max-width: 400px;
-            background: white;
-            border-radius: 10px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-            overflow: hidden;
+            max-width: 500px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.1);
         }
         
-        .login-header {
-            background: linear-gradient(135deg, var(--primary-color), #2980b9);
-            color: white;
-            padding: 30px 20px;
+        .logo {
             text-align: center;
+            margin-bottom: 30px;
         }
         
-        .login-logo {
-            font-size: 3rem;
-            margin-bottom: 10px;
-        }
-        
-        .login-title {
-            font-size: 1.5rem;
-            font-weight: bold;
+        .logo h1 {
+            font-size: 2.5rem;
+            background: linear-gradient(90deg, #3b82f6, #8b5cf6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
             margin-bottom: 5px;
         }
         
-        .login-subtitle {
-            font-size: 0.9rem;
-            opacity: 0.9;
+        .logo p {
+            color: #94a3b8;
+            font-size: 1.1rem;
         }
         
-        .login-body {
-            padding: 30px 25px;
-        }
-        
-        .login-tabs {
+        .tabs {
             display: flex;
-            margin-bottom: 25px;
-            border-bottom: 2px solid #eee;
+            gap: 10px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
         }
         
-        .login-tab {
+        .tab-btn {
             flex: 1;
-            padding: 12px;
-            background: none;
+            padding: 15px 10px;
+            background: rgba(51, 65, 85, 0.7);
             border: none;
-            font-size: 1rem;
+            border-radius: 10px;
+            color: #cbd5e1;
             font-weight: 600;
-            color: #7f8c8d;
             cursor: pointer;
-            transition: all 0.3s;
-            position: relative;
+            transition: all 0.3s ease;
+            text-align: center;
+            min-width: 100px;
         }
         
-        .login-tab.active {
-            color: var(--primary-color);
+        .tab-btn:hover {
+            background: rgba(71, 85, 105, 0.9);
+            transform: translateY(-2px);
         }
         
-        .login-tab.active::after {
-            content: '';
-            position: absolute;
-            bottom: -2px;
-            left: 0;
-            right: 0;
-            height: 2px;
-            background-color: var(--primary-color);
+        .tab-btn.active {
+            background: linear-gradient(90deg, #3b82f6, #8b5cf6);
+            color: white;
+            box-shadow: 0 4px 15px rgba(59, 130, 246, 0.4);
         }
         
-        .tab-content {
+        .form-container {
             display: none;
         }
         
-        .tab-content.active {
+        .form-container.active {
             display: block;
+            animation: fadeIn 0.5s ease;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
         }
         
         .form-group {
             margin-bottom: 20px;
         }
         
-        .form-label {
+        .form-group label {
             display: block;
             margin-bottom: 8px;
-            font-weight: 600;
-            color: var(--secondary-color);
-            font-size: 0.9rem;
+            color: #e2e8f0;
+            font-weight: 500;
         }
         
-        .form-control {
+        .form-group input {
             width: 100%;
-            padding: 12px 15px;
-            border: 1px solid #ddd;
-            border-radius: 6px;
+            padding: 15px;
+            background: rgba(30, 41, 59, 0.8);
+            border: 2px solid rgba(100, 116, 139, 0.5);
+            border-radius: 10px;
+            color: #f8fafc;
             font-size: 1rem;
-            transition: border-color 0.3s;
+            transition: all 0.3s ease;
         }
         
-        .form-control:focus {
+        .form-group input:focus {
             outline: none;
-            border-color: var(--primary-color);
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
         }
+        
+        .role-badge {
+            display: inline-block;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            margin-bottom: 15px;
+            text-transform: uppercase;
+        }
+        
+        .agent-badge { background: #10b981; color: white; }
+        .supervisor-badge { background #3b82f6; color: white; }
+        .subsystem-badge { background: #8b5cf6; color: white; }
+        .master-badge { background: #f59e0b; color: white; }
         
         .login-btn {
             width: 100%;
             padding: 15px;
-            background: linear-gradient(135deg, var(--primary-color), #2980b9);
+            background: linear-gradient(90deg, #3b82f6, #8b5cf6);
             color: white;
             border: none;
-            border-radius: 6px;
-            font-size: 1rem;
+            border-radius: 10px;
+            font-size: 1.1rem;
             font-weight: 600;
             cursor: pointer;
-            transition: all 0.3s;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: 10px;
+            transition: all 0.3s ease;
+            margin-top: 10px;
         }
         
         .login-btn:hover {
-            background: linear-gradient(135deg, #2980b9, var(--primary-color));
             transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(52, 152, 219, 0.4);
+            box-shadow: 0 10px 20px rgba(59, 130, 246, 0.3);
         }
         
-        .login-btn:disabled {
-            opacity: 0.7;
-            cursor: not-allowed;
+        .login-btn:active {
+            transform: translateY(0);
         }
         
-        .error-message {
-            background-color: #f8d7da;
-            color: #721c24;
-            padding: 10px;
-            border-radius: 5px;
-            margin-bottom: 15px;
+        .status-message {
+            padding: 12px;
+            border-radius: 8px;
+            margin-top: 20px;
             text-align: center;
             display: none;
         }
         
-        .error-message.show {
-            display: block;
+        .status-success {
+            background: rgba(16, 185, 129, 0.2);
+            color: #10b981;
+            border: 1px solid #10b981;
         }
         
-        .success-message {
-            background-color: #d4edda;
-            color: #155724;
-            padding: 10px;
-            border-radius: 5px;
-            margin-bottom: 15px;
+        .status-error {
+            background: rgba(239, 68, 68, 0.2);
+            color: #ef4444;
+            border: 1px solid #ef4444;
+        }
+        
+        .footer {
             text-align: center;
-            display: none;
+            margin-top: 30px;
+            color: #94a3b8;
+            font-size: 0.9rem;
         }
         
-        .success-message.show {
-            display: block;
-        }
-        
-        .login-footer {
-            margin-top: 25px;
-            text-align: center;
-            color: #7f8c8d;
-            font-size: 0.85rem;
-            padding-top: 15px;
-            border-top: 1px solid #eee;
-        }
-        
-        .system-status {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            margin-top: 15px;
-            font-size: 0.85rem;
-        }
-        
-        .status-dot {
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            background-color: var(--success-color);
-        }
-        
-        .status-dot.warning {
-            background-color: var(--warning-color);
-        }
-        
-        .status-dot.danger {
-            background-color: var(--danger-color);
-        }
-        
-        .loading-spinner {
-            width: 20px;
-            height: 20px;
-            border: 2px solid rgba(255,255,255,0.3);
-            border-top: 2px solid white;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-        }
-        
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        .debug-info {
-            background-color: #f8f9fa;
-            border: 1px solid #ddd;
-            border-radius: 6px;
-            padding: 10px;
-            margin-top: 15px;
-            font-size: 0.8rem;
-            font-family: monospace;
-            max-height: 200px;
-            overflow-y: auto;
-        }
-
-        .debug-info pre {
-            margin: 0;
-            white-space: pre-wrap;
-            word-wrap: break-word;
+        .footer a {
+            color #3b82filling
         }
     </style>
 </head>
 <body>
-    <div class="login-container">
-        <div class="login-header">
-            <div class="login-logo">
-                <i class="fas fa-dice"></i>
-            </div>
-            <div class="login-title">NOVA LOTTO</div>
-            <div class="login-subtitle">Système de gestion multi-niveaux</div>
+    <div class="container">
+        <div class="logo">
+            <h1>Nova Lotto</h1>
+            <p>Système de gestion de loterie</p>
         </div>
         
-        <div class="login-body">
-            <div class="error-message" id="error-message"></div>
-            <div class="success-message" id="success-message"></div>
-            
-            <div class="login-tabs">
-                <button class="login-tab" data-tab="agent">Agent</button>
-                <button class="login-tab" data-tab="supervisor">Superviseur</button>
-                <button class="login-tab" data-tab="subsystem">Admin Sous-Système</button>
-                <button class="login-tab active" data-tab="master">Master</button>
+        <div class="tabs">
+            <button class="tab-btn active" data-tab="agent">Agent</button>
+            <button class="tab-btn" data-tab="supervisor">Superviseur</button>
+            <button class="tab-btn" data-tab="subsystem">Admin Sous-système</button>
+            <button class="tab-btn" data-tab="master">Master</button>
+        </div>
+        
+        <!-- Formulaire Agent -->
+        <div id="agent-form" class="form-container active">
+            <div class="role-badge agent-badge">Agent</div>
+            <div class="form-group">
+                <label for="agent-username">Identifiant</label>
+                <input type="text" id="agent-username" placeholder="Entrez votre identifiant">
             </div>
-            
-            <!-- Master Login -->
-            <div class="tab-content active" id="master-tab">
-                <div class="form-group">
-                    <label class="form-label">Identifiant Master</label>
-                    <input type="text" class="form-control" id="master-username" placeholder="maitre01" autocomplete="username">
-                </div>
-                
-                <div class="form-group">
-                    <label class="form-label">Mot de passe Master</label>
-                    <input type="password" class="form-control" id="master-password" placeholder="••••••••" autocomplete="current-password">
-                </div>
-                
-                <button class="login-btn" id="master-login-btn">
-                    <i class="fas fa-crown"></i> Connexion Master
-                </button>
+            <div class="form-group">
+                <label for="agent-password">Mot de passe</label>
+                <input type="password" id="agent-password" placeholder="Entrez votre mot de passe">
             </div>
-            
-            <div class="login-footer">
-                <div class="system-status">
-                    <div class="status-dot" id="system-status"></div>
-                    <span id="status-text">Vérification du système...</span>
-                </div>
-                <div class="login-help">
-                    En cas de problème, contactez le support technique
-                </div>
+            <button class="login-btn" onclick="login('agent')">Connexion Agent</button>
+        </div>
+        
+        <!-- Formulaire Superviseur -->
+        <div id="supervisor-form" class="form-container">
+            <div class="role-badge supervisor-badge">Superviseur</div>
+            <div class="form-group">
+                <label for="supervisor-username">Identifiant</label>
+                <input type="text" id="supervisor-username" placeholder="Entrez votre identifiant">
             </div>
-
-            <!-- Debug Info (à supprimer en production) -->
-            <div class="debug-info" id="debug-info" style="display: none;">
-                <strong>Debug Log:</strong>
-                <pre id="debug-log"></pre>
+            <div class="form-group">
+                <label for="supervisor-password">Mot de passe</label>
+                <input type="password" id="supervisor-password" placeholder="Entrez votre mot de passe">
             </div>
+            <button class="login-btn" onclick="login('supervisor')">Connexion Superviseur</button>
+        </div>
+        
+        <!-- Formulaire Admin Sous-système -->
+        <div id="subsystem-form" class="form-container">
+            <div class="role-badge subsystem-badge">Admin Sous-système</div>
+            <div class="form-group">
+                <label for="subsystem-username">Identifiant</label>
+                <input type="text" id="subsystem-username" placeholder="Entrez votre identifiant">
+            </div>
+            <div class="form-group">
+                <label for="subsystem-password">Mot de passe</label>
+                <input type="password" id="subsystem-password" placeholder="Entrez votre mot de passe">
+            </div>
+            <button class="login-btn" onclick="login('subsystem')">Connexion Admin Sous-système</button>
+        </div>
+        
+        <!-- Formulaire Master -->
+        <div id="master-form" class="form-container">
+            <div class="role-badge master-badge">Master</div>
+            <div class="form-group">
+                <label for="master-username">Identifiant</label>
+                <input type="text" id="master-username" placeholder="Entrez votre identifiant">
+            </div>
+            <div class="form-group">
+                <label for="master-password">Mot de passe</label>
+                <input type="password" id="master-password" placeholder="Entrez votre mot de passe">
+            </div>
+            <button class="login-btn" onclick="login('master')">Connexion Master</button>
+        </div>
+        
+        <div id="status-message" class="status-message"></div>
+        
+        <div class="footer">
+            <p>© 2024 Nova Lotto System | Version 2.0</p>
         </div>
     </div>
-    
+
     <script>
-        // Configuration
-        const API_BASE_URL = 'https://lotatonova-fv0b.onrender.com';
+        // Gestion des onglets
+        document.querySelectorAll('.tab-btn').forEach(button => {
+            button.addEventListener('click', () => {
+                const tab = button.getAttribute('data-tab');
+                
+                // Mettre à jour les onglets actifs
+                document.querySelectorAll('.tab-btn').forEach(btn => {
+                    btn.classList.remove('active');
+                });
+                button.classList.add('active');
+                
+                // Afficher le formulaire actif
+                document.querySelectorAll('.form-container').forEach(div => {
+                    div.classList.remove('active');
+                });
+                document.getElementById(`${tab}-form`).classList.add('active');
+                
+                // Réinitialiser le message
+                hideStatusMessage();
+            });
+        });
         
-        // Debug helper
-        function addDebugLog(message, type = 'info') {
-            const debugLog = document.getElementById('debug-log');
-            const debugInfo = document.getElementById('debug-info');
-            const timestamp = new Date().toLocaleTimeString();
-            const icon = type === 'error' ? '❌' : type === 'success' ? '✅' : 'ℹ️';
-            debugLog.innerHTML += `${icon} [${timestamp}] ${message}\n`;
-            debugInfo.style.display = 'block';
-            console.log(`[${type}]`, message);
-        }
-
-        // Vérifier le statut du système
-        async function checkSystemStatus() {
-            try {
-                addDebugLog('Vérification du statut du système...');
-                const response = await fetch(`${API_BASE_URL}/api/health`);
-                const data = await response.json();
-                
-                const statusDot = document.getElementById('system-status');
-                const statusText = document.getElementById('status-text');
-                
-                if (data.status === 'ok') {
-                    statusDot.className = 'status-dot';
-                    statusText.textContent = 'Système opérationnel';
-                    addDebugLog('✅ Système opérationnel', 'success');
-                } else {
-                    statusDot.className = 'status-dot warning';
-                    statusText.textContent = 'Système en maintenance';
-                    addDebugLog('⚠️ Système en maintenance', 'warning');
-                }
-            } catch (error) {
-                addDebugLog(`Erreur health check: ${error.message}`, 'error');
-                const statusDot = document.getElementById('system-status');
-                const statusText = document.getElementById('status-text');
-                statusDot.className = 'status-dot danger';
-                statusText.textContent = 'Connexion serveur impossible';
-            }
-        }
-
-        // Afficher un message d'erreur
-        function showError(message) {
-            const errorDiv = document.getElementById('error-message');
-            errorDiv.textContent = message;
-            errorDiv.classList.add('show');
-            
-            setTimeout(() => {
-                errorDiv.classList.remove('show');
-            }, 5000);
-        }
-
-        // Afficher un message de succès
-        function showSuccess(message) {
-            const successDiv = document.getElementById('success-message');
-            successDiv.textContent = message;
-            successDiv.classList.add('show');
-            
-            setTimeout(() => {
-                successDiv.classList.remove('show');
-            }, 3000);
-        }
-
-        // Connexion Master
-        async function masterLogin() {
-            const username = document.getElementById('master-username').value.trim();
-            const password = document.getElementById('master-password').value.trim();
-            const loginBtn = document.getElementById('master-login-btn');
-            
-            addDebugLog(`Tentative de connexion avec: ${username}`);
+        // Fonction de connexion
+        async function login(role) {
+            const username = document.getElementById(`${role}-username`).value;
+            const password = document.getElementById(`${role}-password`).value;
             
             if (!username || !password) {
-                showError('Identifiant et mot de passe requis');
-                addDebugLog('❌ Champs vides', 'error');
+                showStatusMessage('Veuillez remplir tous les champs', 'error');
                 return;
             }
             
-            // Désactiver le bouton et afficher le spinner
-            const originalHtml = loginBtn.innerHTML;
-            loginBtn.innerHTML = '<div class="loading-spinner"></div> Connexion...';
-            loginBtn.disabled = true;
+            showStatusMessage('Connexion en cours...', 'info');
             
             try {
-                addDebugLog(`Envoi requête à: ${API_BASE_URL}/api/auth/login`);
-                
-                const requestBody = {
-                    username: username,
-                    password: password,
-                    role: 'master'
-                };
-                
-                addDebugLog(`Body: ${JSON.stringify(requestBody)}`);
-                
-                const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
+                const response = await fetch('/api/auth/login', {
                     method: 'POST',
-                    headers: { 
-                        'Content-Type': 'application/json'
+                    headers: {
+                        'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify(requestBody)
+                    body: JSON.stringify({
+                        username: username,
+                        password: password,
+                        role: role
+                    })
                 });
-                
-                addDebugLog(`Réponse status: ${response.status}`);
                 
                 const data = await response.json();
-                addDebugLog(`Réponse data: ${JSON.stringify(data)}`);
                 
                 if (data.success) {
-                    addDebugLog('✅ Connexion réussie!', 'success');
-                    showSuccess('Connexion réussie! Redirection...');
+                    showStatusMessage('Connexion réussie! Redirection...', 'success');
                     
-                    // Stocker les données de session
-                    localStorage.setItem('novaLottoMasterToken', data.token);
-                    localStorage.setItem('novaLottoMasterUser', JSON.stringify(data.user));
-                    
-                    // Rediriger après 1 seconde
+                    // Redirection selon le rôle
                     setTimeout(() => {
-                        window.location.href = 'master-dashboard.html';
+                        switch(role) {
+                            case 'agent':
+                                window.location.href = '/lotato.html';
+                                break;
+                            case 'supervisor':
+                                window.location.href = '/supervisor-control.html';
+                                break;
+                            case 'subsystem':
+                                window.location.href = '/subsystem-admin.html';
+                                break;
+                            case 'master':
+                                window.location.href = '/master-dashboard.html';
+                                break;
+                            default:
+                                window.location.href = '/lotato.html';
+                        }
                     }, 1000);
                 } else {
-                    addDebugLog(`❌ Échec: ${data.error}`, 'error');
-                    showError(data.error || 'Identifiants incorrects');
+                    showStatusMessage(data.error || 'Identifiants incorrects', 'error');
                 }
             } catch (error) {
-                addDebugLog(`❌ Erreur réseau: ${error.message}`, 'error');
-                showError('Erreur de connexion au serveur: ' + error.message);
-            } finally {
-                // Réactiver le bouton
-                loginBtn.innerHTML = originalHtml;
-                loginBtn.disabled = false;
+                showStatusMessage('Erreur de connexion au serveur', 'error');
+                console.error('Erreur:', error);
             }
         }
-
-        // Initialisation
-        document.addEventListener('DOMContentLoaded', function() {
-            addDebugLog('🚀 Application initialisée');
-            
-            // Vérifier le statut du système
-            checkSystemStatus();
-            
-            // Gestion des tabs
-            document.querySelectorAll('.login-tab').forEach(tab => {
-                tab.addEventListener('click', function() {
-                    const tabId = this.getAttribute('data-tab');
-                    
-                    document.querySelectorAll('.login-tab').forEach(t => t.classList.remove('active'));
-                    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-                    
-                    this.classList.add('active');
-                    document.getElementById(`${tabId}-tab`).classList.add('active');
-                });
-            });
-            
-            // Bouton de connexion Master
-            document.getElementById('master-login-btn').addEventListener('click', masterLogin);
-            
-            // Connexion avec la touche Entrée
-            document.getElementById('master-password').addEventListener('keypress', function(e) {
-                if (e.key === 'Enter') {
-                    masterLogin();
-                }
-            });
-
-            // Test de connexion automatique (décommenter pour tester)
-            /*
-            setTimeout(() => {
-                document.getElementById('master-username').value = 'maitre01';
-                document.getElementById('master-password').value = '123456';
-                addDebugLog('🧪 Test automatique activé');
-            }, 1000);
-            */
-        });
+        
+        // Fonctions pour afficher/masquer les messages
+        function showStatusMessage(message, type) {
+            const statusDiv = document.getElementById('status-message');
+            statusDiv.textContent = message;
+            statusDiv.className = `status-message status-${type}`;
+            statusDiv.style.display = 'block';
+        }
+        
+        function hideStatusMessage() {
+            document.getElementById('status-message').style.display = 'none';
+        }
+        
+        // Initialisation - Focus sur le premier champ
+        document.getElementById('agent-username').focus();
     </script>
 </body>
 </html>

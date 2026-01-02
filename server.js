@@ -1,7 +1,11 @@
-const express = require('express');
-const mongoose = require('mongoose');
-const cors = require('cors');
-const path = require('path');
+import express from 'express';
+import mongoose from 'mongoose';
+import cors from 'cors';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 const app = express();
 
@@ -11,7 +15,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // Servir les fichiers statiques
-app.use(express.static(path.join(__dirname, '')));
+app.use(express.static(join(__dirname, '')));
 
 // Connexion MongoDB
 mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/novalotto', {
@@ -31,7 +35,7 @@ const userSchema = new mongoose.Schema({
   password: { type: String, required: true },
   name: String,
   role: { type: String, enum: ['agent', 'supervisor', 'admin', 'master'], default: 'agent' },
-  level: Number, // Pour superviseurs (1, 2, 3...)
+  level: Number,
   subsystem: String,
   subsystemName: String,
   dateCreation: { type: Date, default: Date.now }
@@ -137,7 +141,7 @@ app.post('/api/auth/register', async (req, res) => {
   }
 });
 
-// 4. Liste des utilisateurs (pour admin)
+// 4. Liste des utilisateurs
 app.get('/api/users', async (req, res) => {
   try {
     const users = await User.find({}, 'username name role level dateCreation');
@@ -147,18 +151,17 @@ app.get('/api/users', async (req, res) => {
   }
 });
 
-// 5. Route racine - sert index.html
+// 5. Route racine
 app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'index.html'));
+  res.sendFile(join(__dirname, 'index.html'));
 });
 
-// 6. Routes pour autres pages HTML
 app.get('/lotato.html', (req, res) => {
-  res.sendFile(path.join(__dirname, 'lotato.html'));
+  res.sendFile(join(__dirname, 'lotato.html'));
 });
 
 app.get('/lotato2.html', (req, res) => {
-  res.sendFile(path.join(__dirname, 'lotato2.html'));
+  res.sendFile(join(__dirname, 'lotato2.html'));
 });
 
 // Démarrer serveur

@@ -3,45 +3,84 @@ import mongoose from "mongoose";
 import cors from "cors";
 import path from "path";
 import dotenv from "dotenv";
+
 dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 10000;
 
-// Middleware
+/* =======================
+   MIDDLEWARES
+======================= */
 app.use(cors());
 app.use(express.json());
 
-// ------------------ DATABASE ------------------
-const mongoUri = process.env.MONGO_URL;
+/* =======================
+   MONGODB
+======================= */
+if (!process.env.MONGO_URL) {
+  console.error("❌ MONGO_URL est manquant !");
+  process.exit(1);
+}
 
-mongoose.connect(mongoUri)
+mongoose
+  .connect(process.env.MONGO_URL)
   .then(() => console.log("✅ MongoDB CONNECTÉ avec succès !"))
-  .catch(err => console.error("❌ ERREUR MongoDB :", err));
+  .catch((err) => {
+    console.error("❌ ERREUR MongoDB :", err.message);
+    process.exit(1);
+  });
 
-// ------------------ API ROUTES ------------------
-app.get("/api/status", (req, res) => {
+/* =======================
+   API HEALTH (UTILISÉ PAR INDEX.HTML)
+======================= */
+app.get("/api/health", (req, res) => {
   res.json({
-    status: "OK",
-    mongo: mongoose.connection.readyState === 1 ? "Connected" : "Disconnected"
+    status: "ok",
+    mongo: mongoose.connection.readyState === 1 ? "connected" : "disconnected",
   });
 });
 
-// Exemple login Master (garde le tien si tu l’as déjà)
-app.post("/api/master/login", async (req, res) => {
-  res.json({ ok: true });
+/* =======================
+   AUTH LOGIN (UTILISÉ PAR INDEX.HTML)
+======================= */
+app.post("/api/auth/login", async (req, res) => {
+  const { username, password, level } = req.body;
+
+  // ⚠️ TEMPORAIRE (POUR TEST)
+  if (!username || !password) {
+    return res.status(400).json({
+      success: false,
+      error: "Identifiants requis",
+    });
+  }
+
+  return res.json({
+    success: true,
+    token: "FAKE_JWT_TOKEN",
+    user: {
+      username,
+      role: level ? `supervisor-${level}` : "user",
+    },
+  });
 });
 
-// ------------------ STATIC FILES ------------------
+/* =======================
+   STATIC FILES
+======================= */
 const __dirname = path.resolve();
 app.use(express.static(__dirname));
 
-// ------------------ CATCH ALL (VERY LAST) ------------------
+/* =======================
+   SPA FALLBACK
+======================= */
 app.get("*", (req, res) => {
   res.sendFile(path.join(__dirname, "index.html"));
 });
 
-// ------------------ START SERVER ------------------
+/* =======================
+   START SERVER
+======================= */
 app.listen(PORT, () => {
   console.log(`🚀 Backend Nova Lotto sur port ${PORT}`);
 });

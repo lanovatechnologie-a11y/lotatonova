@@ -1,110 +1,47 @@
-// ================== IMPORTS ==================
 import express from "express";
-import path from "path";
+import mongoose from "mongoose";
 import cors from "cors";
-import bodyParser from "body-parser";
-import { MongoClient } from "mongodb";
-import { fileURLToPath } from "url";
+import path from "path";
+import dotenv from "dotenv";
+dotenv.config();
 
-// ================== FIX __dirname ==================
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-// ================== APP ==================
 const app = express();
+const PORT = process.env.PORT || 10000;
+
+// Middleware
 app.use(cors());
-app.use(bodyParser.json());
+app.use(express.json());
 
-// ================== ENV ==================
-const MONGO_URL = process.env.MONGO_URL;
-const DB_NAME = "nova_lotto";
+// ------------------ DATABASE ------------------
+const mongoUri = process.env.URL_MONGO;
 
-if (!MONGO_URL) {
-  console.error("❌ MONGO_URL manquant !");
-  process.exit(1);
-}
+mongoose.connect(mongoUri)
+  .then(() => console.log("✅ MongoDB CONNECTÉ avec succès !"))
+  .catch(err => console.error("❌ ERREUR MongoDB :", err));
 
-console.log("🔍 Vérification ENV:");
-console.log("MONGO_URL :", MONGO_URL ? "OK" : "MISSING");
-console.log("================================");
-
-// ================== MONGO CLIENT ==================
-let db;
-
-async function connectDB() {
-  try {
-    const client = new MongoClient(MONGO_URL, {
-      serverApi: {
-        version: "1",
-        strict: true,
-        deprecationErrors: true,
-      },
-    });
-
-    await client.connect();
-    db = client.db(DB_NAME);
-
-    console.log("✅ MongoDB CONNECTÉ avec succès !");
-  } catch (err) {
-    console.error("❌ ERREUR MongoDB :", err);
-  }
-}
-
-await connectDB();
-
-// ================== STATIC FRONTEND ==================
-app.use(express.static(__dirname));
-
-// ================== HEALTH CHECK ==================
-app.get("/status", (req, res) => {
+// ------------------ API ROUTES ------------------
+app.get("/api/status", (req, res) => {
   res.json({
     status: "OK",
-    mongo: db ? "Connected" : "Disconnected",
-    time: new Date(),
+    mongo: mongoose.connection.readyState === 1 ? "Connected" : "Disconnected"
   });
 });
 
-// ================== MASTER LOGIN ==================
-app.post("/api/master-login", async (req, res) => {
-  try {
-    const { username, password } = req.body;
-
-    if (!username || !password)
-      return res.status(400).json({
-        ok: false,
-        message: "Champs manquants",
-      });
-
-    const user = await db.collection("masters").findOne({
-      username,
-      password,
-    });
-
-    if (!user)
-      return res.status(401).json({
-        ok: false,
-        message: "Identifiants incorrects",
-      });
-
-    res.json({
-      ok: true,
-      message: "Connexion réussie",
-      user,
-    });
-  } catch (e) {
-    console.error("LOGIN ERROR:", e);
-    res.status(500).json({ ok: false, message: "Erreur serveur" });
-  }
+// Exemple login Master (garde le tien si tu l’as déjà)
+app.post("/api/master/login", async (req, res) => {
+  res.json({ ok: true });
 });
 
-// ================== DEFAULT ROUTE ==================
+// ------------------ STATIC FILES ------------------
+const __dirname = path.resolve();
+app.use(express.static(__dirname));
+
+// ------------------ CATCH ALL (VERY LAST) ------------------
 app.get("*", (req, res) => {
   res.sendFile(path.join(__dirname, "index.html"));
 });
 
-// ================== START SERVER ==================
-const PORT = process.env.PORT || 10000;
-
-app.listen(PORT, "0.0.0.0", () => {
-  console.log("🚀 Backend Nova Lotto sur port", PORT);
+// ------------------ START SERVER ------------------
+app.listen(PORT, () => {
+  console.log(`🚀 Backend Nova Lotto sur port ${PORT}`);
 });

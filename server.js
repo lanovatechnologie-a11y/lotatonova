@@ -25,7 +25,7 @@ db.once('open', () => {
   console.log('✅ MongoDB CONNECTÉ avec succès !');
 });
 
-// Modèle Utilisateur amélioré
+// Modèle Utilisateur - Adapté à votre structure existante
 const userSchema = new mongoose.Schema({
   username: { 
     type: String, 
@@ -45,29 +45,9 @@ const userSchema = new mongoose.Schema({
     enum: ['agent', 'supervisor', 'subsystem', 'master'], 
     required: true 
   },
-  level: { 
-    type: Number, 
-    default: 1 
-  },
-  subsystem: { 
-    type: String, 
-    default: null 
-  },
-  subsystemName: { 
-    type: String, 
-    default: null 
-  },
   dateCreation: { 
     type: Date, 
     default: Date.now 
-  },
-  lastLogin: { 
-    type: Date, 
-    default: null 
-  },
-  isActive: { 
-    type: Boolean, 
-    default: true 
   }
 });
 
@@ -93,6 +73,7 @@ app.post('/api/auth/login', async (req, res) => {
     
     console.log(`Tentative connexion: ${username} (${role})`);
     
+    // Rechercher l'utilisateur
     const user = await User.findOne({ 
       username: username,
       password: password,
@@ -106,18 +87,7 @@ app.post('/api/auth/login', async (req, res) => {
       });
     }
     
-    if (!user.isActive) {
-      return res.status(401).json({
-        success: false,
-        error: 'Votre compte a été désactivé'
-      });
-    }
-    
-    // Mettre à jour la dernière connexion
-    user.lastLogin = new Date();
-    await user.save();
-    
-    // Générer un token
+    // SUCCÈS
     const token = `nova_${Date.now()}_${user._id}_${user.role}`;
     
     // Réponse selon le rôle
@@ -126,10 +96,7 @@ app.post('/api/auth/login', async (req, res) => {
       username: user.username,
       name: user.name,
       role: user.role,
-      level: user.level || 1,
-      subsystem: user.subsystem,
-      subsystemName: user.subsystemName,
-      lastLogin: user.lastLogin
+      dateCreation: user.dateCreation
     };
     
     res.json({
@@ -151,7 +118,7 @@ app.post('/api/auth/login', async (req, res) => {
 // 3. Inscription
 app.post('/api/auth/register', async (req, res) => {
   try {
-    const { username, password, name, role, level, subsystem } = req.body;
+    const { username, password, name, role } = req.body;
     
     const existingUser = await User.findOne({ username });
     if (existingUser) {
@@ -166,8 +133,6 @@ app.post('/api/auth/register', async (req, res) => {
       password: password,
       name: name || username,
       role: role || 'agent',
-      level: level || 1,
-      subsystem: subsystem || null,
       dateCreation: new Date()
     });
     
@@ -200,7 +165,7 @@ app.get('/api/users', async (req, res) => {
     const { role } = req.query;
     const filter = role ? { role } : {};
     
-    const users = await User.find(filter, 'username name role level subsystem dateCreation lastLogin isActive');
+    const users = await User.find(filter, 'username name role dateCreation');
     res.json({
       success: true,
       count: users.length,
@@ -214,7 +179,7 @@ app.get('/api/users', async (req, res) => {
   }
 });
 
-// 5. Créer des utilisateurs par défaut
+// 5. Créer des utilisateurs par défaut - Adapté à votre structure
 app.post('/api/auth/create-default-users', async (req, res) => {
   try {
     const defaultUsers = [
@@ -226,11 +191,11 @@ app.post('/api/auth/create-default-users', async (req, res) => {
       { username: "agent5", password: "nova123", name: "Agent Epsilon", role: "agent" },
       
       // Superviseurs (5)
-      { username: "supervisor1", password: "nova123", name: "Superviseur Level 1", role: "supervisor", level: 1 },
-      { username: "supervisor2", password: "nova123", name: "Superviseur Level 2", role: "supervisor", level: 2 },
-      { username: "supervisor3", password: "nova123", name: "Superviseur Level 1", role: "supervisor", level: 1 },
-      { username: "supervisor4", password: "nova123", name: "Superviseur Level 2", role: "supervisor", level: 2 },
-      { username: "supervisor5", password: "nova123", name: "Superviseur Level 1", role: "supervisor", level: 1 },
+      { username: "supervisor1", password: "nova123", name: "Superviseur Level 1", role: "supervisor" },
+      { username: "supervisor2", password: "nova123", name: "Superviseur Level 2", role: "supervisor" },
+      { username: "supervisor3", password: "nova123", name: "Superviseur Level 1", role: "supervisor" },
+      { username: "supervisor4", password: "nova123", name: "Superviseur Level 2", role: "supervisor" },
+      { username: "supervisor5", password: "nova123", name: "Superviseur Level 1", role: "supervisor" },
       
       // Sous-système (5)
       { username: "subsystem1", password: "nova123", name: "Admin Sous-système A", role: "subsystem" },
@@ -239,8 +204,7 @@ app.post('/api/auth/create-default-users', async (req, res) => {
       { username: "subsystem4", password: "nova123", name: "Admin Sous-système D", role: "subsystem" },
       { username: "subsystem5", password: "nova123", name: "Admin Sous-système E", role: "subsystem" },
       
-      // Masters (5)
-      { username: "master1", password: "nova123", name: "Master Principal", role: "master" },
+      // Masters (5) - Votre utilisateur master existe déjà
       { username: "master2", password: "nova123", name: "Master Administrateur", role: "master" },
       { username: "master3", password: "nova123", name: "Master Super", role: "master" },
       { username: "master4", password: "nova123", name: "Master Global", role: "master" },
@@ -289,7 +253,7 @@ app.post('/api/auth/verify', async (req, res) => {
   try {
     const { token } = req.body;
     
-    // Simple vérification de token (dans un vrai système, utiliser JWT)
+    // Simple vérification de token
     if (token && token.startsWith('nova_')) {
       const parts = token.split('_');
       if (parts.length >= 3) {
@@ -316,9 +280,11 @@ app.post('/api/auth/verify', async (req, res) => {
     });
     
   } catch (error) {
-    res.status( error
+    res.status(500).json({ 
+      success: false, 
+      error: 'Erreur serveur' 
     });
-  });
+  }
 });
 
 // 7. Route pour logout
@@ -337,9 +303,7 @@ app.get('/api/stats', async (req, res) => {
       supervisors: await User.countDocuments({ role: 'supervisor' }),
       subsystems: await User.countDocuments({ role: 'subsystem' }),
       masters: await User.countDocuments({ role: 'master' }),
-      total: await User.countDocuments(),
-      active: await User.countDocuments({ isActive: true }),
-      inactive: await User.countDocuments({ isActive: false })
+      total: await User.countDocuments()
     };
     
     res.json({

@@ -3,12 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Nova Lotto - Contrôle Niveau 2</title>
+    <title>Lotato - Contrôle Niveau 2</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         :root {
             --primary-color: #3498db;
-            --secondary-color: #2c3e50;
+            --secondary-color: #000c79;
             --success-color: #27ae60;
             --warning-color: #f39c12;
             --danger-color: #e74c3c;
@@ -1410,97 +1410,6 @@ const APP_CONFIG = {
             // Démarrer le rafraîchissement automatique
             startAutoRefresh();
         });
-        
-        // Redirection vers la page de login du superviseur
-        function redirectToSupervisorLogin() {
-            const loginHTML = `
-                <div style="display: flex; justify-content: center; align-items: center; min-height: 100vh; background: linear-gradient(135deg, #3498db, #2c3e50);">
-                    <div style="background: white; padding: 30px; border-radius: 10px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); width: 100%; max-width: 400px;">
-                        <div style="text-align: center; margin-bottom: 25px;">
-                            <div style="width: 70px; height: 70px; background-color: #f39c12; border-radius: 10px; margin: 0 auto 15px; display: flex; align-items: center; justify-content: center;">
-                                <i class="fas fa-shield-alt" style="font-size: 2rem; color: white;"></i>
-                            </div>
-                            <h1 style="color: #2c3e50; margin-bottom: 5px;">Nova Lotto</h1>
-                            <p style="color: #7f8c8d;">Connexion Superviseur Niveau 2</p>
-                        </div>
-                        
-                        <div id="login-error" style="display: none; background-color: #f8d7da; color: #721c24; padding: 10px; border-radius: 5px; margin-bottom: 15px; text-align: center;">
-                            Identifiants incorrects
-                        </div>
-                        
-                        <div style="margin-bottom: 20px;">
-                            <label style="display: block; margin-bottom: 5px; font-weight: bold; color: #2c3e50;">Identifiant</label>
-                            <input type="text" id="supervisor-username" style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 5px; font-size: 16px;" placeholder="Votre identifiant">
-                        </div>
-                        
-                        <div style="margin-bottom: 25px;">
-                            <label style="display: block; margin-bottom: 5px; font-weight: bold; color: #2c3e50;">Mot de passe</label>
-                            <input type="password" id="supervisor-password" style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 5px; font-size: 16px;" placeholder="••••••••">
-                        </div>
-                        
-                        <button id="supervisor-login-btn" style="width: 100%; padding: 15px; background-color: #f39c12; color: white; border: none; border-radius: 5px; font-size: 16px; font-weight: bold; cursor: pointer;">
-                            <i class="fas fa-sign-in-alt"></i> Connexion Superviseur
-                        </button>
-                        
-                        <div style="margin-top: 20px; text-align: center; color: #6c757d; font-size: 14px;">
-                            <p>Contactez l'administrateur en cas de problème</p>
-                        </div>
-                    </div>
-                </div>
-                
-                <script>
-                    document.getElementById('supervisor-login-btn').addEventListener('click', async function() {
-                        const username = document.getElementById('supervisor-username').value;
-                        const password = document.getElementById('supervisor-password').value;
-                        
-                        if (!username || !password) {
-                            showLoginError('Identifiant et mot de passe requis');
-                            return;
-                        }
-                        
-                        try {
-                            const response = await fetch(APP_CONFIG.login, {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ 
-                                    username, 
-                                    password,
-                                    level: 2 
-                                })
-                            });
-                            
-                            const data = await response.json();
-                            
-                            if (data.success) {
-                                localStorage.setItem('novaLottoSupervisorToken', data.token);
-                                localStorage.setItem('novaLottoSupervisorUser', JSON.stringify(data.user));
-                                localStorage.setItem('novaLottoSupervisorData', JSON.stringify(data.supervisor_data));
-                                location.reload();
-                            } else {
-                                showLoginError(data.error || 'Identifiants incorrects');
-                            }
-                        } catch (error) {
-                            console.error('Erreur connexion:', error);
-                            showLoginError('Erreur de connexion au serveur');
-                        }
-                    });
-                    
-                    document.getElementById('supervisor-password').addEventListener('keypress', function(e) {
-                        if (e.key === 'Enter') {
-                            document.getElementById('supervisor-login-btn').click();
-                        }
-                    });
-                    
-                    function showLoginError(message) {
-                        const errorDiv = document.getElementById('login-error');
-                        errorDiv.textContent = message;
-                        errorDiv.style.display = 'block';
-                    }
-                <\/script>
-            `;
-            
-            document.body.innerHTML = loginHTML;
-        }
         
         // Mettre à jour l'interface utilisateur
         function updateUserInterface() {

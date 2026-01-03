@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Nova Lotto - Connexion</title>
+    <title>Lotato - Connexion</title>
     <style>
         * {
             margin: 0;
@@ -13,8 +13,8 @@
         }
         
         body {
-            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
-            color: #f8fafc;
+                background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            color: #c2078a;
             min-height: 100vh;
             display: flex;
             justify-content: center;
@@ -23,7 +23,8 @@
         }
         
         .container {
-            background: rgba(30, 41, 59, 0.9);
+            background: linear-gradient(rgba(209, 161, 2, 0.7), rgba(240, 20, 4, 0.7)), 
+                        url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><rect width="100" height="100" fill="%230a0a2a"/><path d="M0 0L100 100M100 0L0 100" stroke="%236e44ff" stroke-width="1"/></svg>');
             border-radius: 20px;
             padding: 40px;
             width: 100%;
@@ -39,14 +40,14 @@
         
         .logo h1 {
             font-size: 2.5rem;
-            background: linear-gradient(90deg, #3b82f6, #8b5cf6);
+            background: linear-gradient(90deg, #0044b1fd, #a300a8);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             margin-bottom: 5px;
         }
         
         .logo p {
-            color: #94a3b8;
+            color: #0a0044;
             font-size: 1.1rem;
         }
         
@@ -60,10 +61,10 @@
         .tab-btn {
             flex: 1;
             padding: 15px 10px;
-            background: rgba(51, 65, 85, 0.7);
+            background: rgba(6, 104, 3, 0.911);
             border: none;
             border-radius: 10px;
-            color: #cbd5e1;
+            color: #fceb00;
             font-weight: 600;
             cursor: pointer;
             transition: all 0.3s ease;
@@ -72,12 +73,12 @@
         }
         
         .tab-btn:hover {
-            background: rgba(71, 85, 105, 0.9);
+            background: rgb(4, 0, 255);
             transform: translateY(-2px);
         }
         
         .tab-btn.active {
-            background: linear-gradient(90deg, #3b82f6, #8b5cf6);
+            background: linear-gradient(90deg, #46b804, #8b5cf6);
             color: white;
             box-shadow: 0 4px 15px rgba(59, 130, 246, 0.4);
         }
@@ -110,17 +111,17 @@
         .form-group input {
             width: 100%;
             padding: 15px;
-            background: rgba(30, 41, 59, 0.8);
-            border: 2px solid rgba(100, 116, 139, 0.5);
+            background: rgba(2, 38, 97, 0.8);
+            border: 2px solid rgba(20, 119, 0, 0.932);
             border-radius: 10px;
-            color: #f8fafc;
+            color: #f6fa06;
             font-size: 1rem;
             transition: all 0.3s ease;
         }
         
         .form-group input:focus {
             outline: none;
-            border-color: #3b82f6;
+            border-color: #032e74;
             box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
         }
         
@@ -135,15 +136,15 @@
         }
         
         .agent-badge { background: #10b981; color: white; }
-        .supervisor-badge { background #3b82f6; color: white; }
+        .supervisor-badge { background: #10b981; color: white; }
         .subsystem-badge { background: #8b5cf6; color: white; }
         .master-badge { background: #f59e0b; color: white; }
         
         .login-btn {
             width: 100%;
             padding: 15px;
-            background: linear-gradient(90deg, #3b82f6, #8b5cf6);
-            color: white;
+            background: linear-gradient(90deg, #508807, #8b5cf6);
+            color: rgb(250, 225, 2);
             border: none;
             border-radius: 10px;
             font-size: 1.1rem;
@@ -155,7 +156,7 @@
         
         .login-btn:hover {
             transform: translateY(-2px);
-            box-shadow: 0 10px 20px rgba(59, 130, 246, 0.3);
+            box-shadow: 0 10px 20px rgb(225, 241, 0);
         }
         
         .login-btn:active {
@@ -185,26 +186,26 @@
         .footer {
             text-align: center;
             margin-top: 30px;
-            color: #94a3b8;
+            color: #000000;
             font-size: 0.9rem;
         }
         
         .footer a {
-            color #3b82filling
+             color: #ef4444;
         }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="logo">
-            <h1>Nova Lotto</h1>
-            <p>Système de gestion de loterie</p>
+            <h1>LOTATO</h1>
+            <p>JERE BòLET OU AK TOUT SEKIRITE</p>
         </div>
         
         <div class="tabs">
             <button class="tab-btn active" data-tab="agent">Agent</button>
-            <button class="tab-btn" data-tab="supervisor">Superviseur</button>
-            <button class="tab-btn" data-tab="subsystem">Admin Sous-système</button>
+            <button class="tab-btn" data-tab="supervisor">Superviseur 1 OU 2</button>
+            <button class="tab-btn" data-tab="subsystem">PROPRIETAIRE</button>
             <button class="tab-btn" data-tab="master">Master</button>
         </div>
         
@@ -267,7 +268,8 @@
         <div id="status-message" class="status-message"></div>
         
         <div class="footer">
-            <p>© 2024 Nova Lotto System | Version 2.0</p>
+            <p>© 2024 Lotato System | Version 4.6</p>
+            <p>SE LA NOVA TEKNOLOJI KI DEVLOPE APLIKASYON SA</p>
         </div>
     </div>
 

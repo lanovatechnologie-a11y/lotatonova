@@ -1,171 +1,126 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const path = require('path');
+const fs = require('fs');
 
 const app = express();
 
-// Middleware
+/* =======================
+   MIDDLEWARES DE BASE
+======================= */
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-
-// Serve tous les fichiers statiques à la racine (où se trouve `server.js`)
 app.use(express.static(__dirname));
 
-// Connexion MongoDB (avec URL de prod ou localhost)
+/* =======================
+   CONNEXION MONGODB
+======================= */
 mongoose.connect(process.env.MONGO_URL || 'mongodb://localhost:27017/lottodb', {
   useNewUrlParser: true,
   useUnifiedTopology: true,
 });
 
-const db = mongoose.connection;
-db.on('error', console.error.bind(console, '❌ Connexion MongoDB échouée'));
-db.once('open', () => {
-  console.log('✅ MongoDB connecté avec succès !');
-});
+mongoose.connection
+  .once('open', () => console.log('✅ MongoDB connecté'))
+  .on('error', () => console.error('❌ Erreur MongoDB'));
 
-// Schema utilisateur
+/* =======================
+   MODELE UTILISATEUR
+======================= */
 const userSchema = new mongoose.Schema({
-  username: { type: String, required: true, unique: true },
-  password: { type: String, required: true },
+  username: String,
+  password: String,
   role: {
     type: String,
-    enum: ['agent', 'supervisor', 'subsystem', 'master'],
-    required: true
+    enum: ['agent', 'supervisor', 'subsystem', 'master']
   },
   level: { type: Number, default: 1 }
 });
 
 const User = mongoose.model('User', userSchema);
 
-// === ROUTE DE CONNEXION ===
+/* =======================
+   AUTH LOGIN
+======================= */
 app.post('/api/auth/login', async (req, res) => {
   try {
     const { username, password, role } = req.body;
-    const user = await User.findOne({ 
-      username,
-      password,
-      role,
-      deleted: { $exists: false } // Si champ "deleted" existe dans les modèles
-    });
 
+    const user = await User.findOne({ username, password, role });
     if (!user) {
-      return res.status(401).json({
-        success: false,
-        error: 'Identifiants ou rôle incorrect'
-      });
+      return res.status(401).json({ success: false, error: 'Accès refusé' });
     }
 
-    // Générer un token simplifié temporaire
-    const token = `nova_${Date.now()}_${user._id}_${user.role}_${user.level || 1}`;
+    const token = `nova_${Date.now()}_${user._id}_${user.role}_${user.level}`;
 
-    // Déterminer la redirection en fonction du rôle et niveau
-    let redirectUrl;
-    switch (user.role) {
-      case 'agent':
-        redirectUrl = '/lotato.html';
-        break;
-      case 'supervisor':
-        if (user.level === 1) {
-          redirectUrl = '/control-level1.html';
-        } else if (user.level === 2) {
-          redirectUrl = '/control-level2.html';
-        } else {
-          redirectUrl = '/supervisor-control.html';
-        }
-        break;
-      case 'subsystem':
-        redirectUrl = '/subsystem-admin.html';
-        break;
-      case 'master':
-        redirectUrl = '/master-dashboard.html';
-        break;
-      default:
-        redirectUrl = '/';
-    }
+    let redirectUrl = '/';
+    if (user.role === 'agent') redirectUrl = '/lotato.html';
+    if (user.role === 'supervisor' && user.level === 1) redirectUrl = '/control-level1.html';
+    if (user.role === 'supervisor' && user.level === 2) redirectUrl = '/control-level2.html';
+    if (user.role === 'subsystem') redirectUrl = '/subsystem-admin.html';
+    if (user.role === 'master') redirectUrl = '/master-dashboard.html';
 
     res.json({
       success: true,
-      redirectUrl: redirectUrl,
-      token: token,
-      user: {
-        id: user._id,
-        username: user.username,
-        role: user.role,
-        level: user.level
-      }
+      token,
+      redirectUrl
     });
 
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      error: 'Erreur serveur lors de la connexion'
-    });
+  } catch (e) {
+    res.status(500).json({ success: false, error: 'Erreur serveur' });
   }
 });
 
-// === MIDDLWARE DE VÉRIFICATION DE TOKEN ===
-function vérifierToken(req, res, next) {
-  const { token } = req.query;
+/* =======================
+   MIDDLEWARE TOKEN ROBUSTE
+======================= */
+function verifyToken(req, res, next) {
+  const authHeader = req.headers.authorization;
+  const tokenFromHeader = authHeader && authHeader.startsWith('Bearer ')
+    ? authHeader.split(' ')[1]
+    : null;
+
+  const token = tokenFromHeader || req.query.token;
+
   if (!token || !token.startsWith('nova_')) {
-    return res.status(401).json({ 
-      success: false, 
-      error: 'Token manquant ou invalide' 
-    });
+    return res.redirect('/'); // ⬅️ pas d’erreur bloquante
   }
-  // Ne vérifie pas le token en détail pour garder le système léger
+
+  req.token = token;
   next();
 }
 
-// === ROUTES HTML ===
-const fs = require('fs');
-
-// 1. Page principale
+/* =======================
+   ROUTES HTML
+======================= */
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });
 
-// 2. Sous-système (subsystem-admin.html)
-app.get('/subsystem-admin.html', vérifierToken, (req, res) => {
-  const filePath = path.join(__dirname, 'subsystem-admin.html');
-  fs.access(filePath, fs.constants.F_OK, (err) => {
-    if (err) {
-      return res.status(500).json({
-        success: false,
-        error: "Fichier /subsystem-admin.html introuvable."
-      });
-    }
-    res.sendFile(filePath);
-  });
+app.get('/lotato.html', (req, res) => {
+  res.sendFile(path.join(__dirname, 'lotato.html'));
 });
 
-// 3. Exemple avec contrôle token + fichiers HTML
-app.get('/control-level1.html', vérifierToken, (req, res) => {
+app.get('/control-level1.html', verifyToken, (req, res) => {
   res.sendFile(path.join(__dirname, 'control-level1.html'));
 });
-app.get('/control-level2.html', vérifierToken, (req, res) => {
+
+app.get('/control-level2.html', verifyToken, (req, res) => {
   res.sendFile(path.join(__dirname, 'control-level2.html'));
 });
-app.get('/supervisor-control.html', vérifierToken, (req, res) => {
-  res.sendFile(path.join(__dirname, 'supervisor-control.html'));
+
+app.get('/subsystem-admin.html', verifyToken, (req, res) => {
+  res.sendFile(path.join(__dirname, 'subsystem-admin.html'));
 });
-app.get('/master-dashboard.html', vérifierToken, (req, res) => {
+
+app.get('/master-dashboard.html', verifyToken, (req, res) => {
   res.sendFile(path.join(__dirname, 'master-dashboard.html'));
 });
 
-// 4. Gestion 404/500 sans fichier 404.html (comme demandé)
-app.use((err, req, res, next) => {
-  if (err) {
-    return res.status(500).json({
-      success: false,
-      error: 'Erreur serveur interne'
-    });
-  }
-  next();
-});
-
-// Démarrer le serveur
+/* =======================
+   LANCEMENT SERVEUR
+======================= */
 const PORT = process.env.PORT || 10000;
 app.listen(PORT, () => {
-  console.log(`🚀 Serveur démarré sur le port ${PORT}`);
-  console.log(`📁 Serveur de fichiers statiques à la racine`);
+  console.log(`🚀 Serveur actif sur le port ${PORT}`);
 });

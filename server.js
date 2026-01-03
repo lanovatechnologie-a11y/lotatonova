@@ -79,7 +79,7 @@ app.post('/api/auth/login', async (req, res) => {
         if (user.level === 2) {
           redirectUrl = '/control-level2.html';
         } else {
-          redirectUrl = '/control-level1.html';
+          redirectUrl = '/supervisor-control.html'; // CHANGÉ ICI
         }
         break;
       case 'subsystem':
@@ -287,7 +287,7 @@ app.get('/lotato.html', (req, res) => {
   res.sendFile(path.join(__dirname, 'lotato.html'));
 });
 
-app.get('/control-level1.html', (req, res) => {
+app.get('/supervisor-control.html', (req, res) => {  // CHANGÉ ICI
   res.sendFile(path.join(__dirname, 'control-level1.html'));
 });
 
@@ -334,6 +334,6 @@ const PORT = process.env.PORT || 10000;
 app.listen(PORT, () => {
   console.log(`🚀 Serveur Nova Lotto sur port ${PORT}`);
   console.log(`📁 Accès: http://localhost:${PORT}`);
-  console.log(`👥 Superviseurs N1: /control-level1.html`);
+  console.log(`👥 Superviseurs N1: /supervisor-control.html`);  // CHANGÉ ICI
   console.log(`👥 Superviseurs N2: /control-level2.html`);
 });

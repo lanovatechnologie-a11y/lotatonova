@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Nova Lotto - Administration Sous-Système</title>
+    <title> Lotato - Administration Sous-Système</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         :root {
@@ -4286,21 +4286,13 @@ const APP_CONFIG = {
         window.toggleUserStatus = toggleUserStatus;
         window.viewTicket = viewTicket;
         window.cancelTicket = cancelTicket;
-    </script>
-    <!-- Contenu de votre page -->
-<h1>Bienvenue, <span id="userName"></span>!</h1>
-
-<!-- Bouton Déconnexion -->
-<button onclick="logout()" style="position: absolute; top: 10px; right: 10px; background: red; color: white; padding: 10px; border: none; border-radius: 5px; cursor: pointer;">
-  Déconnexion
-</button>
-
-<!-- Vérification d'authentification -->
+        </script>
 <script>
   async function checkAuth() {
     const token = localStorage.getItem('nova_token');
     
     if (!token) {
+      alert("ERREUR: Aucun token trouvé");
       window.location.href = '/index.html';
       return;
     }
@@ -4310,27 +4302,29 @@ const APP_CONFIG = {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       
+      if (!response.ok) {
+        alert("ERREUR: Réponse du serveur non-OK");
+        throw new Error('Échec vérification');
+      }
+      
       const data = await response.json();
       
       if (!data.success || data.user.role !== 'subsystem') {
+        alert("ERREUR: Rôle incorrect ou auth échouée");
         window.location.href = '/index.html';
-      } else {
-        console.log('✅ Accès autorisé pour', data.user.name);
-        document.getElementById('userName').textContent = data.user.name;
+        return;
       }
+      
+      document.getElementById('userName').textContent = data.user.name;
+      
     } catch (error) {
+      alert("ERREUR Fatale: " + error.message);
       window.location.href = '/index.html';
     }
   }
 
-  // Vérifier au chargement
   checkAuth();
 
-  // Fonction déconnexion
-  function logout() {
-    localStorage.removeItem('nova_token');
-    window.location.href = '/index.html';
-  }
-</script>
+    </script>
 </body>
 </html>

@@ -58,14 +58,20 @@ app.post('/api/auth/login', async (req, res) => {
     // SUCCÈS
     const token = `nova_${Date.now()}_${user._id}_${user.role}_${user.level || 1}`;
     
-    // Déterminer la redirection selon le rôle
+    // Déterminer la redirection selon le rôle ET le niveau
     let redirectUrl;
     switch(user.role) {
       case 'agent':
         redirectUrl = '/lotato.html';
         break;
       case 'supervisor':
-        redirectUrl = '/supervisor-control.html';
+        if (user.level === 1) {
+          redirectUrl = '/control-level1.html';
+        } else if (user.level === 2) {
+          redirectUrl = '/control-level2.html';
+        } else {
+          redirectUrl = '/supervisor-control.html';
+        }
         break;
       case 'subsystem':
         redirectUrl = '/subsystem-admin.html';
@@ -157,6 +163,14 @@ app.get('/lotato.html', (req, res) => {
 
 app.get('/supervisor-control.html', (req, res) => {
   res.sendFile(path.join(__dirname, 'supervisor-control.html'));
+});
+
+app.get('/control-level1.html', (req, res) => {
+  res.sendFile(path.join(__dirname, 'control-level1.html'));
+});
+
+app.get('/control-level2.html', (req, res) => {
+  res.sendFile(path.join(__dirname, 'control-level2.html'));
 });
 
 app.get('/subsystem-admin.html', (req, res) => {

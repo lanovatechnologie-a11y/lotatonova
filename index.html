@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title> Lotato - Connexion</title>
+    <title>Nova Lotto - Connexion</title>
     <style>
         * {
             margin: 0;
@@ -197,7 +197,7 @@
 <body>
     <div class="container">
         <div class="logo">
-            <h1>LOTATO</h1>
+            <h1>Nova Lotto</h1>
             <p>Système de gestion de loterie</p>
         </div>
         
@@ -294,63 +294,51 @@
             });
         });
         
-        // Fonction de connexion
-        async function login(role) {
-            const username = document.getElementById(`${role}-username`).value;
-            const password = document.getElementById(`${role}-password`).value;
+async function login(role) {
+    const username = document.getElementById(`${role}-username`).value;
+    const password = document.getElementById(`${role}-password`).value; // CORRIGÉ ICI
+    
+    if (!username || !password) {
+        showStatusMessage('Veuillez remplir tous les champs', 'error');
+        return;
+    }
+    
+    showStatusMessage('Connexion en cours...', 'info');
+    
+    try {
+        const response = await fetch('/api/auth/login', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                username: username,
+                password: password,
+                role: role
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            showStatusMessage('Connexion réussie! Redirection...', 'success');
             
-            if (!username || !password) {
-                showStatusMessage('Veuillez remplir tous les champs', 'error');
-                return;
-            }
+            // SAUVEGARDER LE TOKEN
+            localStorage.setItem('nova_token', data.token);
             
-            showStatusMessage('Connexion en cours...', 'info');
-            
-            try {
-                const response = await fetch('/api/auth/login', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        username: username,
-                        password: password,
-                        role: role
-                    })
-                });
-                
-                const data = await response.json();
-                
-                if (data.success) {
-                    showStatusMessage('Connexion réussie! Redirection...', 'success');
-                    
-                    // Redirection selon le rôle
-                    setTimeout(() => {
-                        switch(role) {
-                            case 'agent':
-                                window.location.href = '/lotato.html';
-                                break;
-                            case 'supervisor':
-                                window.location.href = '/supervisor-control.html';
-                                break;
-                            case 'subsystem':
-                                window.location.href = '/subsystem-admin.html';
-                                break;
-                            case 'master':
-                                window.location.href = '/master-dashboard.html';
-                                break;
-                            default:
-                                window.location.href = '/lotato.html';
-                        }
-                    }, 1000);
-                } else {
-                    showStatusMessage(data.error || 'Identifiants incorrects', 'error');
-                }
-            } catch (error) {
-                showStatusMessage('Erreur de connexion au serveur', 'error');
-                console.error('Erreur:', error);
-            }
+            // Redirection avec token en paramètre
+            setTimeout(() => {
+                window.location.href = data.redirectUrl + '?token=' + data.token;
+            }, 1000);
+        } else {
+            showStatusMessage(data.error || 'Identifiants incorrects', 'error');
         }
+    } catch (error) {
+        showStatusMessage('Erreur de connexion au serveur', 'error');
+        console.error('Erreur:', error);
+    }
+}
+
         
         // Fonctions pour afficher/masquer les messages
         function showStatusMessage(message, type) {

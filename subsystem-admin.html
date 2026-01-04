@@ -1,323 +1,147 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <title>Lotato – Subsystem Admin</title>
-
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
-
-    <style>
-        :root {
-            --primary:#3498db;
-            --secondary:#2c3e50;
-            --success:#27ae60;
-            --warning:#f39c12;
-            --danger:#e74c3c;
-            --bg:#f5f7fa;
-            --sidebar:240px;
-        }
-
-        *{box-sizing:border-box;margin:0;padding:0;font-family:Segoe UI,Tahoma,sans-serif}
-        body{background:var(--bg);display:flex;min-height:100vh;color:#2c3e50}
-
-        /* SIDEBAR */
-        .sidebar{
-            width:var(--sidebar);
-            background:linear-gradient(180deg,var(--secondary),#1a2530);
-            color:#fff;
-            position:fixed;
-            height:100vh;
-        }
-        .logo{
-            padding:20px;
-            text-align:center;
-            border-bottom:1px solid rgba(255,255,255,.1)
-        }
-        .logo i{font-size:28px;color:var(--primary)}
-        .nav a{
-            display:flex;
-            align-items:center;
-            padding:12px 20px;
-            color:rgba(255,255,255,.85);
-            text-decoration:none;
-            cursor:pointer;
-        }
-        .nav a i{width:22px}
-        .nav a.active,
-        .nav a:hover{
-            background:rgba(255,255,255,.1);
-            color:#fff;
-            border-left:4px solid var(--primary);
-        }
-
-        /* MAIN */
-        .main{
-            margin-left:var(--sidebar);
-            padding:20px;
-            width:100%;
-        }
-        .topbar{
-            display:flex;
-            justify-content:space-between;
-            align-items:center;
-            border-bottom:1px solid #ddd;
-            padding-bottom:10px;
-            margin-bottom:20px;
-        }
-
-        /* STATS */
-        .stats{
-            display:grid;
-            grid-template-columns:repeat(auto-fit,minmax(200px,1fr));
-            gap:15px;
-            margin-bottom:20px;
-        }
-        .card{
-            background:#fff;
-            padding:15px;
-            border-radius:8px;
-            box-shadow:0 2px 8px rgba(0,0,0,.07);
-            display:flex;
-            align-items:center;
-            gap:12px;
-        }
-        .card i{
-            font-size:22px;
-            padding:12px;
-            border-radius:6px;
-            color:#fff;
-        }
-
-        /* TABLE */
-        .box{
-            background:#fff;
-            border-radius:8px;
-            padding:20px;
-            box-shadow:0 2px 8px rgba(0,0,0,.07);
-        }
-        table{width:100%;border-collapse:collapse}
-        th,td{padding:10px;border-bottom:1px solid #eee;font-size:14px}
-        th{background:#f8f9fa;text-align:left}
-        tr:hover{background:#f5f5f5}
-
-        .badge{
-            padding:4px 8px;
-            border-radius:10px;
-            font-size:12px;
-            font-weight:600;
-        }
-        .ok{background:#d4edda;color:#155724}
-        .warn{background:#fff3cd;color:#856404}
-        .bad{background:#f8d7da;color:#721c24}
-
-        .actions button{
-            border:none;
-            background:#eee;
-            padding:6px 8px;
-            border-radius:4px;
-            cursor:pointer;
-        }
-
-        /* MODAL */
-        .modal{
-            display:none;
-            position:fixed;
-            inset:0;
-            background:rgba(0,0,0,.5);
-            align-items:center;
-            justify-content:center;
-            z-index:2000;
-        }
-        .modal.active{display:flex}
-        .modal-box{
-            background:#fff;
-            width:400px;
-            border-radius:8px;
-            padding:20px;
-        }
-        .modal-header{
-            display:flex;
-            justify-content:space-between;
-            margin-bottom:10px;
-        }
-        .modal-footer{
-            text-align:right;
-            margin-top:15px;
-        }
-        .btn{
-            padding:8px 14px;
-            border:none;
-            border-radius:6px;
-            font-weight:600;
-            cursor:pointer;
-        }
-        .btn-primary{background:var(--primary);color:#fff}
-        .btn-danger{background:var(--danger);color:#fff}
-    </style>
+  <meta charset="UTF-8" />
+  <title>Sous-système | Propriétaire</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    body { font-family: Arial, sans-serif; background:#f4f6f8; margin:0 }
+    header { background:#111; color:#fff; padding:12px 16px; display:flex; align-items:center; gap:12px }
+    header img { height:36px }
+    main { padding:16px }
+    .card { background:#fff; border-radius:8px; padding:16px; margin-bottom:16px; box-shadow:0 2px 6px rgba(0,0,0,.08) }
+    h2 { margin:0 0 8px }
+    button { padding:8px 12px; cursor:pointer }
+    .row { display:flex; gap:12px; flex-wrap:wrap }
+    .muted { color:#777 }
+    table { width:100%; border-collapse:collapse }
+    th,td { padding:8px; border-bottom:1px solid #eee; text-align:left }
+  </style>
 </head>
-
 <body>
 
-<!-- SIDEBAR -->
-<div class="sidebar">
-    <div class="logo">
-        <i class="fa-solid fa-diagram-project"></i>
-        <div>Subsystem</div>
+<header>
+  <img id="logo" src="" alt="" onerror="this.style.display='none'">
+  <div>
+    <div id="name">Sous-système</div>
+    <small class="muted" id="status">Chargement…</small>
+  </div>
+</header>
+
+<main>
+  <div class="card">
+    <h2>Configuration du jeu</h2>
+    <div class="row">
+      <div>
+        <label>Multiplicateur</label><br>
+        <input id="multiplier" type="number" step="0.1" />
+      </div>
+      <div>
+        <label>Bloquer une boule</label><br>
+        <input id="blockedBall" placeholder="ex: 12" />
+      </div>
     </div>
-    <div class="nav">
-        <a class="active" onclick="showSection('dashboard')"><i class="fa fa-chart-line"></i> Dashboard</a>
-        <a onclick="showSection('users')"><i class="fa fa-users"></i> Utilisateurs</a>
-        <a onclick="showSection('logs')"><i class="fa fa-list"></i> Logs</a>
-    </div>
-</div>
+    <br>
+    <button onclick="saveConfig()">Enregistrer</button>
+  </div>
 
-<!-- MAIN -->
-<div class="main">
-    <div class="topbar">
-        <h2 id="pageTitle">Dashboard</h2>
-        <span id="systemStatus" class="badge ok">ONLINE</span>
-    </div>
+  <div class="card">
+    <h2>Superviseurs</h2>
+    <button onclick="createSupervisor(2)">Créer Superviseur N2</button>
+    <button onclick="createSupervisor(1)">Créer Superviseur N1</button>
+    <table id="supTable">
+      <thead><tr><th>Nom</th><th>Niveau</th><th>Actions</th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </div>
 
-    <!-- DASHBOARD -->
-    <section id="dashboard">
-        <div class="stats">
-            <div class="card"><i class="fa fa-users" style="background:#3498db"></i><div><b id="statUsers">0</b><div>Utilisateurs</div></div></div>
-            <div class="card"><i class="fa fa-ticket" style="background:#9b59b6"></i><div><b id="statTickets">0</b><div>Tickets</div></div></div>
-            <div class="card"><i class="fa fa-coins" style="background:#27ae60"></i><div><b id="statSales">0</b><div>Ventes</div></div></div>
-        </div>
-    </section>
+  <div class="card">
+    <h2>Agents</h2>
+    <table id="agentTable">
+      <thead><tr><th>Nom</th><th>Statut</th><th>Actions</th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </div>
 
-    <!-- USERS -->
-    <section id="users" style="display:none">
-        <div class="box">
-            <h3>Utilisateurs</h3>
-            <table>
-                <thead>
-                    <tr><th>Nom</th><th>Rôle</th><th>Statut</th><th>Actions</th></tr>
-                </thead>
-                <tbody id="usersTable"></tbody>
-            </table>
-        </div>
-    </section>
-
-    <!-- LOGS -->
-    <section id="logs" style="display:none">
-        <div class="box">
-            <h3>Logs système</h3>
-            <ul id="logsList"></ul>
-        </div>
-    </section>
-</div>
-
-<!-- MODAL -->
-<div class="modal" id="modal">
-    <div class="modal-box">
-        <div class="modal-header">
-            <h3 id="modalTitle"></h3>
-            <button onclick="closeModal()">✖</button>
-        </div>
-        <div id="modalBody"></div>
-        <div class="modal-footer">
-            <button class="btn btn-primary" onclick="closeModal()">OK</button>
-        </div>
-    </div>
-</div>
+  <div class="card">
+    <h2>Transactions</h2>
+    <table id="txTable">
+      <thead><tr><th>Agent</th><th>Montant</th><th>Date</th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </div>
+</main>
 
 <script>
-/* ===============================
-   COMMUNICATION BACKEND (CONSERVÉE)
-================================ */
-const API_BASE = "/api"; // identique au fichier léger
+  // === LOGIQUE COPIÉE DU MASTER (token) ===
+  const params = new URLSearchParams(location.search);
+  const token = params.get('token');
+  if (!token || !token.startsWith('nova_')) {
+    document.body.innerHTML = '<h3 style="padding:16px">Accès refusé</h3>';
+    throw new Error('Token invalide');
+  }
 
-function authHeaders(){
-    return {
-        "Content-Type":"application/json",
-        "Authorization":"Bearer "+localStorage.getItem("token")
-    };
-}
-
-/* ===============================
-   NAVIGATION INTERNE (AJOUTÉE)
-================================ */
-function showSection(id){
-    document.querySelectorAll("section").forEach(s=>s.style.display="none");
-    document.getElementById(id).style.display="block";
-    document.getElementById("pageTitle").innerText =
-        id.charAt(0).toUpperCase()+id.slice(1);
-}
-
-/* ===============================
-   DASHBOARD STATS
-================================ */
-async function loadStats(){
-    try{
-        const r = await fetch(API_BASE+"/stats",{headers:authHeaders()});
-        if(!r.ok) throw "err";
-        const d = await r.json();
-        statUsers.innerText=d.users;
-        statTickets.innerText=d.tickets;
-        statSales.innerText=d.sales;
-    }catch{
-        systemStatus.className="badge warn";
-        systemStatus.innerText="WARNING";
-    }
-}
-
-/* ===============================
-   USERS
-================================ */
-async function loadUsers(){
-    usersTable.innerHTML="";
-    const r = await fetch(API_BASE+"/users",{headers:authHeaders()});
-    const users = await r.json();
-    users.forEach(u=>{
-        usersTable.innerHTML+=`
-        <tr>
-            <td>${u.name}</td>
-            <td>${u.role}</td>
-            <td><span class="badge ${u.active?'ok':'bad'}">${u.active?'ACTIF':'BLOQUÉ'}</span></td>
-            <td class="actions">
-                <button onclick="viewUser('${u.id}')"><i class="fa fa-eye"></i></button>
-                <button onclick="deleteUser('${u.id}')"><i class="fa fa-trash"></i></button>
-            </td>
-        </tr>`;
+  // === API helper ===
+  async function api(path, method='GET', body) {
+    const res = await fetch(path + '?token=' + encodeURIComponent(token), {
+      method,
+      headers: { 'Content-Type':'application/json' },
+      body: body ? JSON.stringify(body) : undefined
     });
-}
+    return res.json();
+  }
 
-function viewUser(id){
-    modalTitle.innerText="Utilisateur";
-    modalBody.innerText="ID : "+id;
-    modal.classList.add("active");
-}
+  // === LOAD ===
+  async function load() {
+    const info = await api('/api/subsystem/me');
+    if (!info.success) return alert(info.error || 'Erreur');
 
-function deleteUser(id){
-    modalTitle.innerText="Suppression";
-    modalBody.innerText="Suppression utilisateur "+id;
-    modal.classList.add("active");
-}
+    document.getElementById('name').textContent = info.data.name;
+    document.getElementById('status').textContent = info.data.active ? 'Actif' : 'Bloqué';
+    if (info.data.logo) document.getElementById('logo').src = info.data.logo;
 
-/* ===============================
-   LOGS
-================================ */
-async function loadLogs(){
-    const r = await fetch(API_BASE+"/logs",{headers:authHeaders()});
-    const logs = await r.json();
-    logsList.innerHTML="";
-    logs.forEach(l=>{
-        logsList.innerHTML+=`<li>${l}</li>`;
-    });
-}
+    document.getElementById('multiplier').value = info.data.multiplier || 1;
 
-function closeModal(){
-    modal.classList.remove("active");
-}
+    fillTable('supTable', info.supervisors || [], (s)=>`
+      <tr><td>${s.username}</td><td>${s.level}</td>
+      <td><button onclick="blockUser('${s._id}')">Bloquer</button></td></tr>`);
 
-/* INIT */
-loadStats();
-loadUsers();
-loadLogs();
+    fillTable('agentTable', info.agents || [], (a)=>`
+      <tr><td>${a.username}</td><td>${a.blocked?'Bloqué':'Actif'}</td>
+      <td><button onclick="blockUser('${a._id}')">Bloquer</button></td></tr>`);
+
+    fillTable('txTable', info.transactions || [], (t)=>`
+      <tr><td>${t.agent}</td><td>${t.amount}</td><td>${new Date(t.date).toLocaleString()}</td></tr>`);
+  }
+
+  function fillTable(id, rows, tpl){
+    const tb = document.querySelector('#'+id+' tbody');
+    tb.innerHTML = rows.map(tpl).join('');
+  }
+
+  async function saveConfig(){
+    const multiplier = Number(document.getElementById('multiplier').value);
+    const blockedBall = document.getElementById('blockedBall').value;
+    const r = await api('/api/subsystem/config','POST',{ multiplier, blockedBall });
+    alert(r.success ? 'Enregistré' : r.error);
+  }
+
+  async function createSupervisor(level){
+    const username = prompt('Nom utilisateur');
+    const password = prompt('Mot de passe');
+    if (!username || !password) return;
+    const r = await api('/api/subsystem/supervisor','POST',{ username, password, level });
+    if (!r.success) return alert(r.error);
+    load();
+  }
+
+  async function blockUser(id){
+    const r = await api('/api/subsystem/block','POST',{ id });
+    if (!r.success) return alert(r.error);
+    load();
+  }
+
+  load();
 </script>
-
 </body>
 </html>

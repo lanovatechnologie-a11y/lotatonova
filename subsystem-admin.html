@@ -1,147 +1,4284 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8" />
-  <title>Sous-système | Propriétaire</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <style>
-    body { font-family: Arial, sans-serif; background:#f4f6f8; margin:0 }
-    header { background:#111; color:#fff; padding:12px 16px; display:flex; align-items:center; gap:12px }
-    header img { height:36px }
-    main { padding:16px }
-    .card { background:#fff; border-radius:8px; padding:16px; margin-bottom:16px; box-shadow:0 2px 6px rgba(0,0,0,.08) }
-    h2 { margin:0 0 8px }
-    button { padding:8px 12px; cursor:pointer }
-    .row { display:flex; gap:12px; flex-wrap:wrap }
-    .muted { color:#777 }
-    table { width:100%; border-collapse:collapse }
-    th,td { padding:8px; border-bottom:1px solid #eee; text-align:left }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lotato - Administration Sous-Système</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary-color: #3498db;
+            --secondary-color: #2c3e50;
+            --success-color: #27ae60;
+            --warning-color: #f39c12;
+            --danger-color: #e74c3c;
+            --dark-color: #2c3e50;
+            --light-color: #ecf0f1;
+            --sidebar-width: 250px;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background-color: #f5f7fa;
+            color: var(--dark-color);
+            display: flex;
+            min-height: 100vh;
+        }
+        
+        /* Sidebar */
+        .sidebar {
+            width: var(--sidebar-width);
+            background: linear-gradient(180deg, var(--secondary-color), #1a2530);
+            color: white;
+            position: fixed;
+            height: 100vh;
+            overflow-y: auto;
+            box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+            z-index: 1000;
+        }
+        
+        .logo-container {
+            padding: 20px;
+            text-align: center;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        .logo-placeholder {
+            width: 60px;
+            height: 60px;
+            background-color: var(--primary-color);
+            border-radius: 10px;
+            margin: 0 auto 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+        }
+        
+        .subsystem-name {
+            font-size: 1.2rem;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .subsystem-domain {
+            font-size: 0.8rem;
+            color: rgba(255,255,255,0.7);
+        }
+        
+        .user-info {
+            padding: 15px 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            background-color: var(--warning-color);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }
+        
+        .user-details h3 {
+            font-size: 0.95rem;
+            margin-bottom: 3px;
+        }
+        
+        .user-details p {
+            font-size: 0.8rem;
+            color: rgba(255,255,255,0.7);
+        }
+        
+        .nav-menu {
+            padding: 15px 0;
+        }
+        
+        .nav-item {
+            display: flex;
+            align-items: center;
+            padding: 12px 20px;
+            color: rgba(255,255,255,0.8);
+            text-decoration: none;
+            transition: all 0.3s;
+            border-left: 4px solid transparent;
+        }
+        
+        .nav-item:hover {
+            background-color: rgba(255,255,255,0.1);
+            color: white;
+            border-left-color: var(--primary-color);
+        }
+        
+        .nav-item.active {
+            background-color: rgba(255,255,255,0.15);
+            color: white;
+            border-left-color: var(--primary-color);
+        }
+        
+        .nav-icon {
+            width: 25px;
+            font-size: 1.1rem;
+            margin-right: 12px;
+        }
+        
+        .nav-label {
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+        
+        /* Main Content */
+        .main-content {
+            flex: 1;
+            margin-left: var(--sidebar-width);
+            padding: 20px;
+            min-height: 100vh;
+        }
+        
+        .top-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 0;
+            margin-bottom: 25px;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        .page-title {
+            font-size: 1.5rem;
+            color: var(--secondary-color);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .page-title i {
+            color: var(--primary-color);
+        }
+        
+        .top-actions {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        
+        .subsystem-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background-color: #f8f9fa;
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+        }
+        
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background-color: var(--success-color);
+        }
+        
+        .status-dot.warning {
+            background-color: var(--warning-color);
+        }
+        
+        .status-dot.danger {
+            background-color: var(--danger-color);
+        }
+        
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.9rem;
+        }
+        
+        .btn-primary {
+            background-color: var(--primary-color);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background-color: #2980b9;
+        }
+        
+        .btn-success {
+            background-color: var(--success-color);
+            color: white;
+        }
+        
+        .btn-success:hover {
+            background-color: #219955;
+        }
+        
+        .btn-warning {
+            background-color: var(--warning-color);
+            color: white;
+        }
+        
+        .btn-warning:hover {
+            background-color: #e67e22;
+        }
+        
+        .btn-danger {
+            background-color: var(--danger-color);
+            color: white;
+        }
+        
+        .btn-danger:hover {
+            background-color: #c0392b;
+        }
+        
+        /* Dashboard Cards */
+        .stats-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+        
+        .stat-card {
+            background-color: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.08);
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            transition: transform 0.3s;
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-3px);
+        }
+        
+        .stat-icon {
+            width: 50px;
+            height: 50px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            color: white;
+        }
+        
+        .icon-sales {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        }
+        
+        .icon-users {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        }
+        
+        .icon-tickets {
+            background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+        }
+        
+        .icon-profit {
+            background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+        }
+        
+        .stat-info {
+            flex: 1;
+        }
+        
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: var(--secondary-color);
+        }
+        
+        .stat-label {
+            font-size: 0.85rem;
+            color: #7f8c8d;
+            margin-top: 3px;
+        }
+        
+        .stat-trend {
+            font-size: 0.75rem;
+            margin-top: 5px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        
+        .trend-up {
+            color: var(--success-color);
+        }
+        
+        .trend-down {
+            color: var(--danger-color);
+        }
+        
+        /* Tables */
+        .table-container {
+            background-color: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.08);
+            margin-bottom: 25px;
+            overflow-x: auto;
+        }
+        
+        .table-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        
+        .table-title {
+            font-size: 1.1rem;
+            color: var(--secondary-color);
+            font-weight: 600;
+        }
+        
+        .search-box {
+            display: flex;
+            gap: 8px;
+        }
+        
+        .search-input {
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            min-width: 200px;
+            font-size: 0.9rem;
+        }
+        
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+        }
+        
+        .table th {
+            background-color: #f8f9fa;
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+            color: var(--secondary-color);
+            border-bottom: 2px solid #dee2e6;
+            white-space: nowrap;
+        }
+        
+        .table td {
+            padding: 10px 12px;
+            border-bottom: 1px solid #eee;
+            vertical-align: middle;
+        }
+        
+        .table tr:hover {
+            background-color: #f8f9fa;
+        }
+        
+        /* Status Badges */
+        .status-badge {
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: bold;
+            display: inline-block;
+            text-align: center;
+            min-width: 70px;
+        }
+        
+        .status-active {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        
+        .status-inactive {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+        
+        .status-pending {
+            background-color: #fff3cd;
+            color: #856404;
+        }
+        
+        /* Role Badges */
+        .role-badge {
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            font-weight: bold;
+            display: inline-block;
+        }
+        
+        .role-owner {
+            background-color: var(--danger-color);
+            color: white;
+        }
+        
+        .role-admin {
+            background-color: #9b59b6;
+            color: white;
+        }
+        
+        .role-supervisor-2 {
+            background-color: #e67e22;
+            color: white;
+        }
+        
+        .role-supervisor-1 {
+            background-color: var(--warning-color);
+            color: white;
+        }
+        
+        .role-agent {
+            background-color: var(--success-color);
+            color: white;
+        }
+        
+        /* Action Buttons */
+        .action-buttons {
+            display: flex;
+            gap: 5px;
+        }
+        
+        .action-btn {
+            width: 30px;
+            height: 30px;
+            border-radius: 5px;
+            border: none;
+            background-color: #f8f9fa;
+            color: #6c757d;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+        }
+        
+        .action-btn:hover {
+            background-color: #e9ecef;
+            color: var(--secondary-color);
+        }
+        
+        .action-btn.edit:hover {
+            background-color: var(--warning-color);
+            color: white;
+        }
+        
+        .action-btn.delete:hover {
+            background-color: var(--danger-color);
+            color: white;
+        }
+        
+        .action-btn.view:hover {
+            background-color: var(--primary-color);
+            color: white;
+        }
+        
+        /* Modals */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0,0,0,0.5);
+            z-index: 2000;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .modal.active {
+            display: flex;
+        }
+        
+        .modal-content {
+            background-color: white;
+            border-radius: 10px;
+            width: 100%;
+            max-width: 500px;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        
+        .modal-header {
+            padding: 15px 20px;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .modal-title {
+            font-size: 1.2rem;
+            color: var(--secondary-color);
+            font-weight: 600;
+        }
+        
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            color: #6c757d;
+            cursor: pointer;
+            transition: color 0.3s;
+        }
+        
+        .modal-close:hover {
+            color: var(--danger-color);
+        }
+        
+        .modal-body {
+            padding: 20px;
+        }
+        
+        .modal-footer {
+            padding: 15px 20px;
+            border-top: 1px solid #eee;
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+        
+        /* Forms */
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        .form-label {
+            display: block;
+            margin-bottom: 6px;
+            font-weight: 600;
+            color: var(--secondary-color);
+            font-size: 0.9rem;
+        }
+        
+        .form-control {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            transition: border-color 0.3s;
+        }
+        
+        .form-control:focus {
+            outline: none;
+            border-color: var(--primary-color);
+        }
+        
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+        
+        /* Tabs */
+        .tabs {
+            display: flex;
+            border-bottom: 1px solid #ddd;
+            margin-bottom: 20px;
+            overflow-x: auto;
+        }
+        
+        .tab {
+            padding: 10px 15px;
+            background: none;
+            border: none;
+            border-bottom: 3px solid transparent;
+            font-weight: 600;
+            color: #6c757d;
+            cursor: pointer;
+            transition: all 0.3s;
+            white-space: nowrap;
+        }
+        
+        .tab:hover {
+            color: var(--secondary-color);
+        }
+        
+        .tab.active {
+            color: var(--primary-color);
+            border-bottom-color: var(--primary-color);
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        /* Game Multipliers */
+        .multipliers-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 12px;
+            margin-top: 15px;
+        }
+        
+        .multiplier-item {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #dee2e6;
+        }
+        
+        .multiplier-name {
+            font-weight: 600;
+            margin-bottom: 5px;
+            color: var(--secondary-color);
+        }
+        
+        .multiplier-value {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+        
+        /* Loading */
+        .loading {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 200px;
+            color: #6c757d;
+        }
+        
+        .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid var(--primary-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 15px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* Notifications */
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 12px 18px;
+            border-radius: 8px;
+            color: white;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            z-index: 3000;
+            animation: slideIn 0.3s ease-out;
+            max-width: 350px;
+        }
+        
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(100%);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+        
+        .notification.success {
+            background-color: var(--success-color);
+        }
+        
+        .notification.error {
+            background-color: var(--danger-color);
+        }
+        
+        .notification.warning {
+            background-color: var(--warning-color);
+        }
+        
+        .notification.info {
+            background-color: var(--primary-color);
+        }
+        
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: #6c757d;
+        }
+        
+        .empty-icon {
+            font-size: 3rem;
+            color: #dee2e6;
+            margin-bottom: 15px;
+        }
+        
+        /* Progress Bars */
+        .progress-bar {
+            height: 6px;
+            background-color: #e9ecef;
+            border-radius: 3px;
+            overflow: hidden;
+            margin-top: 8px;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background-color: var(--success-color);
+            border-radius: 3px;
+            transition: width 0.3s;
+        }
+        
+        /* Subscription Info */
+        .subscription-info {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        
+        .subscription-info h3 {
+            margin-bottom: 10px;
+            font-size: 1.1rem;
+        }
+        
+        /* Quick Stats */
+        .quick-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+        
+        .quick-stat {
+            background-color: white;
+            border-radius: 8px;
+            padding: 15px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .quick-stat-icon {
+            width: 35px;
+            height: 35px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1rem;
+        }
+        
+        .quick-stat-info {
+            flex: 1;
+        }
+        
+        .quick-stat-value {
+            font-size: 1.1rem;
+            font-weight: bold;
+            color: var(--secondary-color);
+        }
+        
+        .quick-stat-label {
+            font-size: 0.8rem;
+            color: #6c757d;
+        }
+        
+        /* Responsive */
+        @media (max-width: 1024px) {
+            .sidebar {
+                width: 70px;
+                overflow-x: hidden;
+            }
+            
+            .subsystem-name, .subsystem-domain, .user-details, .nav-label {
+                display: none;
+            }
+            
+            .main-content {
+                margin-left: 70px;
+            }
+            
+            .logo-container {
+                padding: 15px 10px;
+            }
+            
+            .user-info {
+                justify-content: center;
+                padding: 10px;
+            }
+            
+            .nav-item {
+                justify-content: center;
+                padding: 12px 10px;
+            }
+            
+            .nav-icon {
+                margin-right: 0;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+            
+            .stats-cards {
+                grid-template-columns: 1fr;
+            }
+            
+            .table-header {
+                flex-direction: column;
+                gap: 12px;
+                align-items: flex-start;
+            }
+            
+            .search-box {
+                width: 100%;
+            }
+            
+            .search-input {
+                min-width: auto;
+                flex: 1;
+            }
+            
+            .top-bar {
+                flex-direction: column;
+                gap: 15px;
+                align-items: flex-start;
+            }
+            
+            .top-actions {
+                width: 100%;
+                justify-content: space-between;
+            }
+        }
+        
+        /* Configuration Cards */
+        .config-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .config-card {
+            background-color: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.08);
+            border-left: 4px solid var(--primary-color);
+        }
+        
+        .config-card h3 {
+            margin-bottom: 15px;
+            color: var(--secondary-color);
+            font-size: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        /* Ticket Actions */
+        .ticket-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 10px;
+        }
+        
+        /* User Limits */
+        .limits-info {
+            background-color: #f8f9fa;
+            padding: 12px;
+            border-radius: 6px;
+            margin-top: 10px;
+            font-size: 0.85rem;
+        }
+        
+        /* Stats des agents en ligne */
+        .agent-stats-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+        
+        .agent-stat-card {
+            background-color: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.08);
+            border-top: 4px solid #3498db;
+        }
+        
+        .agent-stat-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 15px;
+        }
+        
+        .agent-avatar {
+            width: 45px;
+            height: 45px;
+            background: linear-gradient(135deg, #3498db, #2c3e50);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 1.1rem;
+        }
+        
+        .agent-name {
+            font-weight: 600;
+            color: var(--secondary-color);
+            font-size: 1rem;
+        }
+        
+        .agent-role {
+            font-size: 0.8rem;
+            color: #6c757d;
+        }
+        
+        .agent-stats {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+        }
+        
+        .agent-stat-item {
+            background-color: #f8f9fa;
+            padding: 10px;
+            border-radius: 6px;
+            text-align: center;
+        }
+        
+        .agent-stat-label {
+            font-size: 0.75rem;
+            color: #6c757d;
+            margin-bottom: 4px;
+        }
+        
+        .agent-stat-value {
+            font-weight: bold;
+            color: var(--secondary-color);
+            font-size: 0.9rem;
+        }
+        
+        .agent-stat-value.positive {
+            color: var(--success-color);
+        }
+        
+        .agent-stat-value.negative {
+            color: var(--danger-color);
+        }
+        
+        .agent-status {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 0.8rem;
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px solid #eee;
+        }
+        
+        .status-indicator {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+        }
+        
+        .status-online {
+            background-color: var(--success-color);
+        }
+        
+        .status-offline {
+            background-color: #95a5a6;
+        }
+    </style>
 </head>
 <body>
-
-<header>
-  <img id="logo" src="" alt="" onerror="this.style.display='none'">
-  <div>
-    <div id="name">Sous-système</div>
-    <small class="muted" id="status">Chargement…</small>
-  </div>
-</header>
-
-<main>
-  <div class="card">
-    <h2>Configuration du jeu</h2>
-    <div class="row">
-      <div>
-        <label>Multiplicateur</label><br>
-        <input id="multiplier" type="number" step="0.1" />
-      </div>
-      <div>
-        <label>Bloquer une boule</label><br>
-        <input id="blockedBall" placeholder="ex: 12" />
-      </div>
+    <!-- Sidebar -->
+    <div class="sidebar">
+        <div class="logo-container">
+            <div class="logo-placeholder" id="subsystem-logo">
+                <i class="fas fa-building"></i>
+            </div>
+            <div class="subsystem-name" id="subsystem-name">Chargement...</div>
+            <div class="subsystem-domain" id="subsystem-domain">sous-domaine.novalotto.com</div>
+        </div>
+        
+        <div class="user-info">
+            <div class="user-avatar" id="user-avatar">U</div>
+            <div class="user-details">
+                <h3 id="user-name">Utilisateur</h3>
+                <p id="user-role">Propriétaire</p>
+            </div>
+        </div>
+        
+        <div class="nav-menu">
+            <a href="#" class="nav-item active" data-section="dashboard">
+                <div class="nav-icon"><i class="fas fa-tachometer-alt"></i></div>
+                <div class="nav-label">Tableau de bord</div>
+            </a>
+            <a href="#" class="nav-item" data-section="supervisors">
+                <div class="nav-icon"><i class="fas fa-user-shield"></i></div>
+                <div class="nav-label">Superviseurs</div>
+            </a>
+            <a href="#" class="nav-item" data-section="agents">
+                <div class="nav-icon"><i class="fas fa-users"></i></div>
+                <div class="nav-label">Agents</div>
+            </a>
+            <a href="#" class="nav-item" data-section="configuration">
+                <div class="nav-icon"><i class="fas fa-cog"></i></div>
+                <div class="nav-label">Configuration</div>
+            </a>
+            <a href="#" class="nav-item" data-section="multipliers">
+                <div class="nav-icon"><i class="fas fa-percentage"></i></div>
+                <div class="nav-label">Multiplicateurs</div>
+            </a>
+            <a href="#" class="nav-item" data-section="reports">
+                <div class="nav-icon"><i class="fas fa-chart-bar"></i></div>
+                <div class="nav-label">Rapports</div>
+            </a>
+            <a href="#" class="nav-item" data-section="tickets">
+                <div class="nav-icon"><i class="fas fa-ticket-alt"></i></div>
+                <div class="nav-label">Tickets</div>
+            </a>
+            <a href="#" class="nav-item" data-section="activity">
+                <div class="nav-icon"><i class="fas fa-history"></i></div>
+                <div class="nav-label">Activité</div>
+            </a>
+        </div>
     </div>
-    <br>
-    <button onclick="saveConfig()">Enregistrer</button>
-  </div>
+    
+    <!-- Main Content -->
+    <div class="main-content">
+        <!-- Top Bar -->
+        <div class="top-bar">
+            <div class="page-title">
+                <i class="fas fa-tachometer-alt"></i>
+                <span id="page-title">Tableau de bord</span>
+            </div>
+            <div class="top-actions">
+                <div class="subsystem-status">
+                    <div class="status-dot" id="system-status-dot"></div>
+                    <span id="system-status-text">Système actif</span>
+                </div>
+                <button class="btn btn-primary" id="refresh-btn">
+                    <i class="fas fa-sync-alt"></i> Actualiser
+                </button>
+                <button class="btn btn-warning" id="logout-btn">
+                    <i class="fas fa-sign-out-alt"></i> Déconnexion
+                </button>
+            </div>
+        </div>
+        
+        <!-- Subscription Info -->
+        <div class="subscription-info" id="subscription-info" style="display: none;">
+            <h3><i class="fas fa-exclamation-triangle"></i> Abonnement expire bientôt</h3>
+            <p>Votre abonnement expire dans <span id="days-left">X</span> jours. Contactez l'administrateur Master.</p>
+        </div>
+        
+        <!-- Dashboard Section -->
+        <div id="dashboard-section" class="section-content active">
+            <!-- Quick Stats -->
+            <div class="quick-stats">
+                <div class="quick-stat">
+                    <div class="quick-stat-icon" style="background-color: #3498db;">
+                        <i class="fas fa-user-shield"></i>
+                    </div>
+                    <div class="quick-stat-info">
+                        <div class="quick-stat-value" id="total-supervisors">0</div>
+                        <div class="quick-stat-label">Superviseurs</div>
+                    </div>
+                </div>
+                
+                <div class="quick-stat">
+                    <div class="quick-stat-icon" style="background-color: #2ecc71;">
+                        <i class="fas fa-users"></i>
+                    </div>
+                    <div class="quick-stat-info">
+                        <div class="quick-stat-value" id="total-agents">0</div>
+                        <div class="quick-stat-label">Agents</div>
+                    </div>
+                </div>
+                
+                <div class="quick-stat">
+                    <div class="quick-stat-icon" style="background-color: #f39c12;">
+                        <i class="fas fa-chart-line"></i>
+                    </div>
+                    <div class="quick-stat-info">
+                        <div class="quick-stat-value" id="today-sales">0 HTG</div>
+                        <div class="quick-stat-label">Ventes aujourd'hui</div>
+                    </div>
+                </div>
+                
+                <div class="quick-stat">
+                    <div class="quick-stat-icon" style="background-color: #e74c3c;">
+                        <i class="fas fa-exclamation-triangle"></i>
+                    </div>
+                    <div class="quick-stat-info">
+                        <div class="quick-stat-value" id="pending-alerts">0</div>
+                        <div class="quick-stat-label">Alertes en attente</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Stats Cards -->
+            <div class="stats-cards">
+                <div class="stat-card">
+                    <div class="stat-icon icon-sales">
+                        <i class="fas fa-money-bill-wave"></i>
+                    </div>
+                    <div class="stat-info">
+                        <div class="stat-value" id="total-sales">0 HTG</div>
+                        <div class="stat-label">Ventes du mois</div>
+                        <div class="stat-trend trend-up">
+                            <i class="fas fa-arrow-up"></i> 12% vs mois dernier
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-icon icon-users">
+                        <i class="fas fa-users"></i>
+                    </div>
+                    <div class="stat-info">
+                        <div class="stat-value" id="active-agents">0/0</div>
+                        <div class="stat-label">Agents actifs</div>
+                        <div class="stat-trend trend-up">
+                            <i class="fas fa-arrow-up"></i> 3 nouveaux
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-icon icon-tickets">
+                        <i class="fas fa-receipt"></i>
+                    </div>
+                    <div class="stat-info">
+                        <div class="stat-value" id="total-tickets">0</div>
+                        <div class="stat-label">Tickets du mois</div>
+                        <div class="stat-trend trend-up">
+                            <i class="fas fa-arrow-up"></i> 8% vs mois dernier
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-icon icon-profit">
+                        <i class="fas fa-chart-pie"></i>
+                    </div>
+                    <div class="stat-info">
+                        <div class="stat-value" id="estimated-profit">0 HTG</div>
+                        <div class="stat-label">Profit estimé</div>
+                        <div class="stat-trend trend-up">
+                            <i class="fas fa-arrow-up"></i> 15% vs mois dernier
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Recent Activity -->
+            <div class="table-container">
+                <div class="table-header">
+                    <div class="table-title">Activité récente</div>
+                    <div class="search-box">
+                        <input type="text" class="search-input" placeholder="Rechercher une activité...">
+                        <button class="btn btn-primary">
+                            <i class="fas fa-search"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="loading" id="activity-loading">
+                    <div class="loading-spinner"></div>
+                    <p>Chargement de l'activité...</p>
+                </div>
+                
+                <table class="table" id="activity-table" style="display: none;">
+                    <thead>
+                        <tr>
+                            <th>Heure</th>
+                            <th>Utilisateur</th>
+                            <th>Action</th>
+                            <th>Détails</th>
+                        </tr>
+                    </thead>
+                    <tbody id="activity-table-body">
+                        <!-- Rempli dynamiquement -->
+                    </tbody>
+                </table>
+                
+                <div class="empty-state" id="activity-empty" style="display: none;">
+                    <div class="empty-icon">
+                        <i class="fas fa-history"></i>
+                    </div>
+                    <h3>Aucune activité récente</h3>
+                    <p>Les actions apparaîtront ici</p>
+                </div>
+            </div>
+            
+            <!-- Recent Tickets -->
+            <div class="table-container">
+                <div class="table-header">
+                    <div class="table-title">Tickets récents</div>
+                    <div class="search-box">
+                        <input type="text" class="search-input" placeholder="Rechercher un ticket...">
+                        <button class="btn btn-primary">
+                            <i class="fas fa-search"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="loading" id="tickets-loading">
+                    <div class="loading-spinner"></div>
+                    <p>Chargement des tickets...</p>
+                </div>
+                
+                <table class="table" id="tickets-table" style="display: none;">
+                    <thead>
+                        <tr>
+                            <th>N° Ticket</th>
+                            <th>Vendeur</th>
+                            <th>Montant</th>
+                            <th>Date</th>
+                            <th>Statut</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tickets-table-body">
+                        <!-- Rempli dynamiquement -->
+                    </tbody>
+                </table>
+                
+                <div class="empty-state" id="tickets-empty" style="display: none;">
+                    <div class="empty-icon">
+                        <i class="fas fa-ticket-alt"></i>
+                    </div>
+                    <h3>Aucun ticket récent</h3>
+                    <p>Les tickets vendus apparaîtront ici</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Supervisors Section -->
+        <div id="supervisors-section" class="section-content" style="display: none;">
+            <div class="tabs">
+                <button class="tab active" data-supervisor-tab="all">Tous les superviseurs</button>
+                <button class="tab" data-supervisor-tab="level2">Superviseurs Niveau 2</button>
+                <button class="tab" data-supervisor-tab="level1">Superviseurs Niveau 1</button>
+            </div>
+            
+            <div class="tab-content active" id="all-tab-supervisors">
+                <div class="table-container">
+                    <div class="table-header">
+                        <div class="table-title">Gestion des superviseurs</div>
+                        <div class="search-box">
+                            <input type="text" class="search-input" placeholder="Rechercher un superviseur..." id="search-supervisors">
+                            <button class="btn btn-primary" id="search-supervisor-btn">
+                                <i class="fas fa-search"></i>
+                            </button>
+                            <button class="btn btn-success" id="add-supervisor-btn">
+                                <i class="fas fa-plus"></i> Ajouter
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="loading" id="supervisors-loading">
+                        <div class="loading-spinner"></div>
+                        <p>Chargement des superviseurs...</p>
+                    </div>
+                    
+                    <table class="table" id="supervisors-table" style="display: none;">
+                        <thead>
+                            <tr>
+                                <th>Nom</th>
+                                <th>Identifiant</th>
+                                <th>Niveau</th>
+                                <th>Statut</th>
+                                <th>Agents assignés</th>
+                                <th>Dernière connexion</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="supervisors-table-body">
+                            <!-- Rempli dynamiquement -->
+                        </tbody>
+                    </table>
+                    
+                    <div class="empty-state" id="supervisors-empty" style="display: none;">
+                        <div class="empty-icon">
+                            <i class="fas fa-user-shield"></i>
+                        </div>
+                        <h3>Aucun superviseur</h3>
+                        <p>Ajoutez votre premier superviseur</p>
+                        <button class="btn btn-success" id="create-first-supervisor" style="margin-top: 15px;">
+                            <i class="fas fa-plus"></i> Ajouter un superviseur
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Agents Section -->
+        <div id="agents-section" class="section-content" style="display: none;">
+            <div class="tabs">
+                <button class="tab active" data-agent-tab="all">Tous les agents</button>
+                <button class="tab" data-agent-tab="online">Agents en ligne</button>
+                <button class="tab" data-agent-tab="inactive">Agents inactifs</button>
+            </div>
+            
+            <div class="tab-content active" id="all-tab-agents">
+                <div class="table-container">
+                    <div class="table-header">
+                        <div class="table-title">Gestion des agents</div>
+                        <div class="search-box">
+                            <input type="text" class="search-input" placeholder="Rechercher un agent..." id="search-agents">
+                            <select class="form-control" id="filter-supervisor" style="width: 200px;">
+                                <option value="">Tous les superviseurs</option>
+                            </select>
+                            <button class="btn btn-success" id="add-agent-btn">
+                                <i class="fas fa-plus"></i> Ajouter
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="loading" id="agents-loading">
+                        <div class="loading-spinner"></div>
+                        <p>Chargement des agents...</p>
+                    </div>
+                    
+                    <table class="table" id="agents-table" style="display: none;">
+                        <thead>
+                            <tr>
+                                <th>Nom</th>
+                                <th>Identifiant</th>
+                                <th>Superviseur</th>
+                                <th>Statut</th>
+                                <th>Limites</th>
+                                <th>Dernière connexion</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="agents-table-body">
+                            <!-- Rempli dynamiquement -->
+                        </tbody>
+                    </table>
+                    
+                    <div class="empty-state" id="agents-empty" style="display: none;">
+                        <div class="empty-icon">
+                            <i class="fas fa-users"></i>
+                        </div>
+                        <h3>Aucun agent</h3>
+                        <p>Ajoutez votre premier agent</p>
+                        <button class="btn btn-success" id="create-first-agent" style="margin-top: 15px;">
+                            <i class="fas fa-plus"></i> Ajouter un agent
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Configuration Section -->
+        <div id="configuration-section" class="section-content" style="display: none;">
+            <div class="config-cards">
+                <div class="config-card">
+                    <h3><i class="fas fa-info-circle"></i> Informations du sous-système</h3>
+                    <div class="form-group">
+                        <label class="form-label">Nom de l'entreprise</label>
+                        <input type="text" class="form-control" id="company-name" placeholder="Ex: Borlette Cap-Haïtien">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Logo (URL)</label>
+                        <input type="text" class="form-control" id="company-logo" placeholder="https://exemple.com/logo.png">
+                        <small style="color: #6c757d; display: block; margin-top: 5px;">
+                            URL vers votre logo (PNG, JPG)
+                        </small>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Téléphone de contact</label>
+                            <input type="text" class="form-control" id="company-phone" placeholder="+509 32 53 49 58">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label">Adresse</label>
+                            <input type="text" class="form-control" id="company-address" placeholder="Adresse de l'entreprise">
+                        </div>
+                    </div>
+                    
+                    <button class="btn btn-success" id="save-company-info">
+                        <i class="fas fa-save"></i> Sauvegarder
+                    </button>
+                </div>
+                
+                <div class="config-card">
+                    <h3><i class="fas fa-clock"></i> Horaires d'ouverture</h3>
+                    <div class="form-group">
+                        <label class="form-label">Heure d'ouverture</label>
+                        <input type="time" class="form-control" id="opening-time" value="08:00">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Heure de fermeture</label>
+                        <input type="time" class="form-control" id="closing-time" value="22:00">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">
+                            <input type="checkbox" id="enable-schedule" checked>
+                            Activer les horaires
+                        </label>
+                        <small style="color: #6c757d; display: block; margin-top: 5px;">
+                            Si désactivé, le système est accessible 24h/24
+                        </small>
+                    </div>
+                    
+                    <button class="btn btn-success" id="save-schedule">
+                        <i class="fas fa-save"></i> Sauvegarder
+                    </button>
+                </div>
+                
+                <div class="config-card">
+                    <h3><i class="fas fa-gamepad"></i> Jeux autorisés</h3>
+                    <div style="margin-top: 10px;">
+                        <label style="display: flex; align-items: center; gap: 8px; margin-bottom: 10px;">
+                            <input type="checkbox" id="game-borlette" checked>
+                            <span>Borlette (2 chiffres)</span>
+                        </label>
+                        
+                        <label style="display: flex; align-items: center; gap: 8px; margin-bottom: 10px;">
+                            <input type="checkbox" id="game-boulpe" checked>
+                            <span>Boul Pe (boule paire)</span>
+                        </label>
+                        
+                        <label style="display: flex; align-items: center; gap: 8px; margin-bottom: 10px;">
+                            <input type="checkbox" id="game-lotto3" checked>
+                            <span>Lotto 3 (3 chiffres)</span>
+                        </label>
+                        
+                        <label style="display: flex; align-items: center; gap: 8px; margin-bottom: 10px;">
+                            <input type="checkbox" id="game-lotto4" checked>
+                            <span>Lotto 4 (4 chiffres)</span>
+                        </label>
+                        
+                        <label style="display: flex; align-items: center; gap: 8px; margin-bottom: 10px;">
+                            <input type="checkbox" id="game-lotto5" checked>
+                            <span>Lotto 5 (5 chiffres)</span>
+                        </label>
+                        
+                        <label style="display: flex; align-items: center; gap: 8px; margin-bottom: 10px;">
+                            <input type="checkbox" id="game-grap" checked>
+                            <span>Grap (boule paire 111, 222...)</span>
+                        </label>
+                        
+                        <label style="display: flex; align-items: center; gap: 8px;">
+                            <input type="checkbox" id="game-marriage" checked>
+                            <span>Marriage (2 chiffres)</span>
+                        </label>
+                    </div>
+                    
+                    <button class="btn btn-success" id="save-games" style="margin-top: 15px;">
+                        <i class="fas fa-save"></i> Sauvegarder
+                    </button>
+                </div>
+                
+                <div class="config-card">
+                    <h3><i class="fas fa-ban"></i> Boules bloquées</h3>
+                    <div class="form-group">
+                        <label class="form-label">Boules interdites (séparées par des virgules)</label>
+                        <input type="text" class="form-control" id="blocked-numbers" placeholder="Ex: 11, 22, 33, 44">
+                        <small style="color: #6c757d; display: block; margin-top: 5px;">
+                            Les agents ne pourront pas vendre de tickets avec ces numéros
+                        </small>
+                    </div>
+                    
+                    <button class="btn btn-success" id="save-blocked">
+                        <i class="fas fa-save"></i> Sauvegarder
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Multipliers Section -->
+        <div id="multipliers-section" class="section-content" style="display: none;">
+            <div class="tabs">
+                <button class="tab active" data-multiplier-tab="global">Multiplicateurs globaux</button>
+                <button class="tab" data-multiplier-tab="custom">Multiplicateurs personnalisés</button>
+            </div>
+            
+            <div class="tab-content active" id="global-tab">
+                <div class="table-container">
+                    <div class="table-header">
+                        <div class="table-title">Multiplicateurs par défaut</div>
+                        <div class="search-box">
+                            <button class="btn btn-success" id="apply-multipliers">
+                                <i class="fas fa-check"></i> Appliquer à tous
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="multipliers-grid">
+                        <div class="multiplier-item">
+                            <div class="multiplier-name">Borlette</div>
+                            <div class="form-group" style="margin-bottom: 0;">
+                                <input type="number" class="form-control" id="multiplier-borlette" value="60" min="1" step="1">
+                            </div>
+                        </div>
+                        
+                        <div class="multiplier-item">
+                            <div class="multiplier-name">Boul Pe</div>
+                            <div class="form-group" style="margin-bottom: 0;">
+                                <input type="number" class="form-control" id="multiplier-boulpe" value="60" min="1" step="1">
+                            </div>
+                        </div>
+                        
+                        <div class="multiplier-item">
+                            <div class="multiplier-name">Lotto 3</div>
+                            <div class="form-group" style="margin-bottom: 0;">
+                                <input type="number" class="form-control" id="multiplier-lotto3" value="500" min="1" step="1">
+                            </div>
+                        </div>
+                        
+                        <div class="multiplier-item">
+                            <div class="multiplier-name">Lotto 4</div>
+                            <div class="form-group" style="margin-bottom: 0;">
+                                <input type="number" class="form-control" id="multiplier-lotto4" value="5000" min="1" step="1">
+                            </div>
+                        </div>
+                        
+                        <div class="multiplier-item">
+                            <div class="multiplier-name">Lotto 5</div>
+                            <div class="form-group" style="margin-bottom: 0;">
+                                <input type="number" class="form-control" id="multiplier-lotto5" value="25000" min="1" step="1">
+                            </div>
+                        </div>
+                        
+                        <div class="multiplier-item">
+                            <div class="multiplier-name">Grap</div>
+                            <div class="form-group" style="margin-bottom: 0;">
+                                <input type="number" class="form-control" id="multiplier-grap" value="500" min="1" step="1">
+                            </div>
+                        </div>
+                        
+                        <div class="multiplier-item">
+                            <div class="multiplier-name">Marriage</div>
+                            <div class="form-group" style="margin-bottom: 0;">
+                                <input type="number" class="form-control" id="multiplier-marriage" value="1000" min="1" step="1">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #eee;">
+                        <button class="btn btn-success" id="save-global-multipliers">
+                            <i class="fas fa-save"></i> Sauvegarder les modifications
+                        </button>
+                        <small style="color: #6c757d; display: block; margin-top: 10px;">
+                            Les multiplicateurs globaux s'appliquent à tous les utilisateurs, sauf s'ils ont des multiplicateurs personnalisés.
+                        </small>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="tab-content" id="custom-tab">
+                <div class="table-container">
+                    <div class="table-header">
+                        <div class="table-title">Multiplicateurs par utilisateur</div>
+                        <div class="search-box">
+                            <select class="form-control" id="select-user-multiplier" style="width: 200px;">
+                                <option value="">Sélectionner un utilisateur</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="loading" id="custom-multipliers-loading">
+                        <div class="loading-spinner"></div>
+                        <p>Chargement des multiplicateurs personnalisés...</p>
+                    </div>
+                    
+                    <div id="custom-multipliers-form" style="display: none;">
+                        <div style="margin-bottom: 20px;">
+                            <h4 style="color: var(--secondary-color); margin-bottom: 15px;">
+                                Multiplicateurs pour: <span id="selected-user-name"></span>
+                            </h4>
+                            <div class="multipliers-grid">
+                                <div class="multiplier-item">
+                                    <div class="multiplier-name">Borlette</div>
+                                    <div class="form-group" style="margin-bottom: 0;">
+                                        <input type="number" class="form-control" id="custom-borlette" value="60" min="1" step="1">
+                                    </div>
+                                </div>
+                                
+                                <div class="multiplier-item">
+                                    <div class="multiplier-name">Boul Pe</div>
+                                    <div class="form-group" style="margin-bottom: 0;">
+                                        <input type="number" class="form-control" id="custom-boulpe" value="60" min="1" step="1">
+                                    </div>
+                                </div>
+                                
+                                <div class="multiplier-item">
+                                    <div class="multiplier-name">Lotto 3</div>
+                                    <div class="form-group" style="margin-bottom: 0;">
+                                        <input type="number" class="form-control" id="custom-lotto3" value="500" min="1" step="1">
+                                    </div>
+                                </div>
+                                
+                                <div class="multiplier-item">
+                                    <div class="multiplier-name">Lotto 4</div>
+                                    <div class="form-group" style="margin-bottom: 0;">
+                                        <input type="number" class="form-control" id="custom-lotto4" value="5000" min="1" step="1">
+                                    </div>
+                                </div>
+                                
+                                <div class="multiplier-item">
+                                    <div class="multiplier-name">Lotto 5</div>
+                                    <div class="form-group" style="margin-bottom: 0;">
+                                        <input type="number" class="form-control" id="custom-lotto5" value="25000" min="1" step="1">
+                                    </div>
+                                </div>
+                                
+                                <div class="multiplier-item">
+                                    <div class="multiplier-name">Grap</div>
+                                    <div class="form-group" style="margin-bottom: 0;">
+                                        <input type="number" class="form-control" id="custom-grap" value="500" min="1" step="1">
+                                    </div>
+                                </div>
+                                
+                                <div class="multiplier-item">
+                                    <div class="multiplier-name">Marriage</div>
+                                    <div class="form-group" style="margin-bottom: 0;">
+                                        <input type="number" class="form-control" id="custom-marriage" value="1000" min="1" step="1">
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div style="margin-top: 20px;">
+                                <button class="btn btn-success" id="save-custom-multipliers">
+                                    <i class="fas fa-save"></i> Sauvegarder pour cet utilisateur
+                                </button>
+                                <button class="btn btn-secondary" id="reset-custom-multipliers">
+                                    <i class="fas fa-undo"></i> Rétablir les valeurs globales
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="empty-state" id="custom-multipliers-empty" style="display: none;">
+                        <div class="empty-icon">
+                            <i class="fas fa-percentage"></i>
+                        </div>
+                        <h3>Aucun multiplicateur personnalisé</h3>
+                        <p>Sélectionnez un utilisateur pour définir des multiplicateurs personnalisés</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Reports Section -->
+        <div id="reports-section" class="section-content" style="display: none;">
+            <div class="tabs">
+                <button class="tab active" data-report-tab="daily">Rapport quotidien</button>
+                <button class="tab" data-report-tab="weekly">Rapport hebdomadaire</button>
+                <button class="tab" data-report-tab="monthly">Rapport mensuel</button>
+                <button class="tab" data-report-tab="supervisor">Par superviseur</button>
+            </div>
+            
+            <div class="tab-content active" id="daily-tab">
+                <div class="table-container">
+                    <div class="table-header">
+                        <div class="table-title">Rapport du jour</div>
+                        <div style="display: flex; gap: 10px;">
+                            <input type="date" class="form-control" id="report-date" value="" style="width: 150px;">
+                            <button class="btn btn-success" id="generate-daily-report">
+                                <i class="fas fa-chart-bar"></i> Générer
+                            </button>
+                            <button class="btn btn-primary" id="export-daily-report">
+                                <i class="fas fa-file-export"></i> Exporter
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="loading" id="daily-report-loading">
+                        <div class="loading-spinner"></div>
+                        <p>Génération du rapport...</p>
+                    </div>
+                    
+                    <div id="daily-report-results" style="display: none;">
+                        <!-- Rapport généré ici -->
+                    </div>
+                </div>
+            </div>
+            
+            <div class="tab-content" id="supervisor-tab">
+                <div class="table-container">
+                    <div class="table-header">
+                        <div class="table-title">Rapport par superviseur</div>
+                        <div style="display: flex; gap: 10px;">
+                            <select class="form-control" id="select-supervisor-report" style="width: 200px;">
+                                <option value="">Sélectionner un superviseur</option>
+                            </select>
+                            <input type="date" class="form-control" id="report-start-date" placeholder="Date début">
+                            <input type="date" class="form-control" id="report-end-date" placeholder="Date fin">
+                            <button class="btn btn-success" id="generate-supervisor-report">
+                                <i class="fas fa-chart-bar"></i> Générer
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="loading" id="supervisor-report-loading">
+                        <div class="loading-spinner"></div>
+                        <p>Génération du rapport...</p>
+                    </div>
+                    
+                    <div id="supervisor-report-results" style="display: none;">
+                        <!-- Rapport généré ici -->
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Tickets Section -->
+        <div id="tickets-section" class="section-content" style="display: none;">
+            <div class="tabs">
+                <button class="tab active" data-ticket-tab="recent">Tickets récents</button>
+                <button class="tab" data-ticket-tab="search">Rechercher un ticket</button>
+                <button class="tab" data-ticket-tab="cancelled">Tickets annulés</button>
+            </div>
+            
+            <div class="tab-content active" id="recent-tab">
+                <div class="table-container">
+                    <div class="table-header">
+                        <div class="table-title">Derniers tickets</div>
+                        <div class="search-box">
+                            <select class="form-control" id="filter-agent" style="width: 150px;">
+                                <option value="">Tous les agents</option>
+                            </select>
+                            <select class="form-control" id="filter-status-ticket" style="width: 150px;">
+                                <option value="">Tous les statuts</option>
+                                <option value="active">Actifs</option>
+                                <option value="cancelled">Annulés</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="loading" id="tickets-list-loading">
+                        <div class="loading-spinner"></div>
+                        <p>Chargement des tickets...</p>
+                    </div>
+                    
+                    <table class="table" id="tickets-list-table" style="display: none;">
+                        <thead>
+                            <tr>
+                                <th>N° Ticket</th>
+                                <th>Agent</th>
+                                <th>Superviseur</th>
+                                <th>Montant</th>
+                                <th>Date</th>
+                                <th>Statut</th>
+                                <th>Détails</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tickets-list-body">
+                            <!-- Rempli dynamiquement -->
+                        </tbody>
+                    </table>
+                    
+                    <div class="empty-state" id="tickets-list-empty" style="display: none;">
+                        <div class="empty-icon">
+                            <i class="fas fa-ticket-alt"></i>
+                        </div>
+                        <h3>Aucun ticket</h3>
+                        <p>Aucun ticket n'a été créé récemment</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="tab-content" id="search-tab">
+                <div class="table-container">
+                    <div class="table-header">
+                        <div class="table-title">Recherche de tickets</div>
+                        <div class="search-box">
+                            <input type="text" class="search-input" id="search-ticket-number" placeholder="Numéro de ticket...">
+                            <button class="btn btn-primary" id="search-ticket-btn">
+                                <i class="fas fa-search"></i> Rechercher
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div id="ticket-search-results">
+                        <div style="text-align: center; padding: 40px 20px; color: #6c757d;">
+                            <i class="fas fa-search" style="font-size: 3rem; margin-bottom: 15px; color: #dee2e6;"></i>
+                            <p>Entrez un numéro de ticket pour rechercher</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Activity Section -->
+        <div id="activity-section" class="section-content" style="display: none;">
+            <div class="table-container">
+                <div class="table-header">
+                    <div class="table-title">Journal d'activité complet</div>
+                    <div class="search-box">
+                        <input type="date" class="form-control" id="activity-date" style="width: 150px;">
+                        <select class="form-control" id="activity-user" style="width: 150px;">
+                            <option value="">Tous les utilisateurs</option>
+                        </select>
+                        <button class="btn btn-primary" id="filter-activity">
+                            <i class="fas fa-filter"></i> Filtrer
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="loading" id="full-activity-loading">
+                    <div class="loading-spinner"></div>
+                    <p>Chargement du journal d'activité...</p>
+                </div>
+                
+                <table class="table" id="full-activity-table" style="display: none;">
+                    <thead>
+                        <tr>
+                            <th>Date/Heure</th>
+                            <th>Utilisateur</th>
+                            <th>Rôle</th>
+                            <th>Action</th>
+                            <th>Détails</th>
+                            <th>IP</th>
+                        </tr>
+                    </thead>
+                    <tbody id="full-activity-body">
+                        <!-- Rempli dynamiquement -->
+                    </tbody>
+                </table>
+                
+                <div class="empty-state" id="full-activity-empty" style="display: none;">
+                    <div class="empty-icon">
+                        <i class="fas fa-history"></i>
+                    </div>
+                    <h3>Aucune activité</h3>
+                    <p>Aucune activité enregistrée pour cette période</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Modal: Add Supervisor -->
+    <div class="modal" id="add-supervisor-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title">Ajouter un superviseur</div>
+                <button class="modal-close" id="close-add-supervisor">&times;</button>
+            </div>
+            
+            <div class="modal-body">
+                <form id="add-supervisor-form">
+                    <div class="form-group">
+                        <label class="form-label">Niveau *</label>
+                        <select class="form-control" id="supervisor-level" required>
+                            <option value="">Sélectionner un niveau</option>
+                            <option value="2">Superviseur Niveau 2</option>
+                            <option value="1">Superviseur Niveau 1</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Nom complet *</label>
+                        <input type="text" class="form-control" id="supervisor-fullname" placeholder="Jean Dupont" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Identifiant *</label>
+                        <input type="text" class="form-control" id="supervisor-username" placeholder="jdupont" required>
+                        <small style="color: #6c757d;">Utilisé pour la connexion</small>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Email</label>
+                        <input type="email" class="form-control" id="supervisor-email" placeholder="jean@exemple.com">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Téléphone *</label>
+                        <input type="text" class="form-control" id="supervisor-phone" placeholder="+509 32 53 49 58" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Mot de passe *</label>
+                        <input type="text" class="form-control" id="supervisor-password" value="Super2024!" required>
+                        <small style="color: #6c757d;">Le superviseur devra changer ce mot de passe à la première connexion</small>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Quota d'agents maximum *</label>
+                        <input type="number" class="form-control" id="supervisor-quota" value="10" min="1" required>
+                        <small style="color: #6c757d;">Nombre maximum d'agents que ce superviseur peut gérer</small>
+                    </div>
+                    
+                    <div class="form-group" id="supervisor-level2-container" style="display: none;">
+                        <label class="form-label">Superviseurs Niveau 1 à gérer</label>
+                        <select class="form-control" id="supervisor-managed" multiple style="height: 100px;">
+                            <!-- Rempli dynamiquement -->
+                        </select>
+                        <small style="color: #6c757d;">Sélectionnez les superviseurs Niveau 1 que ce superviseur Niveau 2 dirigera</small>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">
+                            <input type="checkbox" id="supervisor-active" checked>
+                            Compte actif immédiatement
+                        </label>
+                    </div>
+                    
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" id="cancel-add-supervisor">Annuler</button>
+                        <button type="submit" class="btn btn-success">
+                            <i class="fas fa-plus"></i> Créer le superviseur
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Modal: Add Agent -->
+    <div class="modal" id="add-agent-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title">Ajouter un agent</div>
+                <button class="modal-close" id="close-add-agent">&times;</button>
+            </div>
+            
+            <div class="modal-body">
+                <form id="add-agent-form">
+                    <div class="form-group">
+                        <label class="form-label">Superviseur *</label>
+                        <select class="form-control" id="agent-supervisor" required>
+                            <option value="">Sélectionner un superviseur</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Nom complet *</label>
+                        <input type="text" class="form-control" id="agent-fullname" placeholder="Pierre Martin" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Identifiant *</label>
+                        <input type="text" class="form-control" id="agent-username" placeholder="pmartin" required>
+                        <small style="color: #6c757d;">Utilisé pour la connexion</small>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Téléphone *</label>
+                        <input type="text" class="form-control" id="agent-phone" placeholder="+509 32 53 49 58" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Mot de passe *</label>
+                        <input type="text" class="form-control" id="agent-password" value="Agent2024!" required>
+                        <small style="color: #6c757d;">L'agent devra changer ce mot de passe à la première connexion</small>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Limites de l'agent</label>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label style="font-size: 0.85rem;">Tickets max/jour</label>
+                                <input type="number" class="form-control" id="agent-max-tickets" value="100" min="1">
+                            </div>
+                            <div class="form-group">
+                                <label style="font-size: 0.85rem;">Montant max/jour (HTG)</label>
+                                <input type="number" class="form-control" id="agent-max-amount" value="100000" min="1">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">
+                            <input type="checkbox" id="agent-active" checked>
+                            Compte actif immédiatement
+                        </label>
+                    </div>
+                    
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" id="cancel-add-agent">Annuler</button>
+                        <button type="submit" class="btn btn-success">
+                            <i class="fas fa-plus"></i> Créer l'agent
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Modal: View Ticket -->
+    <div class="modal" id="view-ticket-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title">Détails du ticket</div>
+                <button class="modal-close" id="close-view-ticket">&times;</button>
+            </div>
+            
+            <div class="modal-body">
+                <div class="loading" id="ticket-details-loading">
+                    <div class="loading-spinner"></div>
+                    <p>Chargement des détails...</p>
+                </div>
+                
+                <div id="ticket-details" style="display: none;">
+                    <!-- Rempli dynamiquement -->
+                </div>
+            </div>
+            
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" id="close-ticket-details">Fermer</button>
+                <button type="button" class="btn btn-danger" id="cancel-ticket-btn" style="display: none;">
+                    <i class="fas fa-ban"></i> Annuler le ticket
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Modal: View User -->
+    <div class="modal" id="view-user-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title">Détails de l'utilisateur</div>
+                <button class="modal-close" id="close-view-user">&times;</button>
+            </div>
+            
+            <div class="modal-body">
+                <div class="loading" id="user-details-loading">
+                    <div class="loading-spinner"></div>
+                    <p>Chargement des détails...</p>
+                </div>
+                
+                <div id="user-details" style="display: none;">
+                    <!-- Rempli dynamiquement -->
+                </div>
+            </div>
+            
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" id="close-user-details">Fermer</button>
+                <button type="button" class="btn btn-warning" id="edit-user-btn">
+                    <i class="fas fa-edit"></i> Modifier
+                </button>
+                <button type="button" class="btn btn-danger" id="deactivate-user-btn">
+                    <i class="fas fa-ban"></i> Désactiver
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Notification Container -->
+    <div id="notification-container"></div>
+    
+    <script>
+        // Configuration
+        const API_BASE_URL = 'https://lotatonova-fv0b.onrender.com';
+        const APP_CONFIG = {
+            login: `${API_BASE_URL}/api/auth/login`,
+            verify: `${API_BASE_URL}/api/auth/verify`
+        };
+        
+        let authToken = localStorage.getItem('nova_token');
+        let currentUser = JSON.parse(localStorage.getItem('nova_user') || '{}');
+        let currentSubsystem = JSON.parse(localStorage.getItem('nova_subsystem') || '{}');
+        
+        // Initialisation
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🏢 Subsystem Admin initialisé');
+            
+            // Vérifier l'authentification
+            if (!authToken || !currentUser.id) {
+                window.location.href = '/index.html';
+                return;
+            }
+            
+            // Charger les données du sous-système
+            loadSubsystemData();
+            
+            // Mettre à jour l'interface utilisateur
+            updateUserInterface();
+            
+            // Charger les données initiales
+            loadDashboardData();
+            loadRecentActivity();
+            loadRecentTickets();
+            
+            // Configurer les événements
+            setupEventListeners();
+            
+            // Démarrer le rafraîchissement automatique
+            startAutoRefresh();
+        });
+        
+        // Charger les données du sous-système
+        async function loadSubsystemData() {
+            try {
+                // Pour l'instant, on simule des données
+                if (!currentSubsystem.id) {
+                    currentSubsystem = {
+                        id: 'subsystem_001',
+                        name: 'Borlette Cap-Haïtien',
+                        subdomain: 'caphaitien',
+                        logo: '',
+                        owner: 'Jean Dupont',
+                        max_agents: 50,
+                        max_supervisors: 10,
+                        created_at: '2024-01-15'
+                    };
+                    localStorage.setItem('nova_subsystem', JSON.stringify(currentSubsystem));
+                }
+            } catch (error) {
+                console.error('Erreur chargement sous-système:', error);
+            }
+        }
+        
+        // Mettre à jour l'interface utilisateur
+        function updateUserInterface() {
+            // Logo et nom du sous-système
+            document.getElementById('subsystem-name').textContent = 
+                currentSubsystem.name || 'Sous-Système';
+            document.getElementById('subsystem-domain').textContent = 
+                (currentSubsystem.subdomain || 'sous-domaine') + '.novalotto.com';
+            
+            // Logo personnalisé si disponible
+            if (currentSubsystem.logo) {
+                const logoContainer = document.getElementById('subsystem-logo');
+                logoContainer.innerHTML = `<img src="${currentSubsystem.logo}" alt="Logo" style="width: 100%; height: 100%; border-radius: 10px; object-fit: cover;">`;
+            }
+            
+            // Info utilisateur
+            document.getElementById('user-avatar').textContent = 
+                currentUser.username?.charAt(0) || 'U';
+            document.getElementById('user-name').textContent = 
+                currentUser.username || 'Utilisateur';
+            document.getElementById('user-role').textContent = 
+                currentUser.role === 'subsystem' ? 'Propriétaire' : 'Administrateur';
+        }
+        
+        // Configurer les événements
+        function setupEventListeners() {
+            // Navigation
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    
+                    // Mettre à jour la navigation active
+                    document.querySelectorAll('.nav-item').forEach(nav => {
+                        nav.classList.remove('active');
+                    });
+                    this.classList.add('active');
+                    
+                    // Afficher la section correspondante
+                    const section = this.getAttribute('data-section');
+                    showSection(section);
+                });
+            });
+            
+            // Boutons d'action
+            document.getElementById('refresh-btn').addEventListener('click', refreshData);
+            document.getElementById('logout-btn').addEventListener('click', logout);
+            document.getElementById('create-first-supervisor').addEventListener('click', showAddSupervisorModal);
+            document.getElementById('create-first-agent').addEventListener('click', showAddAgentModal);
+            
+            // Tabs superviseurs
+            document.querySelectorAll('[data-supervisor-tab]').forEach(tab => {
+                tab.addEventListener('click', function() {
+                    const tabId = this.getAttribute('data-supervisor-tab');
+                    switchSupervisorTab(tabId);
+                });
+            });
+            
+            // Tabs agents
+            document.querySelectorAll('[data-agent-tab]').forEach(tab => {
+                tab.addEventListener('click', function() {
+                    const tabId = this.getAttribute('data-agent-tab');
+                    switchAgentTab(tabId);
+                });
+            });
+            
+            // Tabs multiplicateurs
+            document.querySelectorAll('[data-multiplier-tab]').forEach(tab => {
+                tab.addEventListener('click', function() {
+                    const tabId = this.getAttribute('data-multiplier-tab');
+                    switchMultiplierTab(tabId);
+                });
+            });
+            
+            // Tabs rapports
+            document.querySelectorAll('[data-report-tab]').forEach(tab => {
+                tab.addEventListener('click', function() {
+                    const tabId = this.getAttribute('data-report-tab');
+                    switchReportTab(tabId);
+                });
+            });
+            
+            // Tabs tickets
+            document.querySelectorAll('[data-ticket-tab]').forEach(tab => {
+                tab.addEventListener('click', function() {
+                    const tabId = this.getAttribute('data-ticket-tab');
+                    switchTicketTab(tabId);
+                });
+            });
+            
+            // Modals superviseurs
+            document.getElementById('add-supervisor-btn').addEventListener('click', showAddSupervisorModal);
+            document.getElementById('close-add-supervisor').addEventListener('click', hideAddSupervisorModal);
+            document.getElementById('cancel-add-supervisor').addEventListener('click', hideAddSupervisorModal);
+            document.getElementById('supervisor-level').addEventListener('change', toggleSupervisorLevelFields);
+            
+            // Formulaire ajout superviseur
+            document.getElementById('add-supervisor-form').addEventListener('submit', createSupervisor);
+            
+            // Modals agents
+            document.getElementById('add-agent-btn').addEventListener('click', showAddAgentModal);
+            document.getElementById('close-add-agent').addEventListener('click', hideAddAgentModal);
+            document.getElementById('cancel-add-agent').addEventListener('click', hideAddAgentModal);
+            
+            // Formulaire ajout agent
+            document.getElementById('add-agent-form').addEventListener('submit', createAgent);
+            
+            // Configuration
+            document.getElementById('save-company-info').addEventListener('click', saveCompanyInfo);
+            document.getElementById('save-schedule').addEventListener('click', saveSchedule);
+            document.getElementById('save-games').addEventListener('click', saveGames);
+            document.getElementById('save-blocked').addEventListener('click', saveBlockedNumbers);
+            
+            // Multiplicateurs
+            document.getElementById('save-global-multipliers').addEventListener('click', saveGlobalMultipliers);
+            document.getElementById('apply-multipliers').addEventListener('click', applyMultipliersToAll);
+            document.getElementById('select-user-multiplier').addEventListener('change', loadUserMultipliers);
+            document.getElementById('save-custom-multipliers').addEventListener('click', saveCustomMultipliers);
+            document.getElementById('reset-custom-multipliers').addEventListener('click', resetCustomMultipliers);
+            
+            // Rapports
+            document.getElementById('generate-daily-report').addEventListener('click', generateDailyReport);
+            document.getElementById('export-daily-report').addEventListener('click', exportDailyReport);
+            document.getElementById('generate-supervisor-report').addEventListener('click', generateSupervisorReport);
+            
+            // Recherche tickets
+            document.getElementById('search-ticket-btn').addEventListener('click', searchTicket);
+            document.getElementById('search-ticket-number').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    searchTicket();
+                }
+            });
+            
+            // Filtres
+            document.getElementById('filter-activity').addEventListener('click', loadFullActivity);
+            document.getElementById('filter-agent').addEventListener('change', loadTicketsList);
+            document.getElementById('filter-status-ticket').addEventListener('change', loadTicketsList);
+            document.getElementById('filter-supervisor').addEventListener('change', filterAgentsBySupervisor);
+        }
+        
+        // Afficher une section
+        function showSection(sectionId) {
+            // Cacher toutes les sections
+            document.querySelectorAll('.section-content').forEach(section => {
+                section.style.display = 'none';
+            });
+            
+            // Afficher la section demandée
+            const section = document.getElementById(`${sectionId}-section`);
+            if (section) {
+                section.style.display = 'block';
+                document.getElementById('page-title').textContent = 
+                    document.querySelector(`.nav-item[data-section="${sectionId}"] .nav-label`).textContent;
+                
+                // Charger les données spécifiques à la section
+                switch(sectionId) {
+                    case 'dashboard':
+                        loadDashboardData();
+                        loadRecentActivity();
+                        loadRecentTickets();
+                        break;
+                    case 'supervisors':
+                        loadSupervisors();
+                        break;
+                    case 'agents':
+                        loadAgents();
+                        loadSupervisorsForFilter();
+                        break;
+                    case 'configuration':
+                        loadConfiguration();
+                        break;
+                    case 'multipliers':
+                        loadGlobalMultipliers();
+                        loadUsersForMultipliers();
+                        break;
+                    case 'reports':
+                        generateDailyReport();
+                        loadSupervisorsForReports();
+                        break;
+                    case 'tickets':
+                        loadTicketsList();
+                        loadAgentsForFilter();
+                        break;
+                    case 'activity':
+                        loadFullActivity();
+                        break;
+                }
+            }
+        }
+        
+        // Changer l'onglet superviseurs
+        function switchSupervisorTab(tabId) {
+            // Mettre à jour les tabs
+            document.querySelectorAll('[data-supervisor-tab]').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.querySelector(`[data-supervisor-tab="${tabId}"]`).classList.add('active');
+            
+            // Afficher le contenu correspondant
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            document.getElementById(`${tabId}-tab-supervisors`).classList.add('active');
+            
+            // Filtrer les superviseurs selon le niveau
+            filterSupervisorsByLevel(tabId);
+        }
+        
+        // Changer l'onglet agents
+        function switchAgentTab(tabId) {
+            // Mettre à jour les tabs
+            document.querySelectorAll('[data-agent-tab]').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.querySelector(`[data-agent-tab="${tabId}"]`).classList.add('active');
+            
+            // Afficher le contenu correspondant
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            document.getElementById(`${tabId}-tab-agents`).classList.add('active');
+            
+            // Filtrer les agents selon le statut
+            filterAgentsByStatus(tabId);
+        }
+        
+        // Changer l'onglet multiplicateurs
+        function switchMultiplierTab(tabId) {
+            // Mettre à jour les tabs
+            document.querySelectorAll('[data-multiplier-tab]').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.querySelector(`[data-multiplier-tab="${tabId}"]`).classList.add('active');
+            
+            // Afficher le contenu correspondant
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            document.getElementById(`${tabId}-tab`).classList.add('active');
+        }
+        
+        // Changer l'onglet rapports
+        function switchReportTab(tabId) {
+            // Mettre à jour les tabs
+            document.querySelectorAll('[data-report-tab]').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.querySelector(`[data-report-tab="${tabId}"]`).classList.add('active');
+            
+            // Afficher le contenu correspondant
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            document.getElementById(`${tabId}-tab`).classList.add('active');
+        }
+        
+        // Changer l'onglet tickets
+        function switchTicketTab(tabId) {
+            // Mettre à jour les tabs
+            document.querySelectorAll('[data-ticket-tab]').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.querySelector(`[data-ticket-tab="${tabId}"]`).classList.add('active');
+            
+            // Afficher le contenu correspondant
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            document.getElementById(`${tabId}-tab`).classList.add('active');
+        }
+        
+        // Charger les données du tableau de bord
+        async function loadDashboardData() {
+            try {
+                // Simuler des données
+                const dashboardData = {
+                    totalSupervisors: 5,
+                    totalAgents: 32,
+                    todaySales: 125000,
+                    pendingAlerts: 2,
+                    totalSales: 125000 * 30,
+                    activeAgents: `25/${currentSubsystem.max_agents || 50}`,
+                    totalTickets: 320,
+                    estimatedProfit: (125000 * 0.9 * 30)
+                };
+                
+                // Mettre à jour les statistiques
+                document.getElementById('total-supervisors').textContent = dashboardData.totalSupervisors;
+                document.getElementById('total-agents').textContent = dashboardData.totalAgents;
+                document.getElementById('today-sales').textContent = 
+                    dashboardData.todaySales.toLocaleString() + ' HTG';
+                document.getElementById('pending-alerts').textContent = dashboardData.pendingAlerts;
+                document.getElementById('total-sales').textContent = 
+                    dashboardData.totalSales.toLocaleString() + ' HTG';
+                document.getElementById('active-agents').textContent = dashboardData.activeAgents;
+                document.getElementById('total-tickets').textContent = dashboardData.totalTickets;
+                document.getElementById('estimated-profit').textContent = 
+                    dashboardData.estimatedProfit.toLocaleString() + ' HTG';
+                
+                // Mettre à jour le statut du système
+                const statusDot = document.getElementById('system-status-dot');
+                const statusText = document.getElementById('system-status-text');
+                
+                if (currentSubsystem.is_active === false) {
+                    statusDot.className = 'status-dot danger';
+                    statusText.textContent = 'Système désactivé';
+                } else {
+                    statusDot.className = 'status-dot';
+                    statusText.textContent = 'Système actif';
+                }
+                
+                // Vérifier l'abonnement
+                checkSubscription();
+                
+            } catch (error) {
+                console.error('Erreur chargement dashboard:', error);
+                showNotification('Erreur lors du chargement des données', 'error');
+            }
+        }
+        
+        // Vérifier l'abonnement
+        function checkSubscription() {
+            if (currentSubsystem.subscription_expires) {
+                const expireDate = new Date(currentSubsystem.subscription_expires);
+                const now = new Date();
+                const daysLeft = Math.ceil((expireDate - now) / (1000 * 60 * 60 * 24));
+                
+                if (daysLeft <= 7) {
+                    const subscriptionInfo = document.getElementById('subscription-info');
+                    const daysLeftSpan = document.getElementById('days-left');
+                    
+                    daysLeftSpan.textContent = daysLeft;
+                    subscriptionInfo.style.display = 'block';
+                }
+            }
+        }
+        
+        // Charger l'activité récente
+        async function loadRecentActivity() {
+            const loading = document.getElementById('activity-loading');
+            const table = document.getElementById('activity-table');
+            const empty = document.getElementById('activity-empty');
+            const tbody = document.getElementById('activity-table-body');
+            
+            loading.style.display = 'flex';
+            table.style.display = 'none';
+            empty.style.display = 'none';
+            
+            try {
+                // Simuler des données
+                setTimeout(() => {
+                    const activities = [
+                        {
+                            time: new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }),
+                            user: currentUser.username,
+                            action: 'Connexion',
+                            details: 'Connexion au système'
+                        },
+                        {
+                            time: new Date(Date.now() - 300000).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }),
+                            user: 'Agent 1',
+                            action: 'Vente ticket',
+                            details: 'Ticket #00123 - 500 HTG'
+                        },
+                        {
+                            time: new Date(Date.now() - 600000).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }),
+                            user: 'Superviseur 1',
+                            action: 'Création agent',
+                            details: 'Nouvel agent: Agent 2'
+                        },
+                        {
+                            time: new Date(Date.now() - 900000).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }),
+                            user: 'Agent 2',
+                            action: 'Connexion',
+                            details: 'Première connexion'
+                        }
+                    ];
+                    
+                    if (activities.length === 0) {
+                        loading.style.display = 'none';
+                        empty.style.display = 'block';
+                        return;
+                    }
+                    
+                    tbody.innerHTML = '';
+                    
+                    activities.forEach(activity => {
+                        const row = document.createElement('tr');
+                        row.innerHTML = `
+                            <td>${activity.time}</td>
+                            <td><strong>${activity.user}</strong></td>
+                            <td>${activity.action}</td>
+                            <td>${activity.details}</td>
+                        `;
+                        tbody.appendChild(row);
+                    });
+                    
+                    loading.style.display = 'none';
+                    table.style.display = 'table';
+                }, 500);
+                
+            } catch (error) {
+                console.error('Erreur chargement activité:', error);
+                loading.style.display = 'none';
+                empty.style.display = 'block';
+            }
+        }
+        
+        // Charger les tickets récents
+        async function loadRecentTickets() {
+            const loading = document.getElementById('tickets-loading');
+            const table = document.getElementById('tickets-table');
+            const empty = document.getElementById('tickets-empty');
+            const tbody = document.getElementById('tickets-table-body');
+            
+            loading.style.display = 'flex';
+            table.style.display = 'none';
+            empty.style.display = 'none';
+            
+            try {
+                // Simuler des données
+                setTimeout(() => {
+                    const tickets = [
+                        {
+                            id: 'ticket_001',
+                            ticket_number: '00123',
+                            seller: 'Agent 1',
+                            amount: 500,
+                            date: new Date(Date.now() - 300000),
+                            status: 'active'
+                        },
+                        {
+                            id: 'ticket_002',
+                            ticket_number: '00124',
+                            seller: 'Agent 2',
+                            amount: 750,
+                            date: new Date(Date.now() - 600000),
+                            status: 'active'
+                        },
+                        {
+                            id: 'ticket_003',
+                            ticket_number: '00125',
+                            seller: 'Agent 1',
+                            amount: 1000,
+                            date: new Date(Date.now() - 1200000),
+                            status: 'cancelled'
+                        }
+                    ];
+                    
+                    if (tickets.length === 0) {
+                        loading.style.display = 'none';
+                        empty.style.display = 'block';
+                        return;
+                    }
+                    
+                    tbody.innerHTML = '';
+                    
+                    tickets.forEach(ticket => {
+                        const row = document.createElement('tr');
+                        const canCancel = ticket.status === 'active' && 
+                                         (new Date() - ticket.date) / (1000 * 60) < 10;
+                        
+                        row.innerHTML = `
+                            <td><strong>${ticket.ticket_number}</strong></td>
+                            <td>${ticket.seller}</td>
+                            <td>${ticket.amount.toLocaleString()} HTG</td>
+                            <td>${ticket.date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</td>
+                            <td>
+                                <span class="status-badge ${ticket.status === 'active' ? 'status-active' : 'status-inactive'}">
+                                    ${ticket.status === 'active' ? 'Actif' : 'Annulé'}
+                                </span>
+                            </td>
+                            <td>
+                                <div class="action-buttons">
+                                    <button class="action-btn view" onclick="viewTicket('${ticket.id}')" title="Voir détails">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                    ${canCancel ? 
+                                        `<button class="action-btn delete" onclick="cancelTicket('${ticket.id}')" title="Annuler">
+                                            <i class="fas fa-ban"></i>
+                                        </button>` : ''
+                                    }
+                                </div>
+                            </td>
+                        `;
+                        tbody.appendChild(row);
+                    });
+                    
+                    loading.style.display = 'none';
+                    table.style.display = 'table';
+                }, 500);
+                
+            } catch (error) {
+                console.error('Erreur chargement tickets:', error);
+                loading.style.display = 'none';
+                empty.style.display = 'block';
+            }
+        }
+        
+        // Charger les superviseurs
+        async function loadSupervisors() {
+            const loading = document.getElementById('supervisors-loading');
+            const table = document.getElementById('supervisors-table');
+            const empty = document.getElementById('supervisors-empty');
+            const tbody = document.getElementById('supervisors-table-body');
+            
+            loading.style.display = 'flex';
+            table.style.display = 'none';
+            empty.style.display = 'none';
+            
+            try {
+                // Simuler des données
+                setTimeout(() => {
+                    const supervisors = [
+                        {
+                            id: 'super_001',
+                            full_name: 'Jean Dupont',
+                            username: 'jdupont',
+                            level: 2,
+                            status: 'active',
+                            assigned_agents: 15,
+                            last_login: new Date(Date.now() - 3600000)
+                        },
+                        {
+                            id: 'super_002',
+                            full_name: 'Marie Laurent',
+                            username: 'mlaurent',
+                            level: 1,
+                            status: 'active',
+                            assigned_agents: 8,
+                            last_login: new Date(Date.now() - 7200000)
+                        },
+                        {
+                            id: 'super_003',
+                            full_name: 'Pierre Martin',
+                            username: 'pmartin',
+                            level: 1,
+                            status: 'inactive',
+                            assigned_agents: 5,
+                            last_login: new Date(Date.now() - 86400000)
+                        }
+                    ];
+                    
+                    // Stocker les superviseurs pour le filtrage
+                    window.allSupervisors = supervisors;
+                    
+                    if (supervisors.length === 0) {
+                        loading.style.display = 'none';
+                        empty.style.display = 'block';
+                        return;
+                    }
+                    
+                    tbody.innerHTML = '';
+                    
+                    supervisors.forEach(supervisor => {
+                        const row = document.createElement('tr');
+                        const lastLogin = supervisor.last_login ? 
+                            new Date(supervisor.last_login).toLocaleDateString('fr-FR') : 'Jamais';
+                        const roleClass = supervisor.level === 2 ? 'role-supervisor-2' : 'role-supervisor-1';
+                        const roleText = supervisor.level === 2 ? 'Superviseur Niveau 2' : 'Superviseur Niveau 1';
+                        
+                        row.innerHTML = `
+                            <td>
+                                <strong>${supervisor.full_name}</strong>
+                                <div style="font-size: 0.8rem; color: #6c757d;">${supervisor.username}</div>
+                            </td>
+                            <td>${supervisor.username}</td>
+                            <td>
+                                <span class="role-badge ${roleClass}">
+                                    ${roleText}
+                                </span>
+                            </td>
+                            <td>
+                                <span class="status-badge ${supervisor.status === 'active' ? 'status-active' : 'status-inactive'}">
+                                    ${supervisor.status === 'active' ? 'Actif' : 'Inactif'}
+                                </span>
+                            </td>
+                            <td>
+                                <div style="text-align: center; font-weight: bold;">${supervisor.assigned_agents}</div>
+                            </td>
+                            <td>${lastLogin}</td>
+                            <td>
+                                <div class="action-buttons">
+                                    <button class="action-btn view" onclick="viewUser('${supervisor.id}')" title="Voir détails">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                    <button class="action-btn edit" onclick="editUser('${supervisor.id}')" title="Modifier">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <button class="action-btn delete" onclick="toggleUserStatus('${supervisor.id}', ${supervisor.status === 'active'})" 
+                                            title="${supervisor.status === 'active' ? 'Désactiver' : 'Activer'}">
+                                        <i class="fas fa-${supervisor.status === 'active' ? 'ban' : 'check'}"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        `;
+                        tbody.appendChild(row);
+                    });
+                    
+                    loading.style.display = 'none';
+                    table.style.display = 'table';
+                }, 1000);
+                
+            } catch (error) {
+                console.error('Erreur chargement superviseurs:', error);
+                loading.style.display = 'none';
+                empty.style.display = 'block';
+            }
+        }
+        
+        // Filtrer les superviseurs par niveau
+        function filterSupervisorsByLevel(level) {
+            if (level === 'all') return;
+            
+            const rows = document.querySelectorAll('#supervisors-table-body tr');
+            rows.forEach(row => {
+                const levelCell = row.querySelector('.role-badge');
+                if (levelCell) {
+                    const supervisorLevel = levelCell.textContent.includes('Niveau 2') ? '2' : '1';
+                    const show = 
+                        (level === 'level2' && supervisorLevel === '2') ||
+                        (level === 'level1' && supervisorLevel === '1');
+                    
+                    row.style.display = show ? '' : 'none';
+                }
+            });
+        }
+        
+        // Charger les agents
+        async function loadAgents() {
+            const loading = document.getElementById('agents-loading');
+            const table = document.getElementById('agents-table');
+            const empty = document.getElementById('agents-empty');
+            const tbody = document.getElementById('agents-table-body');
+            
+            loading.style.display = 'flex';
+            table.style.display = 'none';
+            empty.style.display = 'none';
+            
+            try {
+                // Simuler des données
+                setTimeout(() => {
+                    const agents = [
+                        {
+                            id: 'agent_001',
+                            full_name: 'Paul Simon',
+                            username: 'psimon',
+                            supervisor: 'Jean Dupont (Niveau 2)',
+                            status: 'active',
+                            limits: '100 tickets/jour\n100,000 HTG/jour',
+                            last_login: new Date(Date.now() - 1800000)
+                        },
+                        {
+                            id: 'agent_002',
+                            full_name: 'Sophie Martin',
+                            username: 'smartin',
+                            supervisor: 'Marie Laurent (Niveau 1)',
+                            status: 'active',
+                            limits: '80 tickets/jour\n80,000 HTG/jour',
+                            last_login: new Date(Date.now() - 2700000)
+                        },
+                        {
+                            id: 'agent_003',
+                            full_name: 'Luc Dubois',
+                            username: 'ldubois',
+                            supervisor: 'Pierre Martin (Niveau 1)',
+                            status: 'inactive',
+                            limits: '50 tickets/jour\n50,000 HTG/jour',
+                            last_login: new Date(Date.now() - 172800000)
+                        }
+                    ];
+                    
+                    // Stocker les agents pour le filtrage
+                    window.allAgents = agents;
+                    
+                    if (agents.length === 0) {
+                        loading.style.display = 'none';
+                        empty.style.display = 'block';
+                        return;
+                    }
+                    
+                    tbody.innerHTML = '';
+                    
+                    agents.forEach(agent => {
+                        const row = document.createElement('tr');
+                        const lastLogin = agent.last_login ? 
+                            new Date(agent.last_login).toLocaleDateString('fr-FR') : 'Jamais';
+                        
+                        row.innerHTML = `
+                            <td>
+                                <strong>${agent.full_name}</strong>
+                                <div style="font-size: 0.8rem; color: #6c757d;">${agent.username}</div>
+                            </td>
+                            <td>${agent.username}</td>
+                            <td>${agent.supervisor}</td>
+                            <td>
+                                <span class="status-badge ${agent.status === 'active' ? 'status-active' : 'status-inactive'}">
+                                    ${agent.status === 'active' ? 'Actif' : 'Inactif'}
+                                </span>
+                            </td>
+                            <td>
+                                <div style="font-size: 0.8rem;">
+                                    ${agent.limits}
+                                </div>
+                            </td>
+                            <td>${lastLogin}</td>
+                            <td>
+                                <div class="action-buttons">
+                                    <button class="action-btn view" onclick="viewUser('${agent.id}')" title="Voir détails">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                    <button class="action-btn edit" onclick="editUser('${agent.id}')" title="Modifier">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <button class="action-btn delete" onclick="toggleUserStatus('${agent.id}', ${agent.status === 'active'})" 
+                                            title="${agent.status === 'active' ? 'Désactiver' : 'Activer'}">
+                                        <i class="fas fa-${agent.status === 'active' ? 'ban' : 'check'}"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        `;
+                        tbody.appendChild(row);
+                    });
+                    
+                    loading.style.display = 'none';
+                    table.style.display = 'table';
+                }, 1000);
+                
+            } catch (error) {
+                console.error('Erreur chargement agents:', error);
+                loading.style.display = 'none';
+                empty.style.display = 'block';
+            }
+        }
+        
+        // Filtrer les agents par statut
+        function filterAgentsByStatus(status) {
+            if (status === 'all') return;
+            
+            const rows = document.querySelectorAll('#agents-table-body tr');
+            rows.forEach(row => {
+                const statusCell = row.querySelector('.status-badge');
+                if (statusCell) {
+                    const agentStatus = statusCell.textContent.trim();
+                    const show = 
+                        (status === 'online' && agentStatus === 'Actif') ||
+                        (status === 'inactive' && agentStatus === 'Inactif');
+                    
+                    row.style.display = show ? '' : 'none';
+                }
+            });
+        }
+        
+        // Filtrer les agents par superviseur
+        function filterAgentsBySupervisor() {
+            const supervisorId = document.getElementById('filter-supervisor').value;
+            if (!supervisorId) return;
+            
+            const rows = document.querySelectorAll('#agents-table-body tr');
+            rows.forEach(row => {
+                const supervisorCell = row.cells[2]; // 3ème cellule = superviseur
+                if (supervisorCell) {
+                    const supervisorName = supervisorCell.textContent.trim();
+                    // Logique de filtrage simplifiée
+                    row.style.display = supervisorName.includes(supervisorId) ? '' : 'none';
+                }
+            });
+        }
+        
+        // Charger les superviseurs pour le filtre
+        async function loadSupervisorsForFilter() {
+            try {
+                const select = document.getElementById('filter-supervisor');
+                select.innerHTML = '<option value="">Tous les superviseurs</option>';
+                
+                if (window.allSupervisors && window.allSupervisors.length > 0) {
+                    window.allSupervisors.forEach(supervisor => {
+                        const option = document.createElement('option');
+                        option.value = supervisor.username;
+                        option.textContent = `${supervisor.full_name} (Niveau ${supervisor.level})`;
+                        select.appendChild(option);
+                    });
+                }
+            } catch (error) {
+                console.error('Erreur chargement superviseurs pour filtre:', error);
+            }
+        }
+        
+        // Charger les agents pour le filtre
+        async function loadAgentsForFilter() {
+            try {
+                const select = document.getElementById('filter-agent');
+                select.innerHTML = '<option value="">Tous les agents</option>';
+                
+                if (window.allAgents && window.allAgents.length > 0) {
+                    window.allAgents.forEach(agent => {
+                        const option = document.createElement('option');
+                        option.value = agent.username;
+                        option.textContent = agent.full_name;
+                        select.appendChild(option);
+                    });
+                }
+            } catch (error) {
+                console.error('Erreur chargement agents pour filtre:', error);
+            }
+        }
+        
+        // Charger les superviseurs pour les rapports
+        async function loadSupervisorsForReports() {
+            try {
+                const select = document.getElementById('select-supervisor-report');
+                select.innerHTML = '<option value="">Sélectionner un superviseur</option>';
+                
+                if (window.allSupervisors && window.allSupervisors.length > 0) {
+                    window.allSupervisors.forEach(supervisor => {
+                        const option = document.createElement('option');
+                        option.value = supervisor.id;
+                        option.textContent = `${supervisor.full_name} (Niveau ${supervisor.level})`;
+                        select.appendChild(option);
+                    });
+                }
+            } catch (error) {
+                console.error('Erreur chargement superviseurs pour rapports:', error);
+            }
+        }
+        
+        // Charger la configuration
+        async function loadConfiguration() {
+            try {
+                // Charger depuis localStorage
+                const config = JSON.parse(localStorage.getItem(`subsystemConfig_${currentSubsystem.id}`)) || {};
+                
+                // Informations entreprise
+                document.getElementById('company-name').value = config.company_name || currentSubsystem.name || '';
+                document.getElementById('company-logo').value = config.company_logo || '';
+                document.getElementById('company-phone').value = config.company_phone || '';
+                document.getElementById('company-address').value = config.company_address || '';
+                
+                // Horaires
+                document.getElementById('opening-time').value = config.opening_time || '08:00';
+                document.getElementById('closing-time').value = config.closing_time || '22:00';
+                document.getElementById('enable-schedule').checked = config.enable_schedule !== false;
+                
+                // Jeux autorisés
+                const allowedGames = config.allowed_games || ['borlette', 'boulpe', 'lotto3', 'lotto4', 'lotto5', 'grap', 'marriage'];
+                document.getElementById('game-borlette').checked = allowedGames.includes('borlette');
+                document.getElementById('game-boulpe').checked = allowedGames.includes('boulpe');
+                document.getElementById('game-lotto3').checked = allowedGames.includes('lotto3');
+                document.getElementById('game-lotto4').checked = allowedGames.includes('lotto4');
+                document.getElementById('game-lotto5').checked = allowedGames.includes('lotto5');
+                document.getElementById('game-grap').checked = allowedGames.includes('grap');
+                document.getElementById('game-marriage').checked = allowedGames.includes('marriage');
+                
+                // Boules bloquées
+                document.getElementById('blocked-numbers').value = config.blocked_numbers || '';
+                
+            } catch (error) {
+                console.error('Erreur chargement configuration:', error);
+            }
+        }
+        
+        // Sauvegarder les informations de l'entreprise
+        async function saveCompanyInfo() {
+            try {
+                const config = {
+                    company_name: document.getElementById('company-name').value,
+                    company_logo: document.getElementById('company-logo').value,
+                    company_phone: document.getElementById('company-phone').value,
+                    company_address: document.getElementById('company-address').value,
+                    updated_at: new Date().toISOString()
+                };
+                
+                // Sauvegarder localement
+                const existingConfig = JSON.parse(localStorage.getItem(`subsystemConfig_${currentSubsystem.id}`)) || {};
+                localStorage.setItem(`subsystemConfig_${currentSubsystem.id}`, JSON.stringify({
+                    ...existingConfig,
+                    ...config
+                }));
+                
+                // Mettre à jour l'affichage
+                if (config.company_logo) {
+                    const logoContainer = document.getElementById('subsystem-logo');
+                    logoContainer.innerHTML = `<img src="${config.company_logo}" alt="Logo" style="width: 100%; height: 100%; border-radius: 10px; object-fit: cover;">`;
+                }
+                
+                document.getElementById('subsystem-name').textContent = config.company_name || currentSubsystem.name;
+                
+                showNotification('Informations de l\'entreprise sauvegardées', 'success');
+            } catch (error) {
+                console.error('Erreur sauvegarde infos entreprise:', error);
+                showNotification('Erreur lors de la sauvegarde', 'error');
+            }
+        }
+        
+        // Sauvegarder les horaires
+        async function saveSchedule() {
+            try {
+                const config = {
+                    opening_time: document.getElementById('opening-time').value,
+                    closing_time: document.getElementById('closing-time').value,
+                    enable_schedule: document.getElementById('enable-schedule').checked
+                };
+                
+                // Sauvegarder localement
+                const existingConfig = JSON.parse(localStorage.getItem(`subsystemConfig_${currentSubsystem.id}`)) || {};
+                localStorage.setItem(`subsystemConfig_${currentSubsystem.id}`, JSON.stringify({
+                    ...existingConfig,
+                    ...config
+                }));
+                
+                showNotification('Horaires sauvegardés', 'success');
+            } catch (error) {
+                console.error('Erreur sauvegarde horaires:', error);
+                showNotification('Erreur lors de la sauvegarde', 'error');
+            }
+        }
+        
+        // Sauvegarder les jeux autorisés
+        async function saveGames() {
+            try {
+                const allowedGames = [];
+                if (document.getElementById('game-borlette').checked) allowedGames.push('borlette');
+                if (document.getElementById('game-boulpe').checked) allowedGames.push('boulpe');
+                if (document.getElementById('game-lotto3').checked) allowedGames.push('lotto3');
+                if (document.getElementById('game-lotto4').checked) allowedGames.push('lotto4');
+                if (document.getElementById('game-lotto5').checked) allowedGames.push('lotto5');
+                if (document.getElementById('game-grap').checked) allowedGames.push('grap');
+                if (document.getElementById('game-marriage').checked) allowedGames.push('marriage');
+                
+                const config = {
+                    allowed_games: allowedGames
+                };
+                
+                // Sauvegarder localement
+                const existingConfig = JSON.parse(localStorage.getItem(`subsystemConfig_${currentSubsystem.id}`)) || {};
+                localStorage.setItem(`subsystemConfig_${currentSubsystem.id}`, JSON.stringify({
+                    ...existingConfig,
+                    ...config
+                }));
+                
+                showNotification('Jeux autorisés sauvegardés', 'success');
+            } catch (error) {
+                console.error('Erreur sauvegarde jeux:', error);
+                showNotification('Erreur lors de la sauvegarde', 'error');
+            }
+        }
+        
+        // Sauvegarder les boules bloquées
+        async function saveBlockedNumbers() {
+            try {
+                const blockedNumbers = document.getElementById('blocked-numbers').value
+                    .split(',')
+                    .map(num => num.trim())
+                    .filter(num => num !== '');
+                
+                const config = {
+                    blocked_numbers: blockedNumbers.join(', ')
+                };
+                
+                // Sauvegarder localement
+                const existingConfig = JSON.parse(localStorage.getItem(`subsystemConfig_${currentSubsystem.id}`)) || {};
+                localStorage.setItem(`subsystemConfig_${currentSubsystem.id}`, JSON.stringify({
+                    ...existingConfig,
+                    ...config
+                }));
+                
+                showNotification('Boules bloquées sauvegardées', 'success');
+            } catch (error) {
+                console.error('Erreur sauvegarde boules bloquées:', error);
+                showNotification('Erreur lors de la sauvegarde', 'error');
+            }
+        }
+        
+        // Afficher le modal d'ajout de superviseur
+        function showAddSupervisorModal() {
+            document.getElementById('add-supervisor-modal').classList.add('active');
+            loadSupervisorsForAssignment();
+        }
+        
+        // Cacher le modal d'ajout de superviseur
+        function hideAddSupervisorModal() {
+            document.getElementById('add-supervisor-modal').classList.remove('active');
+            document.getElementById('add-supervisor-form').reset();
+            document.getElementById('supervisor-level2-container').style.display = 'none';
+        }
+        
+        // Afficher/masquer les champs selon le niveau du superviseur
+        function toggleSupervisorLevelFields() {
+            const level = document.getElementById('supervisor-level').value;
+            const level2Container = document.getElementById('supervisor-level2-container');
+            
+            if (level === '2') {
+                level2Container.style.display = 'block';
+                loadSupervisorsForAssignment();
+            } else {
+                level2Container.style.display = 'none';
+            }
+        }
+        
+        // Charger les superviseurs pour l'assignation
+        async function loadSupervisorsForAssignment() {
+            try {
+                const select = document.getElementById('supervisor-managed');
+                select.innerHTML = '';
+                
+                // Charger les superviseurs Niveau 1
+                if (window.allSupervisors && window.allSupervisors.length > 0) {
+                    const level1Supervisors = window.allSupervisors.filter(s => s.level === 1);
+                    
+                    level1Supervisors.forEach(supervisor => {
+                        const option = document.createElement('option');
+                        option.value = supervisor.id;
+                        option.textContent = `${supervisor.full_name} (${supervisor.assigned_agents} agents)`;
+                        select.appendChild(option);
+                    });
+                }
+            } catch (error) {
+                console.error('Erreur chargement superviseurs pour assignation:', error);
+            }
+        }
+        
+        // Créer un nouveau superviseur
+        async function createSupervisor(e) {
+            e.preventDefault();
+            
+            const supervisorData = {
+                level: parseInt(document.getElementById('supervisor-level').value),
+                full_name: document.getElementById('supervisor-fullname').value.trim(),
+                username: document.getElementById('supervisor-username').value.trim(),
+                email: document.getElementById('supervisor-email').value.trim(),
+                phone: document.getElementById('supervisor-phone').value.trim(),
+                password: document.getElementById('supervisor-password').value,
+                quota: parseInt(document.getElementById('supervisor-quota').value),
+                is_active: document.getElementById('supervisor-active').checked
+            };
+            
+            // Validation
+            if (!supervisorData.level || !supervisorData.full_name || !supervisorData.username || 
+                !supervisorData.phone || !supervisorData.password || !supervisorData.quota) {
+                showNotification('Veuillez remplir tous les champs obligatoires', 'warning');
+                return;
+            }
+            
+            // Si niveau 2, récupérer les superviseurs gérés
+            if (supervisorData.level === 2) {
+                const managedSelect = document.getElementById('supervisor-managed');
+                supervisorData.managed_supervisors = Array.from(managedSelect.selectedOptions).map(opt => opt.value);
+            }
+            
+            try {
+                // Simuler création
+                console.log('Création superviseur:', supervisorData);
+                
+                // Afficher les identifiants
+                alert(`✅ Superviseur créé avec succès !
 
-  <div class="card">
-    <h2>Superviseurs</h2>
-    <button onclick="createSupervisor(2)">Créer Superviseur N2</button>
-    <button onclick="createSupervisor(1)">Créer Superviseur N1</button>
-    <table id="supTable">
-      <thead><tr><th>Nom</th><th>Niveau</th><th>Actions</th></tr></thead>
-      <tbody></tbody>
-    </table>
-  </div>
+📋 Identifiants:
+• Nom: ${supervisorData.full_name}
+• Identifiant: ${supervisorData.username}
+• Mot de passe: ${supervisorData.password}
+• Niveau: ${supervisorData.level === 2 ? 'Superviseur Niveau 2' : 'Superviseur Niveau 1'}
+• Quota agents: ${supervisorData.quota}
 
-  <div class="card">
-    <h2>Agents</h2>
-    <table id="agentTable">
-      <thead><tr><th>Nom</th><th>Statut</th><th>Actions</th></tr></thead>
-      <tbody></tbody>
-    </table>
-  </div>
+⚠️ Le superviseur devra changer son mot de passe à la première connexion.`);
+                
+                hideAddSupervisorModal();
+                
+                // Recharger la liste des superviseurs
+                loadSupervisors();
+                loadDashboardData();
+                
+            } catch (error) {
+                console.error('Erreur création superviseur:', error);
+                showNotification('Erreur lors de la création', 'error');
+            }
+        }
+        
+        // Afficher le modal d'ajout d'agent
+        function showAddAgentModal() {
+            document.getElementById('add-agent-modal').classList.add('active');
+            loadSupervisorsForAgent();
+        }
+        
+        // Cacher le modal d'ajout d'agent
+        function hideAddAgentModal() {
+            document.getElementById('add-agent-modal').classList.remove('active');
+            document.getElementById('add-agent-form').reset();
+        }
+        
+        // Charger les superviseurs pour l'agent
+        async function loadSupervisorsForAgent() {
+            try {
+                const select = document.getElementById('agent-supervisor');
+                select.innerHTML = '<option value="">Sélectionner un superviseur</option>';
+                
+                if (window.allSupervisors && window.allSupervisors.length > 0) {
+                    window.allSupervisors.forEach(supervisor => {
+                        if (supervisor.status === 'active') {
+                            const option = document.createElement('option');
+                            option.value = supervisor.id;
+                            option.textContent = `${supervisor.full_name} (Niveau ${supervisor.level})`;
+                            select.appendChild(option);
+                        }
+                    });
+                }
+            } catch (error) {
+                console.error('Erreur chargement superviseurs pour agent:', error);
+            }
+        }
+        
+        // Créer un nouvel agent
+        async function createAgent(e) {
+            e.preventDefault();
+            
+            const agentData = {
+                supervisor_id: document.getElementById('agent-supervisor').value,
+                full_name: document.getElementById('agent-fullname').value.trim(),
+                username: document.getElementById('agent-username').value.trim(),
+                phone: document.getElementById('agent-phone').value.trim(),
+                password: document.getElementById('agent-password').value,
+                is_active: document.getElementById('agent-active').checked
+            };
+            
+            // Ajouter les limites
+            agentData.limits = {
+                max_tickets_per_day: parseInt(document.getElementById('agent-max-tickets').value) || 100,
+                max_amount_per_day: parseInt(document.getElementById('agent-max-amount').value) || 100000
+            };
+            
+            // Validation
+            if (!agentData.supervisor_id || !agentData.full_name || !agentData.username || 
+                !agentData.phone || !agentData.password) {
+                showNotification('Veuillez remplir tous les champs obligatoires', 'warning');
+                return;
+            }
+            
+            try {
+                // Simuler création
+                console.log('Création agent:', agentData);
+                
+                // Trouver le superviseur
+                const supervisor = window.allSupervisors?.find(s => s.id === agentData.supervisor_id);
+                const supervisorName = supervisor ? supervisor.full_name : 'Inconnu';
+                
+                // Afficher les identifiants
+                alert(`✅ Agent créé avec succès !
 
-  <div class="card">
-    <h2>Transactions</h2>
-    <table id="txTable">
-      <thead><tr><th>Agent</th><th>Montant</th><th>Date</th></tr></thead>
-      <tbody></tbody>
-    </table>
-  </div>
-</main>
+📋 Identifiants:
+• Nom: ${agentData.full_name}
+• Identifiant: ${agentData.username}
+• Mot de passe: ${agentData.password}
+• Superviseur: ${supervisorName}
+• Limites: ${agentData.limits.max_tickets_per_day} tickets/jour, ${agentData.limits.max_amount_per_day.toLocaleString()} HTG/jour
 
-<script>
-  // === LOGIQUE COPIÉE DU MASTER (token) ===
-  const params = new URLSearchParams(location.search);
-  const token = params.get('token');
-  if (!token || !token.startsWith('nova_')) {
-    document.body.innerHTML = '<h3 style="padding:16px">Accès refusé</h3>';
-    throw new Error('Token invalide');
-  }
-
-  // === API helper ===
-  async function api(path, method='GET', body) {
-    const res = await fetch(path + '?token=' + encodeURIComponent(token), {
-      method,
-      headers: { 'Content-Type':'application/json' },
-      body: body ? JSON.stringify(body) : undefined
-    });
-    return res.json();
-  }
-
-  // === LOAD ===
-  async function load() {
-    const info = await api('/api/subsystem/me');
-    if (!info.success) return alert(info.error || 'Erreur');
-
-    document.getElementById('name').textContent = info.data.name;
-    document.getElementById('status').textContent = info.data.active ? 'Actif' : 'Bloqué';
-    if (info.data.logo) document.getElementById('logo').src = info.data.logo;
-
-    document.getElementById('multiplier').value = info.data.multiplier || 1;
-
-    fillTable('supTable', info.supervisors || [], (s)=>`
-      <tr><td>${s.username}</td><td>${s.level}</td>
-      <td><button onclick="blockUser('${s._id}')">Bloquer</button></td></tr>`);
-
-    fillTable('agentTable', info.agents || [], (a)=>`
-      <tr><td>${a.username}</td><td>${a.blocked?'Bloqué':'Actif'}</td>
-      <td><button onclick="blockUser('${a._id}')">Bloquer</button></td></tr>`);
-
-    fillTable('txTable', info.transactions || [], (t)=>`
-      <tr><td>${t.agent}</td><td>${t.amount}</td><td>${new Date(t.date).toLocaleString()}</td></tr>`);
-  }
-
-  function fillTable(id, rows, tpl){
-    const tb = document.querySelector('#'+id+' tbody');
-    tb.innerHTML = rows.map(tpl).join('');
-  }
-
-  async function saveConfig(){
-    const multiplier = Number(document.getElementById('multiplier').value);
-    const blockedBall = document.getElementById('blockedBall').value;
-    const r = await api('/api/subsystem/config','POST',{ multiplier, blockedBall });
-    alert(r.success ? 'Enregistré' : r.error);
-  }
-
-  async function createSupervisor(level){
-    const username = prompt('Nom utilisateur');
-    const password = prompt('Mot de passe');
-    if (!username || !password) return;
-    const r = await api('/api/subsystem/supervisor','POST',{ username, password, level });
-    if (!r.success) return alert(r.error);
-    load();
-  }
-
-  async function blockUser(id){
-    const r = await api('/api/subsystem/block','POST',{ id });
-    if (!r.success) return alert(r.error);
-    load();
-  }
-
-  load();
-</script>
+⚠️ L'agent devra changer son mot de passe à la première connexion.`);
+                
+                hideAddAgentModal();
+                
+                // Recharger la liste des agents
+                loadAgents();
+                loadDashboardData();
+                
+            } catch (error) {
+                console.error('Erreur création agent:', error);
+                showNotification('Erreur lors de la création', 'error');
+            }
+        }
+        
+        // Voir les détails d'un utilisateur
+        window.viewUser = async function(userId) {
+            alert(`Voir détails utilisateur ${userId} - Fonctionnalité à implémenter`);
+        };
+        
+        // Modifier un utilisateur
+        window.editUser = function(userId) {
+            alert(`Modifier utilisateur ${userId} - Fonctionnalité à implémenter`);
+        };
+        
+        // Activer/Désactiver un utilisateur
+        window.toggleUserStatus = async function(userId, isCurrentlyActive) {
+            const action = isCurrentlyActive ? 'désactiver' : 'activer';
+            const message = isCurrentlyActive ? 
+                'L\'utilisateur ne pourra plus se connecter.' : 
+                'L\'utilisateur pourra à nouveau se connecter.';
+            
+            if (!confirm(`Êtes-vous sûr de vouloir ${action} cet utilisateur ?\n\n${message}`)) {
+                return;
+            }
+            
+            try {
+                // Simuler changement de statut
+                showNotification(`Utilisateur ${isCurrentlyActive ? 'désactivé' : 'activé'} avec succès`, 'success');
+                
+                // Recharger les listes
+                loadSupervisors();
+                loadAgents();
+                
+            } catch (error) {
+                console.error(`Erreur ${action} utilisateur:`, error);
+                showNotification('Erreur lors de l\'opération', 'error');
+            }
+        };
+        
+        // Charger la liste des tickets
+        async function loadTicketsList() {
+            const loading = document.getElementById('tickets-list-loading');
+            const table = document.getElementById('tickets-list-table');
+            const empty = document.getElementById('tickets-list-empty');
+            const tbody = document.getElementById('tickets-list-body');
+            
+            loading.style.display = 'flex';
+            table.style.display = 'none';
+            empty.style.display = 'none';
+            
+            try {
+                // Simuler des données
+                setTimeout(() => {
+                    const tickets = [
+                        {
+                            id: 'ticket_001',
+                            ticket_number: '00123',
+                            agent: 'Agent 1',
+                            supervisor: 'Superviseur 1',
+                            amount: 500,
+                            date: new Date(Date.now() - 300000),
+                            status: 'active',
+                            details: 'Borlette - 11, 22'
+                        },
+                        {
+                            id: 'ticket_002',
+                            ticket_number: '00124',
+                            agent: 'Agent 2',
+                            supervisor: 'Superviseur 2',
+                            amount: 750,
+                            date: new Date(Date.now() - 600000),
+                            status: 'active',
+                            details: 'Lotto 3 - 123'
+                        },
+                        {
+                            id: 'ticket_003',
+                            ticket_number: '00125',
+                            agent: 'Agent 1',
+                            supervisor: 'Superviseur 1',
+                            amount: 1000,
+                            date: new Date(Date.now() - 1200000),
+                            status: 'cancelled',
+                            details: 'Borlette - 33, 44'
+                        }
+                    ];
+                    
+                    if (tickets.length === 0) {
+                        loading.style.display = 'none';
+                        empty.style.display = 'block';
+                        return;
+                    }
+                    
+                    tbody.innerHTML = '';
+                    
+                    tickets.forEach(ticket => {
+                        const row = document.createElement('tr');
+                        const canCancel = ticket.status === 'active' && 
+                                         (new Date() - ticket.date) / (1000 * 60) < 10;
+                        
+                        row.innerHTML = `
+                            <td><strong>${ticket.ticket_number}</strong></td>
+                            <td>${ticket.agent}</td>
+                            <td>${ticket.supervisor}</td>
+                            <td>${ticket.amount.toLocaleString()} HTG</td>
+                            <td>${ticket.date.toLocaleString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</td>
+                            <td>
+                                <span class="status-badge ${ticket.status === 'active' ? 'status-active' : 'status-inactive'}">
+                                    ${ticket.status === 'active' ? 'Actif' : 'Annulé'}
+                                </span>
+                            </td>
+                            <td>${ticket.details}</td>
+                            <td>
+                                <div class="action-buttons">
+                                    <button class="action-btn view" onclick="viewTicket('${ticket.id}')" title="Voir détails">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                    ${canCancel ? 
+                                        `<button class="action-btn delete" onclick="cancelTicket('${ticket.id}')" title="Annuler">
+                                            <i class="fas fa-ban"></i>
+                                        </button>` : ''
+                                    }
+                                </div>
+                            </td>
+                        `;
+                        tbody.appendChild(row);
+                    });
+                    
+                    loading.style.display = 'none';
+                    table.style.display = 'table';
+                }, 500);
+                
+            } catch (error) {
+                console.error('Erreur chargement liste tickets:', error);
+                loading.style.display = 'none';
+                empty.style.display = 'block';
+            }
+        }
+        
+        // Voir les détails d'un ticket
+        window.viewTicket = async function(ticketId) {
+            const modal = document.getElementById('view-ticket-modal');
+            const loading = document.getElementById('ticket-details-loading');
+            const details = document.getElementById('ticket-details');
+            const cancelBtn = document.getElementById('cancel-ticket-btn');
+            
+            modal.classList.add('active');
+            loading.style.display = 'flex';
+            details.style.display = 'none';
+            cancelBtn.style.display = 'none';
+            
+            try {
+                // Simuler des données
+                setTimeout(() => {
+                    const ticket = {
+                        id: ticketId,
+                        ticket_number: '00123',
+                        seller: 'Agent 1',
+                        supervisor: 'Superviseur 1',
+                        amount: 500,
+                        date: new Date(Date.now() - 300000),
+                        status: 'active',
+                        details: [
+                            { name: 'Borlette', number: '11', amount: 250, multiplier: 60 },
+                            { name: 'Borlette', number: '22', amount: 250, multiplier: 60 }
+                        ],
+                        total_amount: 500
+                    };
+                    
+                    const ticketDate = new Date(ticket.date);
+                    const minutesDiff = (new Date() - ticketDate) / (1000 * 60);
+                    const canCancel = ticket.status === 'active' && minutesDiff < 10;
+                    
+                    // Formater les détails des paris
+                    let betsHTML = '';
+                    if (ticket.details && Array.isArray(ticket.details)) {
+                        ticket.details.forEach(bet => {
+                            betsHTML += `
+                                <div style="margin-bottom: 5px; padding: 8px; background-color: #f8f9fa; border-radius: 5px;">
+                                    <strong>${bet.name}:</strong> ${bet.number} - ${bet.amount} HTG
+                                    <span style="float: right; color: #6c757d;">
+                                        (x${bet.multiplier})
+                                    </span>
+                                </div>
+                            `;
+                        });
+                    }
+                    
+                    details.innerHTML = `
+                        <div style="margin-bottom: 25px;">
+                            <h3 style="color: var(--secondary-color); margin-bottom: 15px;">
+                                Ticket #${ticket.ticket_number}
+                            </h3>
+                            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; margin-bottom: 20px;">
+                                <div style="background-color: #f8f9fa; padding: 15px; border-radius: 8px;">
+                                    <div style="font-size: 0.9rem; color: #6c757d; margin-bottom: 5px;">Vendeur</div>
+                                    <div style="font-weight: bold; color: var(--secondary-color);">
+                                        ${ticket.seller}
+                                    </div>
+                                </div>
+                                <div style="background-color: #f8f9fa; padding: 15px; border-radius: 8px;">
+                                    <div style="font-size: 0.9rem; color: #6c757d; margin-bottom: 5px;">Superviseur</div>
+                                    <div style="font-weight: bold; color: var(--secondary-color);">
+                                        ${ticket.supervisor}
+                                    </div>
+                                </div>
+                                <div style="background-color: #f8f9fa; padding: 15px; border-radius: 8px;">
+                                    <div style="font-size: 0.9rem; color: #6c757d; margin-bottom: 5px;">Date</div>
+                                    <div style="font-weight: bold; color: var(--secondary-color);">
+                                        ${ticketDate.toLocaleString('fr-FR')}
+                                    </div>
+                                </div>
+                                <div style="background-color: #f8f9fa; padding: 15px; border-radius: 8px;">
+                                    <div style="font-size: 0.9rem; color: #6c757d; margin-bottom: 5px;">Statut</div>
+                                    <div>
+                                        <span class="status-badge ${ticket.status === 'active' ? 'status-active' : 'status-inactive'}">
+                                            ${ticket.status === 'active' ? 'Actif' : 'Annulé'}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div style="background-color: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                                <div style="font-size: 0.9rem; color: #6c757d; margin-bottom: 5px;">Montant total</div>
+                                <div style="font-weight: bold; color: var(--secondary-color); font-size: 1.5rem; text-align: center;">
+                                    ${ticket.total_amount.toLocaleString()} HTG
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <h4 style="color: var(--secondary-color); margin-bottom: 15px;">Détails des paris</h4>
+                        <div style="margin-bottom: 25px;">
+                            ${betsHTML || '<p style="color: #6c757d; text-align: center;">Aucun détail disponible</p>'}
+                        </div>
+                        
+                        <div style="background-color: #f8f9fa; padding: 15px; border-radius: 8px;">
+                            <div style="font-size: 0.9rem; color: #6c757d; margin-bottom: 5px;">Informations supplémentaires</div>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                                <div>
+                                    <div style="font-size: 0.85rem; color: #6c757d;">Âge du ticket</div>
+                                    <div>${Math.floor(minutesDiff)} minutes</div>
+                                </div>
+                                <div>
+                                    <div style="font-size: 0.85rem; color: #6c757d;">Annulation possible</div>
+                                    <div>${canCancel ? '✅ Oui (< 10 min)' : '❌ Non'}</div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    
+                    // Afficher le bouton d'annulation si possible
+                    if (canCancel) {
+                        cancelBtn.style.display = 'block';
+                        cancelBtn.onclick = () => cancelTicket(ticketId);
+                    }
+                    
+                    loading.style.display = 'none';
+                    details.style.display = 'block';
+                }, 500);
+                
+            } catch (error) {
+                console.error('Erreur chargement détails ticket:', error);
+                showNotification('Erreur lors du chargement', 'error');
+                hideViewTicketModal();
+            }
+        };
+        
+        // Annuler un ticket
+        window.cancelTicket = async function(ticketId) {
+            if (!confirm('Êtes-vous sûr de vouloir annuler ce ticket ?\n\nCette action est irréversible.')) {
+                return;
+            }
+            
+            try {
+                // Simuler annulation
+                showNotification('Ticket annulé avec succès', 'success');
+                
+                // Fermer le modal
+                hideViewTicketModal();
+                
+                // Recharger les données
+                loadDashboardData();
+                loadRecentTickets();
+                loadTicketsList();
+                
+            } catch (error) {
+                console.error('Erreur annulation ticket:', error);
+                showNotification('Erreur lors de l\'annulation', 'error');
+            }
+        };
+        
+        // Cacher le modal de visualisation ticket
+        function hideViewTicketModal() {
+            document.getElementById('view-ticket-modal').classList.remove('active');
+        }
+        
+        // Rechercher un ticket par numéro
+        async function searchTicket() {
+            const ticketNumber = document.getElementById('search-ticket-number').value.trim();
+            const results = document.getElementById('ticket-search-results');
+            
+            if (!ticketNumber) {
+                showNotification('Veuillez entrer un numéro de ticket', 'warning');
+                return;
+            }
+            
+            results.innerHTML = `
+                <div style="text-align: center; padding: 20px;">
+                    <div class="loading-spinner" style="margin: 0 auto 15px;"></div>
+                    <p>Recherche du ticket #${ticketNumber}...</p>
+                </div>
+            `;
+            
+            try {
+                // Simuler recherche
+                setTimeout(() => {
+                    const ticket = {
+                        id: 'ticket_001',
+                        ticket_number: ticketNumber,
+                        seller: 'Agent 1',
+                        supervisor: 'Superviseur 1',
+                        amount: 500,
+                        date: new Date(Date.now() - 300000),
+                        status: 'active'
+                    };
+                    
+                    const ticketDate = new Date(ticket.date);
+                    
+                    results.innerHTML = `
+                        <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px;">
+                            <h4 style="color: var(--secondary-color); margin-bottom: 15px;">
+                                Ticket #${ticket.ticket_number} trouvé
+                            </h4>
+                            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; margin-bottom: 15px;">
+                                <div>
+                                    <div style="font-size: 0.85rem; color: #6c757d;">Vendeur</div>
+                                    <div>${ticket.seller}</div>
+                                </div>
+                                <div>
+                                    <div style="font-size: 0.85rem; color: #6c757d;">Superviseur</div>
+                                    <div>${ticket.supervisor}</div>
+                                </div>
+                                <div>
+                                    <div style="font-size: 0.85rem; color: #6c757d;">Date</div>
+                                    <div>${ticketDate.toLocaleString('fr-FR')}</div>
+                                </div>
+                                <div>
+                                    <div style="font-size: 0.85rem; color: #6c757d;">Statut</div>
+                                    <div>
+                                        <span class="status-badge ${ticket.status === 'active' ? 'status-active' : 'status-inactive'}">
+                                            ${ticket.status === 'active' ? 'Actif' : 'Annulé'}
+                                        </span>
+                                    </div>
+                                </div>
+                                <div>
+                                    <div style="font-size: 0.85rem; color: #6c757d;">Montant</div>
+                                    <div style="font-weight: bold;">${ticket.amount.toLocaleString()} HTG</div>
+                                </div>
+                            </div>
+                            <div style="text-align: center; margin-top: 15px;">
+                                <button class="btn btn-primary" onclick="viewTicket('${ticket.id}')">
+                                    <i class="fas fa-eye"></i> Voir les détails
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                }, 1000);
+                
+            } catch (error) {
+                console.error('Erreur recherche ticket:', error);
+                results.innerHTML = `
+                    <div style="text-align: center; padding: 40px 20px; color: #e74c3c;">
+                        <i class="fas fa-exclamation-triangle" style="font-size: 3rem; margin-bottom: 15px;"></i>
+                        <h4 style="color: #e74c3c; margin-bottom: 10px;">Erreur de recherche</h4>
+                        <p>Une erreur s'est produite lors de la recherche</p>
+                    </div>
+                `;
+            }
+        }
+        
+        // Charger l'activité complète
+        async function loadFullActivity() {
+            const loading = document.getElementById('full-activity-loading');
+            const table = document.getElementById('full-activity-table');
+            const empty = document.getElementById('full-activity-empty');
+            const tbody = document.getElementById('full-activity-body');
+            
+            loading.style.display = 'flex';
+            table.style.display = 'none';
+            empty.style.display = 'none';
+            
+            try {
+                // Simuler des données
+                setTimeout(() => {
+                    const activities = [
+                        {
+                            datetime: new Date().toLocaleString('fr-FR'),
+                            user: currentUser.username,
+                            role: 'Propriétaire',
+                            action: 'Connexion',
+                            details: 'Connexion au système d\'administration',
+                            ip: '192.168.1.100'
+                        },
+                        {
+                            datetime: new Date(Date.now() - 300000).toLocaleString('fr-FR'),
+                            user: currentUser.username,
+                            role: 'Propriétaire',
+                            action: 'Modification configuration',
+                            details: 'Changement des multiplicateurs globaux',
+                            ip: '192.168.1.100'
+                        },
+                        {
+                            datetime: new Date(Date.now() - 600000).toLocaleString('fr-FR'),
+                            user: 'Agent 1',
+                            role: 'Agent',
+                            action: 'Vente ticket',
+                            details: 'Ticket #00123 - 500 HTG (Borlette)',
+                            ip: '192.168.1.101'
+                        },
+                        {
+                            datetime: new Date(Date.now() - 900000).toLocaleString('fr-FR'),
+                            user: 'Superviseur 1',
+                            role: 'Superviseur Niveau 1',
+                            action: 'Création agent',
+                            details: 'Nouvel agent: Agent 2 créé',
+                            ip: '192.168.1.102'
+                        }
+                    ];
+                    
+                    if (activities.length === 0) {
+                        loading.style.display = 'none';
+                        empty.style.display = 'block';
+                        return;
+                    }
+                    
+                    tbody.innerHTML = '';
+                    
+                    activities.forEach(activity => {
+                        const row = document.createElement('tr');
+                        row.innerHTML = `
+                            <td>${activity.datetime}</td>
+                            <td><strong>${activity.user}</strong></td>
+                            <td>${activity.role}</td>
+                            <td>${activity.action}</td>
+                            <td>${activity.details}</td>
+                            <td><code>${activity.ip}</code></td>
+                        `;
+                        tbody.appendChild(row);
+                    });
+                    
+                    loading.style.display = 'none';
+                    table.style.display = 'table';
+                }, 500);
+                
+            } catch (error) {
+                console.error('Erreur chargement activité complète:', error);
+                loading.style.display = 'none';
+                empty.style.display = 'block';
+            }
+        }
+        
+        // Rafraîchir les données
+        function refreshData() {
+            const refreshBtn = document.getElementById('refresh-btn');
+            const originalHtml = refreshBtn.innerHTML;
+            
+            refreshBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+            refreshBtn.disabled = true;
+            
+            loadDashboardData();
+            loadRecentActivity();
+            loadRecentTickets();
+            
+            // Réactiver le bouton après 2 secondes
+            setTimeout(() => {
+                refreshBtn.innerHTML = originalHtml;
+                refreshBtn.disabled = false;
+                showNotification('Données rafraîchies', 'success');
+            }, 2000);
+        }
+        
+        // Démarrer le rafraîchissement automatique
+        function startAutoRefresh() {
+            // Rafraîchir toutes les minutes si sur le dashboard
+            setInterval(() => {
+                if (document.getElementById('dashboard-section').style.display !== 'none') {
+                    loadDashboardData();
+                }
+            }, 60000); // 1 minute
+        }
+        
+        // Afficher une notification
+        function showNotification(message, type = 'info') {
+            const container = document.getElementById('notification-container');
+            
+            const notification = document.createElement('div');
+            notification.className = `notification ${type}`;
+            
+            let icon = 'fas fa-info-circle';
+            if (type === 'success') icon = 'fas fa-check-circle';
+            if (type === 'error') icon = 'fas fa-times-circle';
+            if (type === 'warning') icon = 'fas fa-exclamation-triangle';
+            
+            notification.innerHTML = `
+                <i class="${icon}"></i>
+                <span>${message}</span>
+                <button style="background: none; border: none; color: inherit; margin-left: auto; cursor: pointer;" 
+                        onclick="this.parentElement.remove()">
+                    <i class="fas fa-times"></i>
+                </button>
+            `;
+            
+            container.appendChild(notification);
+            
+            // Supprimer automatiquement après 5 secondes
+            setTimeout(() => {
+                if (notification.parentNode) {
+                    notification.remove();
+                }
+            }, 5000);
+        }
+        
+        // Déconnexion
+        function logout() {
+            if (confirm('Êtes-vous sûr de vouloir vous déconnecter ?')) {
+                localStorage.removeItem('nova_token');
+                localStorage.removeItem('nova_user');
+                localStorage.removeItem('nova_subsystem');
+                window.location.href = '/index.html';
+            }
+        }
+        
+        // Fonctions pour les multiplicateurs (similaires aux précédentes)
+        async function loadGlobalMultipliers() {
+            try {
+                const config = JSON.parse(localStorage.getItem(`subsystemConfig_${currentSubsystem.id}`)) || {};
+                const multipliers = config.multipliers || {
+                    borlette: 60,
+                    boulpe: 60,
+                    lotto3: 500,
+                    lotto4: 5000,
+                    lotto5: 25000,
+                    grap: 500,
+                    marriage: 1000
+                };
+                
+                document.getElementById('multiplier-borlette').value = multipliers.borlette;
+                document.getElementById('multiplier-boulpe').value = multipliers.boulpe;
+                document.getElementById('multiplier-lotto3').value = multipliers.lotto3;
+                document.getElementById('multiplier-lotto4').value = multipliers.lotto4;
+                document.getElementById('multiplier-lotto5').value = multipliers.lotto5;
+                document.getElementById('multiplier-grap').value = multipliers.grap;
+                document.getElementById('multiplier-marriage').value = multipliers.marriage;
+                
+            } catch (error) {
+                console.error('Erreur chargement multiplicateurs:', error);
+            }
+        }
+        
+        async function saveGlobalMultipliers() {
+            try {
+                const multipliers = {
+                    borlette: parseInt(document.getElementById('multiplier-borlette').value),
+                    boulpe: parseInt(document.getElementById('multiplier-boulpe').value),
+                    lotto3: parseInt(document.getElementById('multiplier-lotto3').value),
+                    lotto4: parseInt(document.getElementById('multiplier-lotto4').value),
+                    lotto5: parseInt(document.getElementById('multiplier-lotto5').value),
+                    grap: parseInt(document.getElementById('multiplier-grap').value),
+                    marriage: parseInt(document.getElementById('multiplier-marriage').value)
+                };
+                
+                const existingConfig = JSON.parse(localStorage.getItem(`subsystemConfig_${currentSubsystem.id}`)) || {};
+                localStorage.setItem(`subsystemConfig_${currentSubsystem.id}`, JSON.stringify({
+                    ...existingConfig,
+                    multipliers
+                }));
+                
+                showNotification('Multiplicateurs globaux sauvegardés', 'success');
+            } catch (error) {
+                console.error('Erreur sauvegarde multiplicateurs:', error);
+                showNotification('Erreur lors de la sauvegarde', 'error');
+            }
+        }
+        
+        async function loadUsersForMultipliers() {
+            try {
+                const select = document.getElementById('select-user-multiplier');
+                select.innerHTML = '<option value="">Sélectionner un utilisateur</option>';
+                
+                // Combiner superviseurs et agents
+                const allUsers = [
+                    ...(window.allSupervisors || []).map(s => ({ ...s, type: 'supervisor' })),
+                    ...(window.allAgents || []).map(a => ({ ...a, type: 'agent' }))
+                ];
+                
+                allUsers.forEach(user => {
+                    const option = document.createElement('option');
+                    option.value = user.id;
+                    option.textContent = `${user.full_name} (${user.type === 'supervisor' ? `Superviseur Niveau ${user.level}` : 'Agent'})`;
+                    select.appendChild(option);
+                });
+            } catch (error) {
+                console.error('Erreur chargement utilisateurs pour multiplicateurs:', error);
+            }
+        }
+        
+        async function loadUserMultipliers() {
+            const userId = document.getElementById('select-user-multiplier').value;
+            const loading = document.getElementById('custom-multipliers-loading');
+            const form = document.getElementById('custom-multipliers-form');
+            const empty = document.getElementById('custom-multipliers-empty');
+            
+            if (!userId) {
+                form.style.display = 'none';
+                empty.style.display = 'block';
+                return;
+            }
+            
+            loading.style.display = 'flex';
+            form.style.display = 'none';
+            empty.style.display = 'none';
+            
+            try {
+                // Simuler chargement
+                setTimeout(() => {
+                    const userMultipliers = {
+                        borlette: 60,
+                        boulpe: 60,
+                        lotto3: 500,
+                        lotto4: 5000,
+                        lotto5: 25000,
+                        grap: 500,
+                        marriage: 1000
+                    };
+                    
+                    // Trouver l'utilisateur
+                    const allUsers = [
+                        ...(window.allSupervisors || []),
+                        ...(window.allAgents || [])
+                    ];
+                    const user = allUsers.find(u => u.id === userId);
+                    
+                    if (user) {
+                        document.getElementById('selected-user-name').textContent = 
+                            `${user.full_name} (${user.level ? `Superviseur Niveau ${user.level}` : 'Agent'})`;
+                        
+                        document.getElementById('custom-borlette').value = userMultipliers.borlette;
+                        document.getElementById('custom-boulpe').value = userMultipliers.boulpe;
+                        document.getElementById('custom-lotto3').value = userMultipliers.lotto3;
+                        document.getElementById('custom-lotto4').value = userMultipliers.lotto4;
+                        document.getElementById('custom-lotto5').value = userMultipliers.lotto5;
+                        document.getElementById('custom-grap').value = userMultipliers.grap;
+                        document.getElementById('custom-marriage').value = userMultipliers.marriage;
+                        
+                        loading.style.display = 'none';
+                        form.style.display = 'block';
+                    }
+                }, 500);
+                
+            } catch (error) {
+                console.error('Erreur chargement multiplicateurs utilisateur:', error);
+                loading.style.display = 'none';
+                empty.style.display = 'block';
+            }
+        }
+        
+        async function saveCustomMultipliers() {
+            try {
+                const userId = document.getElementById('select-user-multiplier').value;
+                if (!userId) {
+                    showNotification('Sélectionnez d\'abord un utilisateur', 'warning');
+                    return;
+                }
+                
+                const multipliers = {
+                    borlette: parseInt(document.getElementById('custom-borlette').value),
+                    boulpe: parseInt(document.getElementById('custom-boulpe').value),
+                    lotto3: parseInt(document.getElementById('custom-lotto3').value),
+                    lotto4: parseInt(document.getElementById('custom-lotto4').value),
+                    lotto5: parseInt(document.getElementById('custom-lotto5').value),
+                    grap: parseInt(document.getElementById('custom-grap').value),
+                    marriage: parseInt(document.getElementById('custom-marriage').value)
+                };
+                
+                showNotification('Multiplicateurs personnalisés sauvegardés pour cet utilisateur', 'success');
+            } catch (error) {
+                console.error('Erreur sauvegarde multiplicateurs personnalisés:', error);
+                showNotification('Erreur lors de la sauvegarde', 'error');
+            }
+        }
+        
+        async function resetCustomMultipliers() {
+            if (!confirm('Rétablir les multiplicateurs globaux pour cet utilisateur ?')) {
+                return;
+            }
+            
+            try {
+                const globalMultipliers = JSON.parse(localStorage.getItem(`subsystemConfig_${currentSubsystem.id}`))?.multipliers || {
+                    borlette: 60,
+                    boulpe: 60,
+                    lotto3: 500,
+                    lotto4: 5000,
+                    lotto5: 25000,
+                    grap: 500,
+                    marriage: 1000
+                };
+                
+                document.getElementById('custom-borlette').value = globalMultipliers.borlette;
+                document.getElementById('custom-boulpe').value = globalMultipliers.boulpe;
+                document.getElementById('custom-lotto3').value = globalMultipliers.lotto3;
+                document.getElementById('custom-lotto4').value = globalMultipliers.lotto4;
+                document.getElementById('custom-lotto5').value = globalMultipliers.lotto5;
+                document.getElementById('custom-grap').value = globalMultipliers.grap;
+                document.getElementById('custom-marriage').value = globalMultipliers.marriage;
+                
+                showNotification('Multiplicateurs rétablis aux valeurs globales', 'success');
+            } catch (error) {
+                console.error('Erreur rétablissement multiplicateurs:', error);
+                showNotification('Erreur lors du rétablissement', 'error');
+            }
+        }
+        
+        async function applyMultipliersToAll() {
+            if (!confirm('Appliquez ces multiplicateurs à TOUS les utilisateurs ?\n\nCela écrasera tous les multiplicateurs personnalisés.')) {
+                return;
+            }
+            
+            showNotification('Multiplicateurs appliqués à tous les utilisateurs', 'success');
+        }
+        
+        async function generateDailyReport() {
+            const loading = document.getElementById('daily-report-loading');
+            const results = document.getElementById('daily-report-results');
+            
+            loading.style.display = 'flex';
+            results.style.display = 'none';
+            
+            try {
+                // Simuler génération rapport
+                setTimeout(() => {
+                    const report = {
+                        summary: {
+                            total_tickets: 45,
+                            total_amount: 22500,
+                            estimated_payout: 15000,
+                            estimated_profit: 7500
+                        },
+                        breakdown: {
+                            by_seller: [
+                                { seller: 'Agent 1', tickets_count: 20, total_amount: 10000 },
+                                { seller: 'Agent 2', tickets_count: 15, total_amount: 7500 },
+                                { seller: 'Agent 3', tickets_count: 10, total_amount: 5000 }
+                            ],
+                            by_game: [
+                                { game_type: 'Borlette', tickets_count: 30, total_amount: 15000, total_bets: 60 },
+                                { game_type: 'Lotto 3', tickets_count: 10, total_amount: 5000, total_bets: 10 },
+                                { game_type: 'Lotto 4', tickets_count: 5, total_amount: 2500, total_bets: 5 }
+                            ]
+                        }
+                    };
+                    
+                    const date = document.getElementById('report-date').value || new Date().toISOString().split('T')[0];
+                    
+                    let html = `
+                        <div style="margin-bottom: 25px;">
+                            <h3 style="color: var(--secondary-color); margin-bottom: 15px;">Rapport du ${new Date(date).toLocaleDateString('fr-FR')}</h3>
+                            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 20px;">
+                                <div style="background-color: #f8f9fa; padding: 15px; border-radius: 8px;">
+                                    <div style="font-size: 0.9rem; color: #6c757d; margin-bottom: 5px;">Tickets</div>
+                                    <div style="font-weight: bold; color: var(--secondary-color);">${report.summary.total_tickets}</div>
+                                </div>
+                                <div style="background-color: #f8f9fa; padding: 15px; border-radius: 8px;">
+                                    <div style="font-size: 0.9rem; color: #6c757d; margin-bottom: 5px;">Ventes totales</div>
+                                    <div style="font-weight: bold; color: var(--secondary-color);">${report.summary.total_amount.toLocaleString()} HTG</div>
+                                </div>
+                                <div style="background-color: #f8f9fa; padding: 15px; border-radius: 8px;">
+                                    <div style="font-size: 0.9rem; color: #6c757d; margin-bottom: 5px;">Paiements estimés</div>
+                                    <div style="font-weight: bold; color: var(--secondary-color);">${report.summary.estimated_payout.toLocaleString()} HTG</div>
+                                </div>
+                                <div style="background-color: #f8f9fa; padding: 15px; border-radius: 8px;">
+                                    <div style="font-size: 0.9rem; color: #6c757d; margin-bottom: 5px;">Profit estimé</div>
+                                    <div style="font-weight: bold; color: var(--secondary-color);">${report.summary.estimated_profit.toLocaleString()} HTG</div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    
+                    // Détails par vendeur
+                    if (report.breakdown?.by_seller && report.breakdown.by_seller.length > 0) {
+                        html += `
+                            <h4 style="color: var(--secondary-color); margin-bottom: 15px;">Par vendeur</h4>
+                            <table class="table" style="margin-bottom: 25px;">
+                                <thead>
+                                    <tr>
+                                        <th>Vendeur</th>
+                                        <th>Tickets</th>
+                                        <th>Montant</th>
+                                        <th>Moyenne</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                        `;
+                        
+                        report.breakdown.by_seller.forEach(seller => {
+                            const avg = seller.tickets_count > 0 ? seller.total_amount / seller.tickets_count : 0;
+                            html += `
+                                <tr>
+                                    <td>${seller.seller}</td>
+                                    <td>${seller.tickets_count}</td>
+                                    <td>${seller.total_amount.toLocaleString()} HTG</td>
+                                    <td>${avg.toLocaleString()} HTG</td>
+                                </tr>
+                            `;
+                        });
+                        
+                        html += `</tbody></table>`;
+                    }
+                    
+                    results.innerHTML = html;
+                    loading.style.display = 'none';
+                    results.style.display = 'block';
+                }, 1000);
+                
+            } catch (error) {
+                console.error('Erreur génération rapport:', error);
+                showNotification('Erreur lors de la génération du rapport', 'error');
+                loading.style.display = 'none';
+            }
+        }
+        
+        async function generateSupervisorReport() {
+            const supervisorId = document.getElementById('select-supervisor-report').value;
+            const startDate = document.getElementById('report-start-date').value;
+            const endDate = document.getElementById('report-end-date').value;
+            
+            if (!supervisorId || !startDate || !endDate) {
+                showNotification('Veuillez sélectionner un superviseur et une période', 'warning');
+                return;
+            }
+            
+            const loading = document.getElementById('supervisor-report-loading');
+            const results = document.getElementById('supervisor-report-results');
+            
+            loading.style.display = 'flex';
+            results.style.display = 'none';
+            
+            try {
+                // Simuler génération rapport
+                setTimeout(() => {
+                    const supervisor = window.allSupervisors?.find(s => s.id === supervisorId);
+                    
+                    const report = {
+                        supervisor: supervisor?.full_name || 'Inconnu',
+                        level: supervisor?.level || 1,
+                        period: `${startDate} à ${endDate}`,
+                        summary: {
+                            total_agents: 8,
+                            total_tickets: 120,
+                            total_sales: 60000,
+                            estimated_profit: 18000
+                        },
+                        agents_performance: [
+                            { agent: 'Agent 1', tickets: 35, sales: 17500 },
+                            { agent: 'Agent 2', tickets: 30, sales: 15000 },
+                            { agent: 'Agent 3', tickets: 25, sales: 12500 },
+                            { agent: 'Agent 4', tickets: 20, sales: 10000 },
+                            { agent: 'Agent 5', tickets: 10, sales: 5000 }
+                        ]
+                    };
+                    
+                    let html = `
+                        <div style="margin-bottom: 25px;">
+                            <h3 style="color: var(--secondary-color); margin-bottom: 15px;">
+                                Rapport pour ${report.supervisor} (Niveau ${report.level})
+                            </h3>
+                            <div style="color: #6c757d; margin-bottom: 20px;">
+                                Période: ${report.period}
+                            </div>
+                            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 20px;">
+                                <div style="background-color: #f8f9fa; padding: 15px; border-radius: 8px;">
+                                    <div style="font-size: 0.9rem; color: #6c757d; margin-bottom: 5px;">Agents</div>
+                                    <div style="font-weight: bold; color: var(--secondary-color);">${report.summary.total_agents}</div>
+                                </div>
+                                <div style="background-color: #f8f9fa; padding: 15px; border-radius: 8px;">
+                                    <div style="font-size: 0.9rem; color: #6c757d; margin-bottom: 5px;">Tickets</div>
+                                    <div style="font-weight: bold; color: var(--secondary-color);">${report.summary.total_tickets}</div>
+                                </div>
+                                <div style="background-color: #f8f9fa; padding: 15px; border-radius: 8px;">
+                                    <div style="font-size: 0.9rem; color: #6c757d; margin-bottom: 5px;">Ventes totales</div>
+                                    <div style="font-weight: bold; color: var(--secondary-color);">${report.summary.total_sales.toLocaleString()} HTG</div>
+                                </div>
+                                <div style="background-color: #f8f9fa; padding: 15px; border-radius: 8px;">
+                                    <div style="font-size: 0.9rem; color: #6c757d; margin-bottom: 5px;">Profit estimé</div>
+                                    <div style="font-weight: bold; color: var(--secondary-color);">${report.summary.estimated_profit.toLocaleString()} HTG</div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    
+                    // Performance des agents
+                    if (report.agents_performance && report.agents_performance.length > 0) {
+                        html += `
+                            <h4 style="color: var(--secondary-color); margin-bottom: 15px;">Performance des agents</h4>
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>Agent</th>
+                                        <th>Tickets</th>
+                                        <th>Ventes</th>
+                                        <th>Moyenne</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                        `;
+                        
+                        report.agents_performance.forEach(agent => {
+                            const avg = agent.tickets > 0 ? agent.sales / agent.tickets : 0;
+                            html += `
+                                <tr>
+                                    <td>${agent.agent}</td>
+                                    <td>${agent.tickets}</td>
+                                    <td>${agent.sales.toLocaleString()} HTG</td>
+                                    <td>${avg.toLocaleString()} HTG</td>
+                                </tr>
+                            `;
+                        });
+                        
+                        html += `</tbody></table>`;
+                    }
+                    
+                    results.innerHTML = html;
+                    loading.style.display = 'none';
+                    results.style.display = 'block';
+                }, 1000);
+                
+            } catch (error) {
+                console.error('Erreur génération rapport superviseur:', error);
+                showNotification('Erreur lors de la génération du rapport', 'error');
+                loading.style.display = 'none';
+            }
+        }
+        
+        function exportDailyReport() {
+            alert('Fonctionnalité d\'export à implémenter (PDF/Excel)');
+        }
+    </script>
 </body>
 </html>

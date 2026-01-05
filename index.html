@@ -204,7 +204,8 @@
         
         <div class="tabs">
             <button class="tab-btn active" data-tab="agent">Agent</button>
-            <button class="tab-btn" data-tab="supervisor">Superviseur 1 OU 2</button>
+            <button class="tab-btn" data-tab="supervisor1">Superviseur 1</button>
+            <button class="tab-btn" data-tab="supervisor2">Superviseur 2</button>
             <button class="tab-btn" data-tab="subsystem">PROPRIETAIRE</button>
             <button class="tab-btn" data-tab="master">Master</button>
         </div>
@@ -223,18 +224,32 @@
             <button class="login-btn" onclick="login('agent')">Connexion Agent</button>
         </div>
         
-        <!-- Formulaire Superviseur -->
-        <div id="supervisor-form" class="form-container">
-            <div class="role-badge supervisor-badge">Superviseur</div>
+        <!-- Formulaire Superviseur 1 -->
+        <div id="supervisor1-form" class="form-container">
+            <div class="role-badge supervisor-badge">Superviseur 1</div>
             <div class="form-group">
-                <label for="supervisor-username">Identifiant</label>
-                <input type="text" id="supervisor-username" placeholder="Entrez votre identifiant">
+                <label for="supervisor1-username">Identifiant</label>
+                <input type="text" id="supervisor1-username" placeholder="Entrez votre identifiant">
             </div>
             <div class="form-group">
-                <label for="supervisor-password">Mot de passe</label>
-                <input type="password" id="supervisor-password" placeholder="Entrez votre mot de passe">
+                <label for="supervisor1-password">Mot de passe</label>
+                <input type="password" id="supervisor1-password" placeholder="Entrez votre mot de passe">
             </div>
-            <button class="login-btn" onclick="login('supervisor')">Connexion Superviseur</button>
+            <button class="login-btn" onclick="login('supervisor1')">Connexion Superviseur 1</button>
+        </div>
+        
+        <!-- Formulaire Superviseur 2 -->
+        <div id="supervisor2-form" class="form-container">
+            <div class="role-badge supervisor-badge">Superviseur 2</div>
+            <div class="form-group">
+                <label for="supervisor2-username">Identifiant</label>
+                <input type="text" id="supervisor2-username" placeholder="Entrez votre identifiant">
+            </div>
+            <div class="form-group">
+                <label for="supervisor2-password">Mot de passe</label>
+                <input type="password" id="supervisor2-password" placeholder="Entrez votre mot de passe">
+            </div>
+            <button class="login-btn" onclick="login('supervisor2')">Connexion Superviseur 2</button>
         </div>
         
         <!-- Formulaire Admin Sous-système -->
@@ -296,51 +311,50 @@
             });
         });
         
-async function login(role) {
-    const username = document.getElementById(`${role}-username`).value;
-    const password = document.getElementById(`${role}-password`).value; // CORRIGÉ ICI
-    
-    if (!username || !password) {
-        showStatusMessage('Veuillez remplir tous les champs', 'error');
-        return;
-    }
-    
-    showStatusMessage('Connexion en cours...', 'info');
-    
-    try {
-        const response = await fetch('/api/auth/login', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                username: username,
-                password: password,
-                role: role
-            })
-        });
-        
-        const data = await response.json();
-        
-        if (data.success) {
-            showStatusMessage('Connexion réussie! Redirection...', 'success');
+        async function login(role) {
+            const username = document.getElementById(`${role}-username`).value;
+            const password = document.getElementById(`${role}-password`).value;
             
-            // SAUVEGARDER LE TOKEN
-            localStorage.setItem('nova_token', data.token);
+            if (!username || !password) {
+                showStatusMessage('Veuillez remplir tous les champs', 'error');
+                return;
+            }
             
-            // Redirection avec token en paramètre
-            setTimeout(() => {
-                window.location.href = data.redirectUrl + '?token=' + data.token;
-            }, 1000);
-        } else {
-            showStatusMessage(data.error || 'Identifiants incorrects', 'error');
+            showStatusMessage('Connexion en cours...', 'info');
+            
+            try {
+                const response = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        username: username,
+                        password: password,
+                        role: role
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    showStatusMessage('Connexion réussie! Redirection...', 'success');
+                    
+                    // SAUVEGARDER LE TOKEN
+                    localStorage.setItem('nova_token', data.token);
+                    
+                    // Redirection avec token en paramètre
+                    setTimeout(() => {
+                        window.location.href = data.redirectUrl;
+                    }, 1000);
+                } else {
+                    showStatusMessage(data.error || 'Identifiants incorrects', 'error');
+                }
+            } catch (error) {
+                showStatusMessage('Erreur de connexion au serveur', 'error');
+                console.error('Erreur:', error);
+            }
         }
-    } catch (error) {
-        showStatusMessage('Erreur de connexion au serveur', 'error');
-        console.error('Erreur:', error);
-    }
-}
-
         
         // Fonctions pour afficher/masquer les messages
         function showStatusMessage(message, type) {

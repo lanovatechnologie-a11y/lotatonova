@@ -1000,6 +1000,18 @@
         .status-offline {
             background-color: #95a5a6;
         }
+        .hierarchy-card {
+            background: white;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-left: 4px solid;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        
+        .hierarchy-level1 { border-left-color: #9b59b6; }
+        .hierarchy-level2 { border-left-color: #3498db; }
+        .hierarchy-agent { border-left-color: #2ecc71; }
     </style>
 </head>
 <body>
@@ -1009,15 +1021,15 @@
             <div class="logo-placeholder" id="subsystem-logo">
                 <i class="fas fa-building"></i>
             </div>
-            <div class="subsystem-name" id="subsystem-name">Chargement...</div>
-            <div class="subsystem-domain" id="subsystem-domain">sous-domaine.novalotto.com</div>
+            <div class="subsystem-name" id="subsystem-name">Sous-Système</div>
+            <div class="subsystem-domain" id="subsystem-domain">chargement...</div>
         </div>
         
         <div class="user-info">
-            <div class="user-avatar" id="user-avatar">U</div>
+            <div class="user-avatar" id="user-avatar">A</div>
             <div class="user-details">
-                <h3 id="user-name">Utilisateur</h3>
-                <p id="user-role">Administrateur</p>
+                <h3 id="user-name">Administrateur</h3>
+                <p id="user-role">Sous-Système</p>
             </div>
         </div>
         
@@ -1026,29 +1038,25 @@
                 <div class="nav-icon"><i class="fas fa-tachometer-alt"></i></div>
                 <div class="nav-label">Tableau de bord</div>
             </a>
+            <a href="#" class="nav-item" data-section="hierarchy">
+                <div class="nav-icon"><i class="fas fa-sitemap"></i></div>
+                <div class="nav-label">Hiérarchie</div>
+            </a>
             <a href="#" class="nav-item" data-section="users">
                 <div class="nav-icon"><i class="fas fa-users"></i></div>
-                <div class="nav-label">Gestion Utilisateurs</div>
-            </a>
-            <a href="#" class="nav-item" data-section="configuration">
-                <div class="nav-icon"><i class="fas fa-cog"></i></div>
-                <div class="nav-label">Configuration</div>
-            </a>
-            <a href="#" class="nav-item" data-section="multipliers">
-                <div class="nav-icon"><i class="fas fa-percentage"></i></div>
-                <div class="nav-label">Multiplicateurs</div>
-            </a>
-            <a href="#" class="nav-item" data-section="reports">
-                <div class="nav-icon"><i class="fas fa-chart-bar"></i></div>
-                <div class="nav-label">Rapports</div>
+                <div class="nav-label">Utilisateurs</div>
             </a>
             <a href="#" class="nav-item" data-section="tickets">
                 <div class="nav-icon"><i class="fas fa-ticket-alt"></i></div>
                 <div class="nav-label">Tickets</div>
             </a>
-            <a href="#" class="nav-item" data-section="activity">
-                <div class="nav-icon"><i class="fas fa-history"></i></div>
-                <div class="nav-label">Activité</div>
+            <a href="#" class="nav-item" data-section="reports">
+                <div class="nav-icon"><i class="fas fa-chart-bar"></i></div>
+                <div class="nav-label">Rapports</div>
+            </a>
+            <a href="#" class="nav-item" data-section="settings">
+                <div class="nav-icon"><i class="fas fa-cog"></i></div>
+                <div class="nav-label">Paramètres</div>
             </a>
         </div>
     </div>
@@ -1063,124 +1071,39 @@
             </div>
             <div class="top-actions">
                 <div class="subsystem-status">
-                    <div class="status-dot" id="system-status-dot"></div>
-                    <span id="system-status-text">Système actif</span>
+                    <div class="status-dot" id="system-status"></div>
+                    <span id="system-status-text">Connexion...</span>
                 </div>
-                <button class="btn btn-primary" id="change-subsystem-btn">
-                    <i class="fas fa-exchange-alt"></i> Changer
-                </button>
-                <button class="btn btn-primary" id="refresh-btn">
+                <button class="btn btn-primary" id="refresh-data">
                     <i class="fas fa-sync-alt"></i> Actualiser
                 </button>
-                <button class="btn btn-secondary" id="back-to-master-btn">
-                    <i class="fas fa-arrow-left"></i> Retour Master
-                </button>
-                <button class="btn btn-danger" id="logout-btn">
+                <button class="btn btn-warning" id="logout-btn">
                     <i class="fas fa-sign-out-alt"></i> Déconnexion
                 </button>
             </div>
         </div>
 
-        <!-- Message quand aucun sous-système n'est disponible -->
-        <div id="no-subsystem-message" style="display: none; margin-top: 20px;">
-            <div style="text-align: center; padding: 40px 20px; background-color: white; border-radius: 8px; box-shadow: 0 3px 10px rgba(0,0,0,0.08);">
-                <div style="font-size: 4rem; color: #3498db; margin-bottom: 20px;">
-                    <i class="fas fa-building"></i>
-                </div>
-                <h2 style="color: var(--secondary-color); margin-bottom: 15px;">
-                    Aucun sous-système disponible
-                </h2>
-                <p style="color: #6c757d; font-size: 1.1rem; max-width: 600px; margin: 0 auto 30px;">
-                    Vous n'avez pas encore de sous-système à administrer.<br>
-                    Contactez l'administrateur Master pour créer un sous-système.
-                </p>
-                <div style="margin-top: 30px;">
-                    <button class="btn btn-primary" onclick="contactMaster()" style="margin-right: 10px;">
-                        <i class="fas fa-headset"></i> Contacter le Master
-                    </button>
-                    <button class="btn btn-secondary" onclick="changeSubsystem()">
-                        <i class="fas fa-sync-alt"></i> Vérifier à nouveau
-                    </button>
-                </div>
-                <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee; font-size: 0.9rem; color: #95a5a6;">
-                    <i class="fas fa-info-circle"></i> 
-                    Un sous-système vous permet de gérer une filiale, un point de vente ou une zone géographique spécifique.
-                </div>
-            </div>
+        <!-- Message de chargement -->
+        <div id="loading-message" style="display: none; text-align: center; padding: 50px;">
+            <div class="loading-spinner"></div>
+            <p>Chargement des données...</p>
         </div>
 
-        <!-- Information Sous-Système -->
-        <div id="subsystem-info-alert" style="display: none;">
-            <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
-                <div style="display: flex; align-items: center; gap: 10px;">
-                    <i class="fas fa-info-circle" style="font-size: 1.5rem;"></i>
-                    <div>
-                        <strong>Administration Sous-Système</strong>
-                        <div style="font-size: 0.9rem; opacity: 0.9;">
-                            Vous gérez uniquement ce sous-système. Pour créer de nouveaux sous-systèmes, contactez l'administrateur Master.
-                        </div>
-                    </div>
-                </div>
-            </div>
+        <!-- Message d'erreur -->
+        <div id="error-message" style="display: none; background: #f8d7da; color: #721c24; padding: 20px; border-radius: 8px; margin: 20px 0;">
+            <i class="fas fa-exclamation-triangle"></i> <span id="error-text"></span>
         </div>
-        
+
         <!-- Dashboard Section -->
         <div id="dashboard-section" class="section-content active">
-            <!-- Quick Stats -->
-            <div class="quick-stats">
-                <div class="quick-stat">
-                    <div class="quick-stat-icon" style="background-color: #3498db;">
-                        <i class="fas fa-user-clock"></i>
-                    </div>
-                    <div class="quick-stat-info">
-                        <div class="quick-stat-value" id="online-users">0</div>
-                        <div class="quick-stat-label">En ligne maintenant</div>
-                    </div>
-                </div>
-                
-                <div class="quick-stat">
-                    <div class="quick-stat-icon" style="background-color: #2ecc71;">
-                        <i class="fas fa-chart-line"></i>
-                    </div>
-                    <div class="quick-stat-info">
-                        <div class="quick-stat-value" id="today-sales">0 HTG</div>
-                        <div class="quick-stat-label">Ventes aujourd'hui</div>
-                    </div>
-                </div>
-                
-                <div class="quick-stat">
-                    <div class="quick-stat-icon" style="background-color: #f39c12;">
-                        <i class="fas fa-ticket-alt"></i>
-                    </div>
-                    <div class="quick-stat-info">
-                        <div class="quick-stat-value" id="today-tickets">0</div>
-                        <div class="quick-stat-label">Tickets aujourd'hui</div>
-                    </div>
-                </div>
-                
-                <div class="quick-stat">
-                    <div class="quick-stat-icon" style="background-color: #e74c3c;">
-                        <i class="fas fa-exclamation-triangle"></i>
-                    </div>
-                    <div class="quick-stat-info">
-                        <div class="quick-stat-value" id="pending-alerts">0</div>
-                        <div class="quick-stat-label">Alertes en attente</div>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Stats Cards -->
             <div class="stats-cards">
                 <div class="stat-card">
                     <div class="stat-icon icon-sales">
                         <i class="fas fa-money-bill-wave"></i>
                     </div>
                     <div class="stat-info">
-                        <div class="stat-value" id="total-sales">0 HTG</div>
-                        <div class="stat-label">Ventes du mois</div>
-                        <div class="stat-trend trend-up">
-                            <i class="fas fa-arrow-up"></i> 12% vs mois dernier
-                        </div>
+                        <div class="stat-value" id="stat-sales">0 HTG</div>
+                        <div class="stat-label">Ventes aujourd'hui</div>
                     </div>
                 </div>
                 
@@ -1189,11 +1112,8 @@
                         <i class="fas fa-users"></i>
                     </div>
                     <div class="stat-info">
-                        <div class="stat-value" id="total-users">0/0</div>
+                        <div class="stat-value" id="stat-users">0/0</div>
                         <div class="stat-label">Utilisateurs actifs</div>
-                        <div class="stat-trend trend-up">
-                            <i class="fas fa-arrow-up"></i> 3 nouveaux
-                        </div>
                     </div>
                 </div>
                 
@@ -1202,11 +1122,8 @@
                         <i class="fas fa-receipt"></i>
                     </div>
                     <div class="stat-info">
-                        <div class="stat-value" id="total-tickets">0</div>
-                        <div class="stat-label">Tickets du mois</div>
-                        <div class="stat-trend trend-up">
-                            <i class="fas fa-arrow-up"></i> 8% vs mois dernier
-                        </div>
+                        <div class="stat-value" id="stat-tickets">0</div>
+                        <div class="stat-label">Tickets aujourd'hui</div>
                     </div>
                 </div>
                 
@@ -1215,476 +1132,270 @@
                         <i class="fas fa-chart-pie"></i>
                     </div>
                     <div class="stat-info">
-                        <div class="stat-value" id="estimated-profit">0 HTG</div>
+                        <div class="stat-value" id="stat-profit">0 HTG</div>
                         <div class="stat-label">Profit estimé</div>
-                        <div class="stat-trend trend-up">
-                            <i class="fas fa-arrow-up"></i> 15% vs mois dernier
-                        </div>
                     </div>
                 </div>
             </div>
-            
-            <!-- Recent Activity -->
+        </div>
+
+        <!-- Hierarchy Section -->
+        <div id="hierarchy-section" class="section-content" style="display: none;">
             <div class="table-container">
                 <div class="table-header">
-                    <div class="table-title">Activité récente</div>
-                    <div class="search-box">
-                        <input type="text" class="search-input" placeholder="Rechercher une activité...">
-                        <button class="btn btn-primary">
-                            <i class="fas fa-search"></i>
-                        </button>
-                    </div>
+                    <div class="table-title">Structure hiérarchique</div>
+                    <button class="btn btn-success" id="add-supervisor-btn">
+                        <i class="fas fa-plus"></i> Ajouter superviseur
+                    </button>
                 </div>
                 
-                <table class="table" id="activity-table">
-                    <thead>
-                        <tr>
-                            <th>Heure</th>
-                            <th>Utilisateur</th>
-                            <th>Action</th>
-                            <th>Détails</th>
-                        </tr>
-                    </thead>
-                    <tbody id="activity-table-body">
-                        <tr>
-                            <td colspan="4" style="text-align: center; padding: 20px; color: #6c757d;">
-                                <i class="fas fa-history"></i> Aucune activité récente
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
+                <div id="hierarchy-container">
+                    <!-- Rempli dynamiquement -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Users Section -->
+        <div id="users-section" class="section-content" style="display: none;">
+            <div class="tabs">
+                <button class="tab active" data-tab="agents">Agents</button>
+                <button class="tab" data-tab="supervisors1">Superviseurs N1</button>
+                <button class="tab" data-tab="supervisors2">Superviseurs N2</button>
             </div>
             
-            <!-- Recent Tickets -->
+            <div class="tab-content active" id="agents-tab">
+                <div class="table-container">
+                    <div class="table-header">
+                        <div class="table-title">Liste des agents</div>
+                        <button class="btn btn-success" id="add-agent-btn">
+                            <i class="fas fa-plus"></i> Ajouter agent
+                        </button>
+                    </div>
+                    
+                    <table class="table" id="agents-table">
+                        <thead>
+                            <tr>
+                                <th>Nom</th>
+                                <th>Code</th>
+                                <th>Superviseur</th>
+                                <th>Tickets aujourd'hui</th>
+                                <th>Statut</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="agents-body">
+                            <!-- Rempli dynamiquement -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tickets Section -->
+        <div id="tickets-section" class="section-content" style="display: none;">
             <div class="table-container">
                 <div class="table-header">
                     <div class="table-title">Tickets récents</div>
-                    <div class="search-box">
-                        <input type="text" class="search-input" placeholder="Rechercher un ticket...">
-                        <button class="btn btn-primary">
-                            <i class="fas fa-search"></i>
-                        </button>
-                    </div>
+                    <input type="date" class="form-control" id="ticket-date" style="width: 150px;">
                 </div>
                 
                 <table class="table" id="tickets-table">
                     <thead>
                         <tr>
-                            <th>N° Ticket</th>
-                            <th>Vendeur</th>
+                            <th>N°</th>
+                            <th>Agent</th>
                             <th>Montant</th>
-                            <th>Date</th>
+                            <th>Heure</th>
                             <th>Statut</th>
-                            <th>Actions</th>
                         </tr>
                     </thead>
-                    <tbody id="tickets-table-body">
-                        <tr>
-                            <td colspan="6" style="text-align: center; padding: 20px; color: #6c757d;">
-                                <i class="fas fa-ticket-alt"></i> Aucun ticket récent
-                            </td>
-                        </tr>
+                    <tbody id="tickets-body">
+                        <!-- Rempli dynamiquement -->
                     </tbody>
                 </table>
             </div>
         </div>
-        
-        <!-- Users Section -->
-        <div id="users-section" class="section-content" style="display: none;">
-            <div class="tabs">
-                <button class="tab active" data-user-tab="all">Tous les utilisateurs</button>
-                <button class="tab" data-user-tab="supervisors1">Superviseurs Niveau 1</button>
-                <button class="tab" data-user-tab="supervisors2">Superviseurs Niveau 2</button>
-                <button class="tab" data-user-tab="agents">Agents</button>
-            </div>
-            
-            <div class="tab-content active" id="all-tab">
-                <div class="table-container">
-                    <div class="table-header">
-                        <div class="table-title">Gestion des utilisateurs</div>
-                        <div class="search-box">
-                            <input type="text" class="search-input" placeholder="Rechercher un utilisateur..." id="search-users">
-                            <button class="btn btn-primary" id="search-user-btn">
-                                <i class="fas fa-search"></i>
-                            </button>
-                            <button class="btn btn-success" id="add-user-btn">
-                                <i class="fas fa-plus"></i> Ajouter utilisateur
-                            </button>
-                        </div>
-                    </div>
-                    
-                    <table class="table" id="users-table">
-                        <thead>
-                            <tr>
-                                <th>Nom</th>
-                                <th>Identifiant</th>
-                                <th>Type</th>
-                                <th>Statut</th>
-                                <th>Dernière connexion</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody id="users-table-body">
-                            <tr>
-                                <td colspan="6" style="text-align: center; padding: 20px; color: #6c757d;">
-                                    <i class="fas fa-users"></i> Aucun utilisateur trouvé
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-        
-        <!-- Configuration Section -->
-        <div id="configuration-section" class="section-content" style="display: none;">
-            <div class="config-cards">
-                <div class="config-card">
-                    <h3><i class="fas fa-info-circle"></i> Informations du sous-système</h3>
-                    <div class="form-group">
-                        <label class="form-label">Nom de l'entreprise</label>
-                        <input type="text" class="form-control" id="company-name" placeholder="Ex: Borlette Cap-Haïtien">
-                    </div>
-                    
-                    <div class="form-group">
-                        <label class="form-label">Téléphone de contact</label>
-                        <input type="text" class="form-control" id="company-phone" placeholder="+509 32 53 49 58">
-                    </div>
-                    
-                    <div class="form-group">
-                        <label class="form-label">Adresse</label>
-                        <input type="text" class="form-control" id="company-address" placeholder="Adresse de l'entreprise">
-                    </div>
-                    
-                    <button class="btn btn-success" id="save-company-info">
-                        <i class="fas fa-save"></i> Sauvegarder
-                    </button>
-                </div>
-                
-                <div class="config-card">
-                    <h3><i class="fas fa-clock"></i> Horaires d'ouverture</h3>
-                    <div class="form-group">
-                        <label class="form-label">Heure d'ouverture</label>
-                        <input type="time" class="form-control" id="opening-time" value="08:00">
-                    </div>
-                    
-                    <div class="form-group">
-                        <label class="form-label">Heure de fermeture</label>
-                        <input type="time" class="form-control" id="closing-time" value="22:00">
-                    </div>
-                    
-                    <div class="form-group">
-                        <label class="form-label">
-                            <input type="checkbox" id="enable-schedule" checked>
-                            Activer les horaires
-                        </label>
-                    </div>
-                    
-                    <button class="btn btn-success" id="save-schedule">
-                        <i class="fas fa-save"></i> Sauvegarder
-                    </button>
-                </div>
-                
-                <div class="config-card">
-                    <h3><i class="fas fa-gamepad"></i> Jeux autorisés</h3>
-                    <div style="margin-top: 10px;">
-                        <label style="display: flex; align-items: center; gap: 8px; margin-bottom: 10px;">
-                            <input type="checkbox" id="game-borlette" checked>
-                            <span>Borlette (2 chiffres)</span>
-                        </label>
-                        
-                        <label style="display: flex; align-items: center; gap: 8px; margin-bottom: 10px;">
-                            <input type="checkbox" id="game-boulpe" checked>
-                            <span>Boul Pe (boule paire)</span>
-                        </label>
-                        
-                        <label style="display: flex; align-items: center; gap: 8px; margin-bottom: 10px;">
-                            <input type="checkbox" id="game-lotto3" checked>
-                            <span>Lotto 3 (3 chiffres)</span>
-                        </label>
-                        
-                        <label style="display: flex; align-items: center; gap: 8px; margin-bottom: 10px;">
-                            <input type="checkbox" id="game-lotto4" checked>
-                            <span>Lotto 4 (4 chiffres)</span>
-                        </label>
-                    </div>
-                    
-                    <button class="btn btn-success" id="save-games" style="margin-top: 15px;">
-                        <i class="fas fa-save"></i> Sauvegarder
-                    </button>
-                </div>
-            </div>
-        </div>
-        
-        <!-- Multipliers Section -->
-        <div id="multipliers-section" class="section-content" style="display: none;">
-            <div class="tabs">
-                <button class="tab active" data-multiplier-tab="global">Multiplicateurs globaux</button>
-                <button class="tab" data-multiplier-tab="custom">Multiplicateurs par utilisateur</button>
-            </div>
-            
-            <div class="tab-content active" id="global-tab">
-                <div class="table-container">
-                    <div class="table-header">
-                        <div class="table-title">Multiplicateurs par défaut</div>
-                    </div>
-                    
-                    <div class="multipliers-grid">
-                        <div class="multiplier-item">
-                            <div class="multiplier-name">Borlette</div>
-                            <div class="form-group" style="margin-bottom: 0;">
-                                <input type="number" class="form-control" id="multiplier-borlette" value="60" min="1" step="1">
-                            </div>
-                        </div>
-                        
-                        <div class="multiplier-item">
-                            <div class="multiplier-name">Boul Pe</div>
-                            <div class="form-group" style="margin-bottom: 0;">
-                                <input type="number" class="form-control" id="multiplier-boulpe" value="60" min="1" step="1">
-                            </div>
-                        </div>
-                        
-                        <div class="multiplier-item">
-                            <div class="multiplier-name">Lotto 3</div>
-                            <div class="form-group" style="margin-bottom: 0;">
-                                <input type="number" class="form-control" id="multiplier-lotto3" value="500" min="1" step="1">
-                            </div>
-                        </div>
-                        
-                        <div class="multiplier-item">
-                            <div class="multiplier-name">Lotto 4</div>
-                            <div class="form-group" style="margin-bottom: 0;">
-                                <input type="number" class="form-control" id="multiplier-lotto4" value="5000" min="1" step="1">
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #eee;">
-                        <button class="btn btn-success" id="save-global-multipliers">
-                            <i class="fas fa-save"></i> Sauvegarder
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
-        
+
         <!-- Reports Section -->
         <div id="reports-section" class="section-content" style="display: none;">
-            <div class="tabs">
-                <button class="tab active" data-report-tab="daily">Rapport quotidien</button>
-                <button class="tab" data-report-tab="weekly">Rapport hebdomadaire</button>
-                <button class="tab" data-report-tab="monthly">Rapport mensuel</button>
-            </div>
-            
-            <div class="tab-content active" id="daily-tab">
-                <div class="table-container">
-                    <div class="table-header">
-                        <div class="table-title">Rapport du jour</div>
-                        <div style="display: flex; gap: 10px;">
-                            <input type="date" class="form-control" id="report-date" value="">
-                            <button class="btn btn-success" id="generate-daily-report">
-                                <i class="fas fa-chart-bar"></i> Générer
-                            </button>
-                            <button class="btn btn-primary" id="export-daily-report">
-                                <i class="fas fa-file-export"></i> Exporter
-                            </button>
-                        </div>
-                    </div>
-                    
-                    <div id="daily-report-results" style="margin-top: 20px;">
-                        <div style="text-align: center; padding: 40px 20px; color: #6c757d;">
-                            <i class="fas fa-chart-bar" style="font-size: 3rem; margin-bottom: 15px; color: #dee2e6;"></i>
-                            <p>Sélectionnez une date et générez un rapport</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        
-        <!-- Tickets Section -->
-        <div id="tickets-section" class="section-content" style="display: none;">
-            <div class="tabs">
-                <button class="tab active" data-ticket-tab="recent">Tickets récents</button>
-                <button class="tab" data-ticket-tab="search">Rechercher un ticket</button>
-                <button class="tab" data-ticket-tab="cancelled">Tickets annulés</button>
-            </div>
-            
-            <div class="tab-content active" id="recent-tab">
-                <div class="table-container">
-                    <div class="table-header">
-                        <div class="table-title">Derniers tickets</div>
-                        <div class="search-box">
-                            <select class="form-control" id="filter-agent" style="width: 150px;">
-                                <option value="">Tous les agents</option>
-                            </select>
-                            <select class="form-control" id="filter-status-ticket" style="width: 150px;">
-                                <option value="">Tous les statuts</option>
-                                <option value="active">Actifs</option>
-                                <option value="cancelled">Annulés</option>
-                            </select>
-                        </div>
-                    </div>
-                    
-                    <table class="table" id="tickets-list-table">
-                        <thead>
-                            <tr>
-                                <th>N° Ticket</th>
-                                <th>Agent</th>
-                                <th>Montant</th>
-                                <th>Date</th>
-                                <th>Statut</th>
-                                <th>Détails</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody id="tickets-list-body">
-                            <tr>
-                                <td colspan="7" style="text-align: center; padding: 20px; color: #6c757d;">
-                                    <i class="fas fa-ticket-alt"></i> Aucun ticket trouvé
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-        
-        <!-- Activity Section -->
-        <div id="activity-section" class="section-content" style="display: none;">
             <div class="table-container">
                 <div class="table-header">
-                    <div class="table-title">Journal d'activité complet</div>
-                    <div class="search-box">
-                        <input type="date" class="form-control" id="activity-date" style="width: 150px;">
-                        <select class="form-control" id="activity-user" style="width: 150px;">
-                            <option value="">Tous les utilisateurs</option>
-                        </select>
-                        <button class="btn btn-primary" id="filter-activity">
-                            <i class="fas fa-filter"></i> Filtrer
+                    <div class="table-title">Rapports</div>
+                    <div>
+                        <input type="date" class="form-control" id="report-start" style="width: 150px; display: inline-block;">
+                        <input type="date" class="form-control" id="report-end" style="width: 150px; display: inline-block;">
+                        <button class="btn btn-primary" id="generate-report">
+                            <i class="fas fa-download"></i> Générer
                         </button>
                     </div>
                 </div>
                 
-                <table class="table" id="full-activity-table">
-                    <thead>
-                        <tr>
-                            <th>Date/Heure</th>
-                            <th>Utilisateur</th>
-                            <th>Action</th>
-                            <th>Détails</th>
-                            <th>IP</th>
-                        </tr>
-                    </thead>
-                    <tbody id="full-activity-body">
-                        <tr>
-                            <td colspan="5" style="text-align: center; padding: 20px; color: #6c757d;">
-                                <i class="fas fa-history"></i> Aucune activité enregistrée
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
+                <div id="report-results">
+                    <!-- Rempli dynamiquement -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Settings Section -->
+        <div id="settings-section" class="section-content" style="display: none;">
+            <div class="config-cards">
+                <div class="config-card">
+                    <h3><i class="fas fa-building"></i> Informations du sous-système</h3>
+                    <div class="form-group">
+                        <label>Nom commercial</label>
+                        <input type="text" class="form-control" id="setting-name">
+                    </div>
+                    <div class="form-group">
+                        <label>Téléphone</label>
+                        <input type="text" class="form-control" id="setting-phone">
+                    </div>
+                    <div class="form-group">
+                        <label>Adresse</label>
+                        <textarea class="form-control" id="setting-address" rows="2"></textarea>
+                    </div>
+                    <button class="btn btn-success" id="save-settings">
+                        <i class="fas fa-save"></i> Sauvegarder
+                    </button>
+                </div>
+
+                <div class="config-card">
+                    <h3><i class="fas fa-chart-pie"></i> Quotas</h3>
+                    <div class="form-group">
+                        <label>Agents maximum</label>
+                        <input type="number" class="form-control" id="quota-agents" min="1">
+                    </div>
+                    <div class="form-group">
+                        <label>Superviseurs N1 maximum</label>
+                        <input type="number" class="form-control" id="quota-supervisors1" min="0">
+                    </div>
+                    <div class="form-group">
+                        <label>Ventes max/jour (HTG)</label>
+                        <input type="number" class="form-control" id="quota-sales" min="0">
+                    </div>
+                    <button class="btn btn-primary" id="request-quota">
+                        <i class="fas fa-envelope"></i> Demander plus au Master
+                    </button>
+                </div>
             </div>
         </div>
     </div>
-    
-    <!-- Modal: Add User -->
+
+    <!-- Modals -->
     <div class="modal" id="add-user-modal">
         <div class="modal-content">
             <div class="modal-header">
-                <div class="modal-title">Ajouter un utilisateur</div>
-                <button class="modal-close" id="close-add-user">&times;</button>
+                <h3 id="modal-title">Ajouter utilisateur</h3>
+                <button class="modal-close">&times;</button>
             </div>
-            
             <div class="modal-body">
-                <form id="add-user-form">
+                <form id="user-form">
                     <div class="form-group">
-                        <label class="form-label">Type d'utilisateur *</label>
-                        <select class="form-control" id="user-type-select" required>
-                            <option value="">Sélectionner un type</option>
+                        <label>Type</label>
+                        <select class="form-control" id="user-type">
+                            <option value="agent">Agent</option>
                             <option value="supervisor1">Superviseur Niveau 1</option>
                             <option value="supervisor2">Superviseur Niveau 2</option>
-                            <option value="agent">Agent/Vendeur</option>
-                        </select>
-                    </div>
-                    
-                    <div class="form-group" id="supervisor-level-container" style="display: none;">
-                        <label class="form-label">Attribuer à (Superviseur Niveau 1)</label>
-                        <select class="form-control" id="supervisor-parent">
-                            <option value="">Aucun (dépend du Sous-Système)</option>
-                        </select>
-                    </div>
-                    
-                    <div class="form-group" id="agent-supervisor-container" style="display: none;">
-                        <label class="form-label">Superviseur responsable</label>
-                        <select class="form-control" id="agent-supervisor">
-                            <option value="">Aucun (assigné plus tard)</option>
                         </select>
                     </div>
                     
                     <div class="form-group">
-                        <label class="form-label">Nom complet *</label>
-                        <input type="text" class="form-control" id="user-fullname" placeholder="Jean Dupont" required>
+                        <label>Nom complet</label>
+                        <input type="text" class="form-control" id="user-fullname" required>
+                    </div>
+                    
+                    <div class="form-group" id="quota-section">
+                        <label>Quotas</label>
+                        <div id="agent-quotas" style="display: none;">
+                            <input type="number" class="form-control" placeholder="Tickets max/jour" id="agent-max-tickets">
+                        </div>
+                        <div id="supervisor1-quotas" style="display: none;">
+                            <input type="number" class="form-control" placeholder="Superviseurs N2 max" id="supervisor1-max-s2">
+                            <input type="number" class="form-control" placeholder="Agents max totaux" id="supervisor1-max-agents" style="margin-top: 10px;">
+                        </div>
+                        <div id="supervisor2-quotas" style="display: none;">
+                            <input type="number" class="form-control" placeholder="Agents max" id="supervisor2-max-agents">
+                        </div>
                     </div>
                     
                     <div class="form-group">
-                        <label class="form-label">Identifiant *</label>
-                        <input type="text" class="form-control" id="user-username" placeholder="jdupont" required>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label class="form-label">Mot de passe *</label>
-                        <input type="text" class="form-control" id="user-password" value="changeme123" required>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label class="form-label">
-                            <input type="checkbox" id="user-active" checked>
-                            Compte actif immédiatement
-                        </label>
+                        <label>Code d'activation</label>
+                        <input type="text" class="form-control" id="activation-code" readonly>
+                        <button type="button" class="btn btn-secondary" id="generate-code" style="margin-top: 10px;">
+                            <i class="fas fa-key"></i> Générer code
+                        </button>
+                        <small>Ce code doit être validé par le Master</small>
                     </div>
                     
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" id="cancel-add-user">Annuler</button>
-                        <button type="submit" class="btn btn-success">Créer l'utilisateur</button>
+                        <button type="button" class="btn btn-secondary" id="cancel-user">Annuler</button>
+                        <button type="submit" class="btn btn-success">Envoyer au Master</button>
                     </div>
                 </form>
             </div>
         </div>
     </div>
-    
+
     <!-- Notification Container -->
     <div id="notification-container"></div>
 
-    <script>
-// Configuration
+<script>
+// ============================================
+// CONFIGURATION
+// ============================================
 const API_BASE_URL = 'https://lotatonova-fv0b.onrender.com';
 
-// Variables globales
+// ============================================
+// VARIABLES GLOBALES
+// ============================================
 let authToken = localStorage.getItem('nova_token');
 let currentUser = JSON.parse(localStorage.getItem('nova_user') || '{}');
 let currentSubsystem = null;
-let userSubsystems = [];
 
-// Vérification basique du token
-function checkAuth() {
-    if (!authToken || !authToken.startsWith('nova_')) {
-        localStorage.removeItem('nova_token');
-        localStorage.removeItem('nova_user');
-        window.location.href = 'index.html';
-        return false;
-    }
-    return true;
+// ============================================
+// FONCTIONS UTILITAIRES
+// ============================================
+function showNotification(message, type = 'info') {
+    const container = document.getElementById('notification-container');
+    const notification = document.createElement('div');
+    notification.className = `notification ${type}`;
+    notification.innerHTML = `
+        <i class="fas fa-${type === 'success' ? 'check' : type === 'error' ? 'times' : type === 'warning' ? 'exclamation' : 'info'}"></i>
+        <span>${message}</span>
+        <button onclick="this.parentElement.remove()" style="background:none;border:none;color:white;cursor:pointer">
+            <i class="fas fa-times"></i>
+        </button>
+    `;
+    container.appendChild(notification);
+    setTimeout(() => notification.remove(), 5000);
 }
 
-// Fonction API principale
-async function apiFetch(endpoint, options = {}) {
-    if (!checkAuth()) {
-        throw new Error('Non authentifié');
+function showError(message) {
+    document.getElementById('error-text').textContent = message;
+    document.getElementById('error-message').style.display = 'block';
+}
+
+function hideError() {
+    document.getElementById('error-message').style.display = 'none';
+}
+
+function showLoading() {
+    document.getElementById('loading-message').style.display = 'block';
+}
+
+function hideLoading() {
+    document.getElementById('loading-message').style.display = 'none';
+}
+
+// ============================================
+// FONCTIONS API
+// ============================================
+async function apiCall(endpoint, options = {}) {
+    if (!authToken) {
+        window.location.href = 'index.html';
+        return null;
     }
     
-    // Ajouter le token à l'URL (le backend le cherche dans l'URL)
-    const separator = endpoint.includes('?') ? '&' : '?';
-    const url = `${API_BASE_URL}${endpoint}${separator}token=${encodeURIComponent(authToken)}`;
+    const url = `${API_BASE_URL}${endpoint}?token=${encodeURIComponent(authToken)}`;
     
     try {
         const response = await fetch(url, {
@@ -1696,422 +1407,429 @@ async function apiFetch(endpoint, options = {}) {
         });
         
         if (response.status === 401) {
-            // Token invalide
             localStorage.removeItem('nova_token');
             localStorage.removeItem('nova_user');
             window.location.href = 'index.html';
-            throw new Error('Session expirée');
-        }
-        
-        if (!response.ok) {
-            throw new Error(`HTTP ${response.status}`);
+            return null;
         }
         
         return await response.json();
     } catch (error) {
-        if (error.message !== 'Session expirée') {
-            console.error('Erreur API:', error);
-            showNotification('Erreur de connexion au serveur', 'error');
-        }
-        throw error;
+        console.error('API Error:', error);
+        return null;
     }
 }
 
-// Fonctions de l'interface
-function showNotification(message, type = 'info') {
-    const container = document.getElementById('notification-container');
-    const notification = document.createElement('div');
-    notification.className = `notification ${type}`;
-    notification.innerHTML = `
-        <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'times-circle' : type === 'warning' ? 'exclamation-triangle' : 'info-circle'}"></i>
-        <span>${message}</span>
-        <button style="background: none; border: none; color: inherit; margin-left: auto; cursor: pointer;" onclick="this.parentElement.remove()">
-            <i class="fas fa-times"></i>
-        </button>
-    `;
-    container.appendChild(notification);
+// ============================================
+// CHARGEMENT DES DONNÉES
+// ============================================
+async function loadSubsystemData() {
+    showLoading();
+    hideError();
     
-    setTimeout(() => {
-        if (notification.parentNode) notification.remove();
-    }, 5000);
+    try {
+        // Charger le sous-système de l'utilisateur
+        const data = await apiCall(`/api/users/${currentUser.id}/subsystem`);
+        
+        if (data && data.success) {
+            currentSubsystem = data.subsystem;
+            updateUI();
+            await loadDashboardStats();
+            await loadHierarchy();
+            await loadUsers();
+        } else {
+            showError('Aucun sous-système trouvé');
+        }
+    } catch (error) {
+        showError('Erreur de chargement');
+    } finally {
+        hideLoading();
+    }
 }
 
-// Charger les données du dashboard
-async function loadDashboardData() {
+async function loadDashboardStats() {
     if (!currentSubsystem) return;
     
-    try {
-        // Simuler des données pour le démo
-        document.getElementById('online-users').textContent = '5';
-        document.getElementById('today-sales').textContent = '45,800 HTG';
-        document.getElementById('today-tickets').textContent = '124';
-        document.getElementById('pending-alerts').textContent = '3';
-        document.getElementById('total-sales').textContent = '850,000 HTG';
-        document.getElementById('total-users').textContent = '12/50';
-        document.getElementById('total-tickets').textContent = '3,245';
-        document.getElementById('estimated-profit').textContent = '180,000 HTG';
-        
-        showNotification('Données chargées', 'success');
-    } catch (error) {
-        console.error('Erreur chargement dashboard:', error);
-    }
-}
-
-// Mettre à jour l'interface utilisateur
-function updateUserInterface() {
-    if (currentSubsystem) {
-        document.getElementById('subsystem-name').textContent = currentSubsystem.name || 'Sous-Système';
-        document.getElementById('subsystem-domain').textContent = (currentSubsystem.subdomain || 'sous-domaine') + '.novalotto.com';
-        document.getElementById('user-name').textContent = currentUser.name || 'Administrateur';
-        document.getElementById('user-role').textContent = 'Admin Sous-Système';
-        
-        document.getElementById('no-subsystem-message').style.display = 'none';
-        document.getElementById('subsystem-info-alert').style.display = 'block';
-        document.getElementById('dashboard-section').style.display = 'block';
-        
-        document.getElementById('system-status-dot').className = 'status-dot';
-        document.getElementById('system-status-text').textContent = 'Système actif';
-    } else {
-        document.getElementById('no-subsystem-message').style.display = 'block';
-        document.getElementById('subsystem-info-alert').style.display = 'none';
-        document.getElementById('dashboard-section').style.display = 'none';
-    }
-}
-
-// Obtenir l'ID du sous-système
-function getSubsystemId() {
-    const urlParams = new URLSearchParams(window.location.search);
-    const urlId = urlParams.get('subsystem_id');
-    const localId = localStorage.getItem('selectedSubsystemId');
+    const data = await apiCall(`/api/subsystems/${currentSubsystem.id}/stats`);
     
-    return urlId || localId;
-}
-
-// Charger les sous-systèmes de l'utilisateur
-async function getUserSubsystems() {
-    try {
-        // Simulation - en production, utilisez l'API
-        return [
-            { id: '1', name: 'Borlette Port-au-Prince', subdomain: 'pap' },
-            { id: '2', name: 'Borlette Cap-Haïtien', subdomain: 'cap' }
-        ];
-    } catch (error) {
-        console.error('Erreur chargement sous-systèmes:', error);
-        return [];
+    if (data && data.success) {
+        document.getElementById('stat-sales').textContent = `${data.today_sales || 0} HTG`;
+        document.getElementById('stat-users').textContent = `${data.active_users || 0}/${currentSubsystem.max_users || 0}`;
+        document.getElementById('stat-tickets').textContent = data.today_tickets || 0;
+        document.getElementById('stat-profit').textContent = `${data.profit || 0} HTG`;
+        
+        document.getElementById('system-status').className = 'status-dot';
+        document.getElementById('system-status-text').textContent = 'Système actif';
     }
 }
 
-// Initialiser les données du sous-système
-async function initializeSubsystemData(subsystemId) {
-    try {
-        // Simulation - en production, utilisez l'API
-        currentSubsystem = {
-            id: subsystemId,
-            name: subsystemId === '1' ? 'Borlette Port-au-Prince' : 'Borlette Cap-Haïtien',
-            subdomain: subsystemId === '1' ? 'pap' : 'cap',
-            max_users: 50
-        };
+async function loadHierarchy() {
+    if (!currentSubsystem) return;
+    
+    const data = await apiCall(`/api/subsystems/${currentSubsystem.id}/hierarchy`);
+    const container = document.getElementById('hierarchy-container');
+    
+    if (data && data.success) {
+        container.innerHTML = '';
         
-        localStorage.setItem('currentSubsystem', JSON.stringify(currentSubsystem));
-        updateUserInterface();
-        await loadDashboardData();
+        // Superviseurs Niveau 1
+        if (data.supervisors1 && data.supervisors1.length > 0) {
+            data.supervisors1.forEach(supervisor => {
+                const card = createHierarchyCard(supervisor, 1);
+                container.appendChild(card);
+            });
+        }
         
-        return true;
-    } catch (error) {
-        console.error('Erreur initialisation sous-système:', error);
-        return false;
+        // Superviseurs Niveau 2
+        if (data.supervisors2 && data.supervisors2.length > 0) {
+            data.supervisors2.forEach(supervisor => {
+                const card = createHierarchyCard(supervisor, 2);
+                container.appendChild(card);
+            });
+        }
     }
 }
 
-// Afficher la popup de sélection de sous-système
-function showSubsystemSelectionPopup() {
-    const modal = document.createElement('div');
-    modal.className = 'modal active';
-    modal.innerHTML = `
-        <div class="modal-content">
-            <div class="modal-header">
-                <div class="modal-title">Sélectionner un sous-système</div>
-                <button class="modal-close" onclick="this.parentElement.parentElement.remove()">&times;</button>
+function createHierarchyCard(user, level) {
+    const div = document.createElement('div');
+    div.className = `hierarchy-card hierarchy-level${level}`;
+    div.innerHTML = `
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div>
+                <strong>${user.name}</strong>
+                <div style="font-size: 0.85rem; color: #666;">
+                    ${level === 1 ? 'Superviseur Niveau 1' : 'Superviseur Niveau 2'}
+                </div>
             </div>
-            
-            <div class="modal-body">
-                ${userSubsystems.length > 0 ? `
-                    <p style="margin-bottom: 15px;">Sélectionnez un sous-système à administrer :</p>
-                    <div style="max-height: 300px; overflow-y: auto;">
-                        ${userSubsystems.map(subsystem => `
-                            <div class="subsystem-item" 
-                                 style="padding: 15px; border: 1px solid #ddd; border-radius: 8px; margin-bottom: 10px; cursor: pointer;"
-                                 onclick="selectSubsystem('${subsystem.id}')">
-                                <div style="display: flex; align-items: center; gap: 15px;">
-                                    <div style="width: 40px; height: 40px; background-color: #3498db; border-radius: 8px; 
-                                          display: flex; align-items: center; justify-content: center; color: white;">
-                                        <i class="fas fa-building"></i>
-                                    </div>
-                                    <div style="flex: 1;">
-                                        <div style="font-weight: bold; color: var(--secondary-color);">${subsystem.name}</div>
-                                        <div style="font-size: 0.85rem; color: #6c757d;">${subsystem.subdomain}.novalotto.com</div>
-                                    </div>
-                                    <i class="fas fa-chevron-right" style="color: #6c757d;"></i>
-                                </div>
-                            </div>
-                        `).join('')}
-                    </div>
-                ` : `
-                    <div style="text-align: center; padding: 40px 20px;">
-                        <i class="fas fa-building" style="font-size: 3rem; color: #dee2e6; margin-bottom: 15px;"></i>
-                        <h3 style="color: var(--secondary-color); margin-bottom: 10px;">Aucun sous-système</h3>
-                        <p style="color: #6c757d; margin-bottom: 20px;">
-                            Vous n'avez pas encore de sous-système.
-                        </p>
-                    </div>
-                `}
-            </div>
-            
-            <div class="modal-footer">
-                <button class="btn btn-secondary" onclick="this.parentElement.parentElement.parentElement.remove()">
-                    Annuler
-                </button>
+            <div style="text-align: right;">
+                <div style="font-weight: bold;">${user.agents_count || 0} agents</div>
+                <div style="font-size: 0.8rem; color: #666;">${user.tickets_today || 0} tickets aujourd'hui</div>
             </div>
         </div>
     `;
-    
-    document.body.appendChild(modal);
+    return div;
 }
 
-// Sélectionner un sous-système
-function selectSubsystem(subsystemId) {
-    localStorage.setItem('selectedSubsystemId', subsystemId);
-    document.querySelector('.modal.active').remove();
-    window.location.href = `subsystem-admin.html?subsystem_id=${subsystemId}`;
-}
-
-// Afficher une section
-function showSection(sectionId) {
-    if (!currentSubsystem) {
-        showNotification('Veuillez d\'abord sélectionner un sous-système', 'warning');
-        return;
-    }
+async function loadUsers() {
+    if (!currentSubsystem) return;
     
-    document.querySelectorAll('.section-content').forEach(section => {
-        section.style.display = 'none';
-    });
+    const data = await apiCall(`/api/subsystems/${currentSubsystem.id}/users`);
+    const tbody = document.getElementById('agents-body');
     
-    const section = document.getElementById(`${sectionId}-section`);
-    if (section) {
-        section.style.display = 'block';
-        document.getElementById('page-title').textContent = 
-            document.querySelector(`.nav-item[data-section="${sectionId}"] .nav-label`).textContent;
+    if (data && data.success) {
+        tbody.innerHTML = '';
+        
+        if (data.users && data.users.length > 0) {
+            data.users.forEach(user => {
+                const row = createUserRow(user);
+                tbody.appendChild(row);
+            });
+        } else {
+            tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:20px;">Aucun utilisateur</td></tr>';
+        }
     }
 }
 
-// Configurer les événements
+function createUserRow(user) {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+        <td>${user.name}</td>
+        <td><span class="role-badge ${user.role}">${user.code || 'N/A'}</span></td>
+        <td>${user.supervisor_name || 'Non assigné'}</td>
+        <td>${user.tickets_today || 0}</td>
+        <td><span class="status-badge ${user.status}">${user.status === 'active' ? 'Actif' : 'Inactif'}</span></td>
+        <td>
+            <button class="action-btn edit" data-id="${user.id}"><i class="fas fa-edit"></i></button>
+            <button class="action-btn delete" data-id="${user.id}"><i class="fas fa-trash"></i></button>
+        </td>
+    `;
+    return tr;
+}
+
+// ============================================
+// MISE À JOUR DE L'INTERFACE
+// ============================================
+function updateUI() {
+    if (!currentSubsystem) return;
+    
+    // Mettre à jour le logo et nom
+    document.getElementById('subsystem-name').textContent = currentSubsystem.name || 'Sous-Système';
+    document.getElementById('subsystem-domain').textContent = currentSubsystem.domain || 'sous-domaine.novalotto.com';
+    
+    // Mettre à jour l'avatar utilisateur
+    document.getElementById('user-avatar').textContent = currentUser.name?.charAt(0)?.toUpperCase() || 'A';
+    document.getElementById('user-name').textContent = currentUser.name || 'Administrateur';
+    
+    // Remplir les paramètres
+    document.getElementById('setting-name').value = currentSubsystem.name || '';
+    document.getElementById('setting-phone').value = currentSubsystem.phone || '';
+    document.getElementById('setting-address').value = currentSubsystem.address || '';
+    document.getElementById('quota-agents').value = currentSubsystem.max_agents || 0;
+    document.getElementById('quota-supervisors1').value = currentSubsystem.max_supervisors1 || 0;
+    document.getElementById('quota-sales').value = currentSubsystem.max_daily_sales || 0;
+}
+
+// ============================================
+// GESTION DES ÉVÉNEMENTS
+// ============================================
 function setupEventListeners() {
     // Navigation
     document.querySelectorAll('.nav-item').forEach(item => {
         item.addEventListener('click', function(e) {
             e.preventDefault();
-            
-            if (!currentSubsystem) {
-                showNotification('Veuillez d\'abord sélectionner un sous-système', 'warning');
-                showSubsystemSelectionPopup();
-                return;
-            }
-            
-            document.querySelectorAll('.nav-item').forEach(nav => {
-                nav.classList.remove('active');
-            });
-            this.classList.add('active');
-            
             const section = this.getAttribute('data-section');
             showSection(section);
+            
+            // Mettre à jour l'onglet actif
+            document.querySelectorAll('.nav-item').forEach(nav => nav.classList.remove('active'));
+            this.classList.add('active');
+            
+            // Mettre à jour le titre
+            document.getElementById('page-title').textContent = this.querySelector('.nav-label').textContent;
         });
     });
     
-    // Boutons d'action
-    document.getElementById('refresh-btn').addEventListener('click', () => {
-        if (currentSubsystem) loadDashboardData();
+    // Tabs
+    document.querySelectorAll('.tab').forEach(tab => {
+        tab.addEventListener('click', function() {
+            const tabId = this.getAttribute('data-tab');
+            showTab(tabId);
+        });
+    });
+    
+    // Boutons
+    document.getElementById('refresh-data').addEventListener('click', () => {
+        loadSubsystemData();
         showNotification('Données actualisées', 'success');
     });
     
-    document.getElementById('change-subsystem-btn').addEventListener('click', () => {
-        showSubsystemSelectionPopup();
-    });
-    
-    document.getElementById('back-to-master-btn').addEventListener('click', () => {
-        window.location.href = 'master-dashboard.html';
-    });
-    
     document.getElementById('logout-btn').addEventListener('click', () => {
-        if (confirm('Êtes-vous sûr de vouloir vous déconnecter ?')) {
-            localStorage.clear();
-            window.location.href = 'index.html';
-        }
+        localStorage.clear();
+        window.location.href = 'index.html';
     });
     
-    // Modal d'ajout d'utilisateur
-    document.getElementById('add-user-btn').addEventListener('click', () => {
-        if (!currentSubsystem) {
-            showNotification('Veuillez d\'abord sélectionner un sous-système', 'warning');
-            return;
-        }
-        document.getElementById('add-user-modal').classList.add('active');
+    // Ajouter utilisateur
+    document.getElementById('add-agent-btn')?.addEventListener('click', () => {
+        showAddUserModal('agent');
     });
     
-    document.getElementById('close-add-user').addEventListener('click', () => {
-        document.getElementById('add-user-modal').classList.remove('active');
+    document.getElementById('add-supervisor-btn')?.addEventListener('click', () => {
+        showAddUserModal('supervisor1');
     });
     
-    document.getElementById('cancel-add-user').addEventListener('click', () => {
-        document.getElementById('add-user-modal').classList.remove('active');
+    // Type d'utilisateur
+    document.getElementById('user-type')?.addEventListener('change', function() {
+        updateQuotaFields(this.value);
     });
     
-    // Gérer le changement de type d'utilisateur
-    document.getElementById('user-type-select').addEventListener('change', function() {
-        const type = this.value;
-        
-        document.getElementById('supervisor-level-container').style.display = 'none';
-        document.getElementById('agent-supervisor-container').style.display = 'none';
-        
-        if (type === 'supervisor2') {
-            document.getElementById('supervisor-level-container').style.display = 'block';
-        } else if (type === 'agent') {
-            document.getElementById('agent-supervisor-container').style.display = 'block';
-        }
-    });
+    // Générer code
+    document.getElementById('generate-code')?.addEventListener('click', generateActivationCode);
     
-    // Formulaire d'ajout d'utilisateur
-    document.getElementById('add-user-form').addEventListener('submit', async (e) => {
+    // Formulaire utilisateur
+    document.getElementById('user-form')?.addEventListener('submit', async function(e) {
         e.preventDefault();
-        
-        const userType = document.getElementById('user-type-select').value;
-        const fullName = document.getElementById('user-fullname').value;
-        const username = document.getElementById('user-username').value;
-        const password = document.getElementById('user-password').value;
-        
-        if (!userType || !fullName || !username || !password) {
-            showNotification('Veuillez remplir tous les champs obligatoires', 'error');
-            return;
-        }
-        
-        // Simulation de création
-        showNotification(`${userType === 'agent' ? 'Agent' : userType === 'supervisor1' ? 'Superviseur Niveau 1' : 'Superviseur Niveau 2'} créé avec succès`, 'success');
-        document.getElementById('add-user-modal').classList.remove('active');
-        
-        // Réinitialiser le formulaire
-        e.target.reset();
+        await createUserRequest();
     });
     
-    // Tabs utilisateurs
-    document.querySelectorAll('[data-user-tab]').forEach(tab => {
-        tab.addEventListener('click', function() {
-            const tabId = this.getAttribute('data-user-tab');
-            
-            document.querySelectorAll('[data-user-tab]').forEach(t => {
-                t.classList.remove('active');
-            });
-            this.classList.add('active');
-            
-            document.querySelectorAll('.tab-content').forEach(content => {
-                content.classList.remove('active');
-            });
-            document.getElementById(`${tabId}-tab`).classList.add('active');
-        });
-    });
+    // Sauvegarder paramètres
+    document.getElementById('save-settings')?.addEventListener('click', saveSettings);
     
-    // Tabs multiplicateurs
-    document.querySelectorAll('[data-multiplier-tab]').forEach(tab => {
-        tab.addEventListener('click', function() {
-            const tabId = this.getAttribute('data-multiplier-tab');
-            
-            document.querySelectorAll('[data-multiplier-tab]').forEach(t => {
-                t.classList.remove('active');
-            });
-            this.classList.add('active');
-            
-            document.querySelectorAll('.tab-content').forEach(content => {
-                content.classList.remove('active');
-            });
-            document.getElementById(`${tabId}-tab`).classList.add('active');
-        });
-    });
+    // Demander quota
+    document.getElementById('request-quota')?.addEventListener('click', requestQuota);
     
-    // Tabs rapports
-    document.querySelectorAll('[data-report-tab]').forEach(tab => {
-        tab.addEventListener('click', function() {
-            const tabId = this.getAttribute('data-report-tab');
-            
-            document.querySelectorAll('[data-report-tab]').forEach(t => {
-                t.classList.remove('active');
-            });
-            this.classList.add('active');
-            
-            document.querySelectorAll('.tab-content').forEach(content => {
-                content.classList.remove('active');
-            });
-            document.getElementById(`${tabId}-tab`).classList.add('active');
-        });
-    });
-    
-    // Tabs tickets
-    document.querySelectorAll('[data-ticket-tab]').forEach(tab => {
-        tab.addEventListener('click', function() {
-            const tabId = this.getAttribute('data-ticket-tab');
-            
-            document.querySelectorAll('[data-ticket-tab]').forEach(t => {
-                t.classList.remove('active');
-            });
-            this.classList.add('active');
-            
-            document.querySelectorAll('.tab-content').forEach(content => {
-                content.classList.remove('active');
-            });
-            document.getElementById(`${tabId}-tab`).classList.add('active');
+    // Fermer modal
+    document.querySelectorAll('.modal-close, .btn-secondary').forEach(btn => {
+        btn.addEventListener('click', function() {
+            document.querySelectorAll('.modal').forEach(m => m.classList.remove('active'));
         });
     });
 }
 
-// Initialisation principale
-document.addEventListener('DOMContentLoaded', async function() {
-    console.log('🚀 Subsystem Admin initialisé');
+function showSection(sectionId) {
+    // Cacher toutes les sections
+    document.querySelectorAll('.section-content').forEach(section => {
+        section.style.display = 'none';
+    });
     
-    // Vérifier l'authentification
-    if (!checkAuth()) return;
+    // Afficher la section demandée
+    const section = document.getElementById(`${sectionId}-section`);
+    if (section) {
+        section.style.display = 'block';
+    }
+}
+
+function showTab(tabId) {
+    // Mettre à jour les tabs
+    document.querySelectorAll('.tab').forEach(tab => {
+        tab.classList.remove('active');
+    });
+    document.querySelector(`[data-tab="${tabId}"]`).classList.add('active');
     
-    // Initialiser l'interface utilisateur de base
-    document.getElementById('user-avatar').textContent = currentUser.name?.charAt(0)?.toUpperCase() || 'A';
-    document.getElementById('user-name').textContent = currentUser.name || 'Administrateur';
-    document.getElementById('user-role').textContent = 'Admin Sous-Système';
+    // Afficher le contenu
+    document.querySelectorAll('.tab-content').forEach(content => {
+        content.classList.remove('active');
+    });
+    document.getElementById(`${tabId}-tab`).classList.add('active');
+}
+
+function showAddUserModal(type = 'agent') {
+    const modal = document.getElementById('add-user-modal');
+    const title = document.getElementById('modal-title');
     
-    // Charger les sous-systèmes
-    userSubsystems = await getUserSubsystems();
+    // Définir le type
+    document.getElementById('user-type').value = type;
+    updateQuotaFields(type);
     
-    const subsystemId = getSubsystemId();
+    // Mettre à jour le titre
+    const typeNames = {
+        'agent': 'Agent',
+        'supervisor1': 'Superviseur Niveau 1',
+        'supervisor2': 'Superviseur Niveau 2'
+    };
+    title.textContent = `Ajouter ${typeNames[type]}`;
     
-    if (subsystemId && userSubsystems.length > 0) {
-        await initializeSubsystemData(subsystemId);
-    } else if (userSubsystems.length > 0) {
-        // Afficher la sélection
-        showSubsystemSelectionPopup();
+    // Générer un code
+    generateActivationCode();
+    
+    // Afficher le modal
+    modal.classList.add('active');
+}
+
+function updateQuotaFields(type) {
+    // Cacher tous les champs de quota
+    document.getElementById('agent-quotas').style.display = 'none';
+    document.getElementById('supervisor1-quotas').style.display = 'none';
+    document.getElementById('supervisor2-quotas').style.display = 'none';
+    
+    // Afficher les champs appropriés
+    if (type === 'agent') {
+        document.getElementById('agent-quotas').style.display = 'block';
+    } else if (type === 'supervisor1') {
+        document.getElementById('supervisor1-quotas').style.display = 'block';
+    } else if (type === 'supervisor2') {
+        document.getElementById('supervisor2-quotas').style.display = 'block';
+    }
+}
+
+function generateActivationCode() {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    let code = 'SUB-';
+    for (let i = 0; i < 8; i++) {
+        code += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    document.getElementById('activation-code').value = code;
+}
+
+async function createUserRequest() {
+    const type = document.getElementById('user-type').value;
+    const name = document.getElementById('user-fullname').value;
+    const code = document.getElementById('activation-code').value;
+    
+    if (!name || !code) {
+        showNotification('Veuillez remplir tous les champs', 'error');
+        return;
+    }
+    
+    const quotas = {};
+    if (type === 'agent') {
+        quotas.max_tickets = document.getElementById('agent-max-tickets').value || 100;
+    } else if (type === 'supervisor1') {
+        quotas.max_supervisors2 = document.getElementById('supervisor1-max-s2').value || 3;
+        quotas.max_agents = document.getElementById('supervisor1-max-agents').value || 50;
+    } else if (type === 'supervisor2') {
+        quotas.max_agents = document.getElementById('supervisor2-max-agents').value || 10;
+    }
+    
+    const request = {
+        subsystem_id: currentSubsystem.id,
+        user_type: type,
+        name: name,
+        activation_code: code,
+        quotas: quotas
+    };
+    
+    showLoading();
+    const result = await apiCall('/api/subsystem/user/request', {
+        method: 'POST',
+        body: JSON.stringify(request)
+    });
+    
+    hideLoading();
+    
+    if (result && result.success) {
+        showNotification('Demande envoyée au Master pour validation', 'success');
+        document.getElementById('add-user-modal').classList.remove('active');
+        document.getElementById('user-form').reset();
     } else {
-        // Aucun sous-système
-        currentSubsystem = null;
-        updateUserInterface();
+        showNotification('Erreur lors de l\'envoi', 'error');
+    }
+}
+
+async function saveSettings() {
+    const settings = {
+        name: document.getElementById('setting-name').value,
+        phone: document.getElementById('setting-phone').value,
+        address: document.getElementById('setting-address').value
+    };
+    
+    const result = await apiCall(`/api/subsystems/${currentSubsystem.id}/settings`, {
+        method: 'POST',
+        body: JSON.stringify(settings)
+    });
+    
+    if (result && result.success) {
+        showNotification('Paramètres sauvegardés', 'success');
+    }
+}
+
+async function requestQuota() {
+    const quotas = {
+        max_agents: document.getElementById('quota-agents').value,
+        max_supervisors1: document.getElementById('quota-supervisors1').value,
+        max_daily_sales: document.getElementById('quota-sales').value
+    };
+    
+    const result = await apiCall('/api/subsystem/quota/request', {
+        method: 'POST',
+        body: JSON.stringify({
+            subsystem_id: currentSubsystem.id,
+            quotas: quotas
+        })
+    });
+    
+    if (result && result.success) {
+        showNotification('Demande de quota envoyée au Master', 'success');
+    }
+}
+
+// ============================================
+// INITIALISATION
+// ============================================
+document.addEventListener('DOMContentLoaded', function() {
+    // Vérifier l'authentification
+    if (!authToken || !currentUser.id) {
+        window.location.href = 'index.html';
+        return;
     }
     
     // Configurer les événements
     setupEventListeners();
+    
+    // Charger les données
+    loadSubsystemData();
+    
+    // Vérifier périodiquement la connexion
+    setInterval(() => {
+        if (!authToken) return;
+        
+        // Simplement vérifier si le token est toujours valide
+        const token = localStorage.getItem('nova_token');
+        if (token !== authToken) {
+            authToken = token;
+            loadSubsystemData();
+        }
+    }, 30000); // Toutes les 30 secondes
 });
-
-// Fonctions globales
-window.changeSubsystem = function() {
-    showSubsystemSelectionPopup();
-};
-
-window.contactMaster = function() {
-    showNotification("Pour créer un nouveau sous-système, contactez l'administrateur Master.", 'info');
-};
-
-window.selectSubsystem = selectSubsystem;
-    </script>
+</script>
 </body>
 </html>

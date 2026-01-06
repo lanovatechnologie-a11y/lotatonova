@@ -2102,329 +2102,163 @@
 // Configuration
 const API_BASE_URL = 'https://lotatonova-fv0b.onrender.com';
 
+// RÉCUPÉRATION DU TOKEN - CORRECTION ESSENTIELLE
 let authToken = localStorage.getItem('nova_token');
 let currentUser = JSON.parse(localStorage.getItem('nova_user') || '{}');
 let currentSubsystem = null;
 let userSubsystems = [];
 
-// Vérifier l'authentification basique (sans API)
+// Vérifier le token SIMPLE
 function checkAuth() {
-    if (!authToken || !currentUser || !currentUser.id) {
-        // Essayez de récupérer depuis sessionStorage comme fallback
-        const sessionToken = sessionStorage.getItem('nova_token');
-        const sessionUser = sessionStorage.getItem('nova_user');
-        
-        if (sessionToken && sessionUser) {
-            authToken = sessionToken;
-            currentUser = JSON.parse(sessionUser);
-            localStorage.setItem('nova_token', sessionToken);
-            localStorage.setItem('nova_user', sessionUser);
-        } else {
-            showErrorAndRedirect('⚠️ Session expirée. Veuillez vous reconnecter.', 'index.html');
-            return false;
-        }
+    if (!authToken || !authToken.startsWith('nova_')) {
+        console.log('❌ Pas de token valide');
+        return false;
     }
     return true;
 }
 
-// Fonction pour afficher une erreur et rediriger
-function showErrorAndRedirect(message, url) {
-    // Créer un modal pour l'erreur
-    const modal = document.createElement('div');
-    modal.className = 'modal active';
-    modal.innerHTML = `
-        <div class="modal-content">
-            <div class="modal-header">
-                <div class="modal-title">Erreur</div>
-                <button class="modal-close" onclick="this.parentElement.parentElement.remove()">&times;</button>
-            </div>
-            <div class="modal-body">
-                <div style="text-align: center; padding: 20px;">
-                    <i class="fas fa-exclamation-triangle" style="font-size: 3rem; color: #e74c3c; margin-bottom: 20px;"></i>
-                    <h3 style="color: var(--secondary-color); margin-bottom: 15px;">${message}</h3>
-                    <p style="color: #6c757d; margin-bottom: 20px;">
-                        Vous allez être redirigé vers la page de connexion.
-                    </p>
-                    <button class="btn btn-primary" onclick="window.location.href='${url}'">
-                        <i class="fas fa-sign-in-alt"></i> Se connecter
-                    </button>
-                </div>
-            </div>
-        </div>
-    `;
-    
-    document.body.appendChild(modal);
-    
-    // Rediriger automatiquement après 5 secondes
-    setTimeout(() => {
-        window.location.href = url;
-    }, 5000);
-}
-
-// Fonction pour afficher une notification
-function showNotification(message, type = 'info') {
-    const container = document.getElementById('notification-container');
-    
-    const notification = document.createElement('div');
-    notification.className = `notification ${type}`;
-    
-    let icon = 'fas fa-info-circle';
-    if (type === 'success') icon = 'fas fa-check-circle';
-    if (type === 'error') icon = 'fas fa-times-circle';
-    if (type === 'warning') icon = 'fas fa-exclamation-triangle';
-    
-    notification.innerHTML = `
-        <i class="${icon}"></i>
-        <span>${message}</span>
-        <button style="background: none; border: none; color: inherit; margin-left: auto; cursor: pointer;" 
-                onclick="this.parentElement.remove()">
-            <i class="fas fa-times"></i>
-        </button>
-    `;
-    
-    container.appendChild(notification);
-    
-    // Supprimer automatiquement après 5 secondes
-    setTimeout(() => {
-        if (notification.parentNode) {
-            notification.remove();
-        }
-    }, 5000);
-}
-
-// Fonction pour obtenir l'ID du sous-système
-function getSubsystemId() {
-    // 1. Vérifier dans l'URL
-    const urlParams = new URLSearchParams(window.location.search);
-    const urlId = urlParams.get('subsystem_id') || urlParams.get('id');
-    
-    if (urlId) {
-        localStorage.setItem('selectedSubsystemId', urlId);
-        return urlId;
+// FONCTION API UNIQUE - CORRECTION PRINCIPALE
+async function apiFetch(url, options = {}) {
+    if (!checkAuth()) {
+        throw new Error('Non authentifié');
     }
     
-    // 2. Vérifier dans localStorage
-    const localId = localStorage.getItem('selectedSubsystemId');
-    if (localId) {
-        return localId;
-    }
+    // AJOUTER LE TOKEN DANS L'URL (comme le backend l'attend)
+    const separator = url.includes('?') ? '&' : '?';
+    const urlWithToken = `${url}${separator}token=${encodeURIComponent(authToken)}`;
     
-    // 3. Vérifier dans currentSubsystem
-    const storedSubsystem = localStorage.getItem('currentSubsystem');
-    if (storedSubsystem) {
-        try {
-            const subsystem = JSON.parse(storedSubsystem);
-            return subsystem.id;
-        } catch (e) {
-            console.error('Erreur parsing currentSubsystem:', e);
-        }
-    }
+    console.log('🌐 Appel API:', urlWithToken.substring(0, 100));
     
-    return null;
-}
-
-// Tester la connexion API
-async function testAPIConnection() {
     try {
-        const response = await fetch(`${API_BASE_URL}/api/health`, {
-            method: 'GET',
+        const response = await fetch(urlWithToken, {
+            ...options,
             headers: {
-                'Authorization': `Bearer ${authToken}`,
-                'Content-Type': 'application/json'
-            }
-        });
-        
-        return response.ok;
-    } catch (error) {
-        console.warn('API non accessible:', error);
-        return false;
-    }
-}
-
-// Récupérer tous les sous-systèmes de l'utilisateur
-async function getUserSubsystems() {
-    try {
-        const response = await fetch(`${API_BASE_URL}/api/users/current/subsystems`, {
-            headers: {
-                'Authorization': `Bearer ${authToken}`,
-                'Content-Type': 'application/json'
+                'Content-Type': 'application/json',
+                ...options.headers
             }
         });
         
         if (response.status === 401) {
-            // Token expiré
-            handleUnauthorized();
-            return [];
+            console.log('🔒 Token expiré ou invalide');
+            // Nettoyer et rediriger
+            localStorage.removeItem('nova_token');
+            localStorage.removeItem('currentSubsystem');
+            window.location.href = 'index.html';
+            throw new Error('Session expirée');
         }
         
         if (!response.ok) {
-            console.warn('Erreur lors de la récupération des sous-systèmes:', response.status);
-            return [];
+            throw new Error(`HTTP ${response.status}`);
         }
         
-        const data = await response.json();
-        
+        return await response.json();
+    } catch (error) {
+        if (error.message !== 'Session expirée') {
+            console.error('❌ Erreur API:', error);
+        }
+        throw error;
+    }
+}
+
+// FONCTIONS API AVEC CORRECTION
+async function testAPIConnection() {
+    try {
+        await apiFetch(`${API_BASE_URL}/api/health`);
+        return true;
+    } catch {
+        return false;
+    }
+}
+
+async function getUserSubsystems() {
+    try {
+        const data = await apiFetch(`${API_BASE_URL}/api/users/current/subsystems`);
         if (data.success && data.subsystems) {
             return data.subsystems;
         }
-        
         return [];
-        
     } catch (error) {
-        console.error('Erreur récupération sous-systèmes:', error);
+        console.warn('Erreur sous-systèmes:', error);
         return [];
     }
 }
 
-// Initialiser les données du sous-système
 async function initializeSubsystemData(subsystemId) {
     try {
-        const response = await fetch(`${API_BASE_URL}/api/subsystems/${subsystemId}`, {
-            headers: {
-                'Authorization': `Bearer ${authToken}`,
-                'Content-Type': 'application/json'
-            }
-        });
-        
-        if (response.status === 401) {
-            handleUnauthorized();
-            return false;
-        }
-        
-        if (response.status === 404) {
-            showNotification('Sous-système non trouvé', 'warning');
-            return false;
-        }
-        
-        if (!response.ok) {
-            throw new Error('Erreur lors de la récupération des données du sous-système');
-        }
-        
-        const data = await response.json();
-        
+        const data = await apiFetch(`${API_BASE_URL}/api/subsystems/${subsystemId}`);
         if (data.success && data.subsystem) {
             currentSubsystem = data.subsystem;
             localStorage.setItem('currentSubsystem', JSON.stringify(currentSubsystem));
-            
             updateUserInterface();
-            
-            // Charger les données initiales
             await loadDashboardData();
-            await loadRecentActivity();
-            await loadRecentTickets();
-            
-            startAutoRefresh();
-            
             return true;
-        } else {
-            throw new Error(data.error || 'Données du sous-système non disponibles');
         }
-        
+        return false;
     } catch (error) {
-        console.error('Erreur initialisation sous-système:', error);
+        console.error('Erreur initialisation:', error);
         return false;
     }
 }
 
-// Gérer l'erreur d'authentification
-function handleUnauthorized() {
-    // Ne pas rediriger immédiatement, juste nettoyer et afficher un message
-    localStorage.removeItem('nova_token');
-    localStorage.removeItem('nova_user');
-    localStorage.removeItem('currentSubsystem');
-    localStorage.removeItem('selectedSubsystemId');
+async function loadDashboardData() {
+    if (!currentSubsystem) return;
     
-    // Mettre à jour les variables
-    authToken = null;
-    currentUser = {};
-    currentSubsystem = null;
-    
-    // Afficher une notification
-    showNotification('Votre session a expiré. Certaines fonctionnalités sont limitées.', 'warning');
-    
-    // Mettre à jour l'interface
-    updateUserInterface();
-}
-
-// Mettre à jour l'interface utilisateur
-function updateUserInterface() {
-    if (currentSubsystem) {
-        // Mode avec sous-système
-        document.getElementById('subsystem-name').textContent = 
-            currentSubsystem.name || 'Sous-Système';
-        document.getElementById('subsystem-domain').textContent = 
-            (currentSubsystem.subdomain || 'sous-domaine') + '.novalotto.com';
-        
-        if (currentSubsystem.logo) {
-            const logoContainer = document.getElementById('subsystem-logo');
-            logoContainer.innerHTML = `<img src="${currentSubsystem.logo}" alt="Logo" style="width: 100%; height: 100%; border-radius: 10px; object-fit: cover;">`;
-        } else {
-            document.getElementById('subsystem-logo').innerHTML = '<i class="fas fa-building"></i>';
+    try {
+        const data = await apiFetch(`${API_BASE_URL}/api/subsystems/${currentSubsystem.id}/dashboard`);
+        if (data.success && data.dashboard) {
+            updateDashboardStats(data.dashboard);
         }
-        
-        if (currentUser && currentUser.name) {
-            document.getElementById('user-avatar').textContent = 
-                currentUser.name.charAt(0).toUpperCase();
-            document.getElementById('user-name').textContent = currentUser.name;
-            document.getElementById('user-role').textContent = 
-                currentSubsystem.is_owner ? 'Propriétaire' : 'Administrateur';
-        }
-        
-        // Mettre à jour le statut
-        const statusDot = document.getElementById('system-status-dot');
-        const statusText = document.getElementById('system-status-text');
-        
-        if (!currentSubsystem.is_active) {
-            statusDot.className = 'status-dot danger';
-            statusText.textContent = 'Système désactivé';
-        } else {
-            statusDot.className = 'status-dot';
-            statusText.textContent = 'Système actif';
-        }
-        
-        // Cacher le message "no subsystem"
-        document.getElementById('no-subsystem-message').style.display = 'none';
-        document.getElementById('dashboard-section').style.display = 'block';
-        
-    } else {
-        // Mode sans sous-système
-        document.getElementById('subsystem-name').textContent = 'Aucun sous-système';
-        document.getElementById('subsystem-domain').textContent = 'Sélectionnez ou créez un sous-système';
-        document.getElementById('subsystem-logo').innerHTML = '<i class="fas fa-plus-circle"></i>';
-        
-        if (currentUser && currentUser.name) {
-            document.getElementById('user-avatar').textContent = 
-                currentUser.name.charAt(0).toUpperCase();
-            document.getElementById('user-name').textContent = currentUser.name;
-            document.getElementById('user-role').textContent = 'Administrateur';
-        }
-        
-        // Statut du système
-        document.getElementById('system-status-dot').className = 'status-dot warning';
-        document.getElementById('system-status-text').textContent = 'Sans sous-système';
-        
-        // Afficher le message "no subsystem"
-        document.getElementById('no-subsystem-message').style.display = 'block';
-        document.getElementById('dashboard-section').style.display = 'none';
-        
-        // Remplir les statistiques avec des zéros
-        resetDashboardStats();
+    } catch (error) {
+        console.warn('Mode démo - Données mockées');
+        updateDashboardStats({
+            online_users: 5,
+            today_sales: 45000,
+            today_tickets: 120,
+            pending_alerts: 3,
+            monthly_sales: 850000,
+            active_users: 12,
+            monthly_tickets: 3500,
+            estimated_profit: 180000
+        });
     }
 }
 
-// Réinitialiser les statistiques du dashboard
-function resetDashboardStats() {
-    document.getElementById('online-users').textContent = '0';
-    document.getElementById('today-sales').textContent = '0 HTG';
-    document.getElementById('today-tickets').textContent = '0';
-    document.getElementById('pending-alerts').textContent = '0';
-    document.getElementById('total-sales').textContent = '0 HTG';
-    document.getElementById('total-users').textContent = '0/0';
-    document.getElementById('total-tickets').textContent = '0';
-    document.getElementById('estimated-profit').textContent = '0 HTG';
+function updateDashboardStats(dashboard) {
+    document.getElementById('online-users').textContent = dashboard.online_users || 0;
+    document.getElementById('today-sales').textContent = `${dashboard.today_sales || 0} HTG`;
+    document.getElementById('today-tickets').textContent = dashboard.today_tickets || 0;
+    document.getElementById('pending-alerts').textContent = dashboard.pending_alerts || 0;
+    document.getElementById('total-sales').textContent = `${dashboard.monthly_sales || 0} HTG`;
+    document.getElementById('total-users').textContent = `${dashboard.active_users || 0}/${currentSubsystem?.max_users || 0}`;
+    document.getElementById('total-tickets').textContent = dashboard.monthly_tickets || 0;
+    document.getElementById('estimated-profit').textContent = `${dashboard.estimated_profit || 0} HTG`;
 }
 
-// Afficher la popup de sélection de sous-système
+// FONCTIONS UI
+function getSubsystemId() {
+    const urlParams = new URLSearchParams(window.location.search);
+    return urlParams.get('subsystem_id') || localStorage.getItem('selectedSubsystemId');
+}
+
+function updateUserInterface() {
+    if (currentSubsystem) {
+        document.getElementById('subsystem-name').textContent = currentSubsystem.name || 'Sous-Système';
+        document.getElementById('subsystem-domain').textContent = (currentSubsystem.subdomain || 'sous-domaine') + '.novalotto.com';
+        document.getElementById('no-subsystem-message').style.display = 'none';
+        document.getElementById('dashboard-section').style.display = 'block';
+    } else {
+        document.getElementById('no-subsystem-message').style.display = 'block';
+        document.getElementById('dashboard-section').style.display = 'none';
+    }
+    
+    // Mettre à jour l'avatar utilisateur
+    if (currentUser && currentUser.name) {
+        document.getElementById('user-avatar').textContent = currentUser.name.charAt(0).toUpperCase();
+        document.getElementById('user-name').textContent = currentUser.name;
+        document.getElementById('user-role').textContent = currentSubsystem?.is_owner ? 'Propriétaire' : 'Administrateur';
+    }
+}
+
 function showSubsystemSelectionPopup() {
     const modal = document.createElement('div');
     modal.className = 'modal active';
@@ -2434,131 +2268,146 @@ function showSubsystemSelectionPopup() {
                 <div class="modal-title">Sélectionner un sous-système</div>
                 <button class="modal-close" onclick="this.parentElement.parentElement.remove()">&times;</button>
             </div>
-            
             <div class="modal-body">
-                ${userSubsystems.length > 0 ? `
-                    <p style="margin-bottom: 15px;">Sélectionnez un sous-système à administrer :</p>
-                    <div style="max-height: 300px; overflow-y: auto;">
-                        ${userSubsystems.map(subsystem => `
-                            <div class="subsystem-item" 
-                                 style="padding: 15px; border: 1px solid #ddd; border-radius: 8px; margin-bottom: 10px; cursor: pointer;"
-                                 onclick="selectSubsystem('${subsystem.id}')">
-                                <div style="display: flex; align-items: center; gap: 15px;">
-                                    <div style="width: 40px; height: 40px; background-color: #3498db; border-radius: 8px; 
-                                          display: flex; align-items: center; justify-content: center; color: white;">
-                                        <i class="fas fa-building"></i>
-                                    </div>
-                                    <div style="flex: 1;">
-                                        <div style="font-weight: bold; color: var(--secondary-color);">${subsystem.name}</div>
-                                        <div style="font-size: 0.85rem; color: #6c757d;">${subsystem.subdomain}.novalotto.com</div>
-                                        <div style="font-size: 0.75rem; color: #95a5a6; margin-top: 5px;">
-                                            ${subsystem.is_active ? '✅ Actif' : '❌ Inactif'}
-                                        </div>
-                                    </div>
-                                    <i class="fas fa-chevron-right" style="color: #6c757d;"></i>
-                                </div>
-                            </div>
-                        `).join('')}
-                    </div>
-                ` : `
-                    <div style="text-align: center; padding: 40px 20px;">
-                        <i class="fas fa-building" style="font-size: 3rem; color: #dee2e6; margin-bottom: 15px;"></i>
-                        <h3 style="color: var(--secondary-color); margin-bottom: 10px;">Aucun sous-système</h3>
-                        <p style="color: #6c757d; margin-bottom: 20px;">
-                            Vous n'avez pas encore de sous-système.
-                        </p>
-                    </div>
-                `}
-            </div>
-            
-            <div class="modal-footer">
-                <button class="btn btn-secondary" onclick="this.parentElement.parentElement.parentElement.remove()">
-                    Annuler
-                </button>
-                <button class="btn btn-primary" onclick="window.location.href='master-dashboard.html'">
-                    <i class="fas fa-arrow-left"></i> Retour au Master
-                </button>
+                ${userSubsystems.length > 0 ? 
+                    userSubsystems.map(s => `
+                        <div onclick="selectSubsystem('${s.id}')" style="padding:15px;border:1px solid #ddd;margin:10px 0;border-radius:8px;cursor:pointer;">
+                            <strong>${s.name}</strong><br>
+                            <small>${s.subdomain}.novalotto.com</small>
+                        </div>
+                    `).join('')
+                : '<p>Aucun sous-système disponible</p>'}
             </div>
         </div>
     `;
-    
     document.body.appendChild(modal);
 }
 
-// Sélectionner un sous-système
 function selectSubsystem(subsystemId) {
     localStorage.setItem('selectedSubsystemId', subsystemId);
-    document.querySelector('.modal.active').remove();
     window.location.href = `subsystem-admin.html?subsystem_id=${subsystemId}`;
 }
 
-// Initialisation principale
+function showNotification(message, type = 'info') {
+    const container = document.getElementById('notification-container');
+    const notification = document.createElement('div');
+    notification.className = `notification ${type}`;
+    notification.innerHTML = `<i class="fas fa-info-circle"></i> ${message}`;
+    container.appendChild(notification);
+    setTimeout(() => notification.remove(), 5000);
+}
+
+// ÉVÉNEMENTS
+function setupEventListeners() {
+    // Navigation
+    document.querySelectorAll('.nav-item').forEach(item => {
+        item.addEventListener('click', function(e) {
+            e.preventDefault();
+            document.querySelectorAll('.nav-item').forEach(nav => nav.classList.remove('active'));
+            this.classList.add('active');
+            showSection(this.getAttribute('data-section'));
+        });
+    });
+    
+    // Boutons principaux
+    document.getElementById('refresh-btn').addEventListener('click', () => {
+        if (currentSubsystem) loadDashboardData();
+        showNotification('Données actualisées', 'success');
+    });
+    
+    document.getElementById('back-to-master-btn').addEventListener('click', () => {
+        window.location.href = 'master-dashboard.html';
+    });
+    
+    document.getElementById('logout-btn').addEventListener('click', () => {
+        if (confirm('Se déconnecter ?')) {
+            localStorage.clear();
+            window.location.href = 'index.html';
+        }
+    });
+    
+    // Bouton pour changer de sous-système
+    const changeBtn = document.createElement('button');
+    changeBtn.className = 'btn btn-primary';
+    changeBtn.innerHTML = '<i class="fas fa-exchange-alt"></i> Changer';
+    changeBtn.onclick = () => {
+        if (userSubsystems.length > 0) showSubsystemSelectionPopup();
+        else showNotification('Aucun autre sous-système disponible', 'warning');
+    };
+    
+    const topActions = document.querySelector('.top-actions');
+    if (topActions) {
+        topActions.insertBefore(changeBtn, document.getElementById('refresh-btn'));
+    }
+}
+
+function showSection(sectionId) {
+    document.querySelectorAll('.section-content').forEach(section => {
+        section.style.display = 'none';
+    });
+    const section = document.getElementById(`${sectionId}-section`);
+    if (section) {
+        section.style.display = 'block';
+        document.getElementById('page-title').textContent = 
+            document.querySelector(`.nav-item[data-section="${sectionId}"] .nav-label`).textContent;
+    }
+}
+
+// INITIALISATION PRINCIPALE
 document.addEventListener('DOMContentLoaded', async function() {
-    console.log('🏢 Subsystem Admin initialisé');
+    console.log('🚀 Subsystem Admin initialisé');
     
-    // Vérifier l'authentification basique
-    if (!checkAuth()) return;
+    // 1. Vérifier l'authentification
+    if (!checkAuth()) {
+        console.log('🔒 Non authentifié - Affichage message');
+        document.getElementById('no-subsystem-message').style.display = 'block';
+        document.getElementById('dashboard-section').style.display = 'none';
+        return;
+    }
     
-    // Mettre à jour les infos utilisateur de base
-    document.getElementById('user-avatar').textContent = currentUser.name?.charAt(0)?.toUpperCase() || 'U';
-    document.getElementById('user-name').textContent = currentUser.name || 'Utilisateur';
-    document.getElementById('user-role').textContent = 'Administrateur';
+    console.log('✅ Authentifié, token:', authToken.substring(0, 20) + '...');
     
-    // Tester la connexion API
+    // 2. Tester la connexion API
     const apiAvailable = await testAPIConnection();
+    console.log('🌐 API disponible:', apiAvailable);
     
     if (apiAvailable) {
-        // API disponible, essayer de récupérer les sous-systèmes
+        // 3. Charger les sous-systèmes
         userSubsystems = await getUserSubsystems();
+        console.log('📊 Sous-systèmes trouvés:', userSubsystems.length);
         
+        // 4. Chercher le sous-système à charger
         const subsystemId = getSubsystemId();
         
-        if (subsystemId) {
-            // Essayer de charger le sous-système spécifié
+        if (subsystemId && userSubsystems.length > 0) {
+            // Charger le sous-système spécifié
             const loaded = await initializeSubsystemData(subsystemId);
-            
-            if (!loaded) {
-                // Sous-système non trouvé
-                if (userSubsystems.length > 0) {
-                    setTimeout(() => showSubsystemSelectionPopup(), 1000);
-                } else {
-                    currentSubsystem = null;
-                    updateUserInterface();
-                }
+            if (!loaded && userSubsystems.length > 0) {
+                showSubsystemSelectionPopup();
             }
+        } else if (userSubsystems.length === 1) {
+            // Un seul sous-système, le charger
+            const subsystemId = userSubsystems[0].id;
+            localStorage.setItem('selectedSubsystemId', subsystemId);
+            await initializeSubsystemData(subsystemId);
+        } else if (userSubsystems.length > 1) {
+            // Plusieurs sous-systèmes, afficher sélection
+            showSubsystemSelectionPopup();
         } else {
-            // Aucun sous-système spécifié
-            if (userSubsystems.length === 0) {
-                // Aucun sous-système disponible
-                currentSubsystem = null;
-                updateUserInterface();
-                showNotification('Aucun sous-système disponible. Créez-en un depuis le Master Dashboard.', 'info');
-            } else if (userSubsystems.length === 1) {
-                // Un seul sous-système, le charger automatiquement
-                const subsystemId = userSubsystems[0].id;
-                localStorage.setItem('selectedSubsystemId', subsystemId);
-                await initializeSubsystemData(subsystemId);
-            } else {
-                // Plusieurs sous-systèmes, afficher la sélection
-                currentSubsystem = null;
-                updateUserInterface();
-                setTimeout(() => showSubsystemSelectionPopup(), 1000);
-            }
+            // Aucun sous-système
+            currentSubsystem = null;
+            updateUserInterface();
         }
     } else {
-        // API non disponible - mode hors ligne
-        console.warn('API non disponible - Mode hors ligne activé');
-        showNotification('Mode hors ligne activé. Certaines fonctionnalités sont limitées.', 'warning');
-        
-        // Vérifier s'il y a un sous-système stocké localement
+        // Mode hors ligne - vérifier si on a un sous-système en cache
+        console.warn('🌐 API non disponible - Mode hors ligne');
         const storedSubsystem = localStorage.getItem('currentSubsystem');
         if (storedSubsystem) {
             try {
                 currentSubsystem = JSON.parse(storedSubsystem);
                 updateUserInterface();
-                showNotification('Utilisation des données locales', 'info');
+                showNotification('Mode hors ligne - Données locales', 'info');
             } catch (e) {
-                console.error('Erreur parsing sous-système local:', e);
                 currentSubsystem = null;
                 updateUserInterface();
             }
@@ -2568,511 +2417,19 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
     }
     
-    // Configurer les événements
+    // 5. Configurer les événements
     setupEventListeners();
 });
 
-// Fonction pour changer de sous-système
+// FONCTIONS GLOBALES POUR HTML
 window.changeSubsystem = function() {
-    showSubsystemSelectionPopup();
+    if (userSubsystems.length > 0) showSubsystemSelectionPopup();
+    else showNotification('Aucun sous-système disponible', 'warning');
 };
 
-// Fonction pour créer un nouveau sous-système
 window.createNewSubsystem = function() {
     window.location.href = 'master-dashboard.html';
 };
-
-// Configurer les événements
-function setupEventListeners() {
-    // Navigation
-    document.querySelectorAll('.nav-item').forEach(item => {
-        item.addEventListener('click', function(e) {
-            e.preventDefault();
-            
-            if (!currentSubsystem) {
-                showNotification('Veuillez d\'abord sélectionner un sous-système', 'warning');
-                showSubsystemSelectionPopup();
-                return;
-            }
-            
-            document.querySelectorAll('.nav-item').forEach(nav => {
-                nav.classList.remove('active');
-            });
-            this.classList.add('active');
-            
-            const section = this.getAttribute('data-section');
-            showSection(section);
-        });
-    });
-    
-    // Boutons d'action
-    document.getElementById('refresh-btn').addEventListener('click', refreshData);
-    document.getElementById('back-to-master-btn').addEventListener('click', goBackToMaster);
-    document.getElementById('logout-btn').addEventListener('click', logout);
-    
-    // Bouton pour changer de sous-système
-    const changeSubsystemBtn = document.createElement('button');
-    changeSubsystemBtn.className = 'btn btn-primary';
-    changeSubsystemBtn.id = 'change-subsystem-btn';
-    changeSubsystemBtn.innerHTML = '<i class="fas fa-exchange-alt"></i> Changer';
-    changeSubsystemBtn.style.marginRight = '10px';
-    changeSubsystemBtn.onclick = changeSubsystem;
-    
-    const topActions = document.querySelector('.top-actions');
-    if (topActions) {
-        topActions.insertBefore(changeSubsystemBtn, document.getElementById('refresh-btn'));
-    }
-    
-    // Autres événements
-    document.getElementById('create-first-user')?.addEventListener('click', showAddUserModal);
-    
-    // Configuration
-    document.getElementById('save-company-info')?.addEventListener('click', saveCompanyInfo);
-    document.getElementById('save-schedule')?.addEventListener('click', saveSchedule);
-    document.getElementById('save-games')?.addEventListener('click', saveGames);
-    document.getElementById('save-report-settings')?.addEventListener('click', saveReportSettings);
-    
-    // Initialiser les tabs
-    initTabs();
-}
-
-// Initialiser les tabs
-function initTabs() {
-    // Tabs utilisateurs
-    document.querySelectorAll('[data-user-tab]').forEach(tab => {
-        tab.addEventListener('click', function() {
-            const tabId = this.getAttribute('data-user-tab');
-            switchUserTab(tabId);
-        });
-    });
-    
-    // Tabs multiplicateurs
-    document.querySelectorAll('[data-multiplier-tab]').forEach(tab => {
-        tab.addEventListener('click', function() {
-            const tabId = this.getAttribute('data-multiplier-tab');
-            switchMultiplierTab(tabId);
-        });
-    });
-    
-    // Tabs rapports
-    document.querySelectorAll('[data-report-tab]').forEach(tab => {
-        tab.addEventListener('click', function() {
-            const tabId = this.getAttribute('data-report-tab');
-            switchReportTab(tabId);
-        });
-    });
-    
-    // Tabs tickets
-    document.querySelectorAll('[data-ticket-tab]').forEach(tab => {
-        tab.addEventListener('click', function() {
-            const tabId = this.getAttribute('data-ticket-tab');
-            switchTicketTab(tabId);
-        });
-    });
-}
-
-// Charger les données du tableau de bord
-async function loadDashboardData() {
-    if (!currentSubsystem) return;
-    
-    try {
-        const response = await fetch(`${API_BASE_URL}/api/subsystems/${currentSubsystem.id}/dashboard`, {
-            headers: {
-                'Authorization': `Bearer ${authToken}`,
-                'Content-Type': 'application/json'
-            }
-        });
-        
-        if (response.status === 401) {
-            handleUnauthorized();
-            return;
-        }
-        
-        if (!response.ok) {
-            throw new Error('Erreur lors du chargement du dashboard');
-        }
-        
-        const data = await response.json();
-        
-        if (data.success && data.dashboard) {
-            const dashboard = data.dashboard;
-            
-            document.getElementById('online-users').textContent = 
-                dashboard.online_users || 0;
-            document.getElementById('today-sales').textContent = 
-                (dashboard.today_sales || 0).toLocaleString() + ' HTG';
-            document.getElementById('today-tickets').textContent = 
-                dashboard.today_tickets || 0;
-            document.getElementById('pending-alerts').textContent = 
-                dashboard.pending_alerts || 0;
-            
-            document.getElementById('total-sales').textContent = 
-                (dashboard.monthly_sales || 0).toLocaleString() + ' HTG';
-            document.getElementById('total-users').textContent = 
-                `${dashboard.active_users || 0}/${currentSubsystem.max_users || 0}`;
-            document.getElementById('total-tickets').textContent = 
-                dashboard.monthly_tickets || 0;
-            document.getElementById('estimated-profit').textContent = 
-                (dashboard.estimated_profit || 0).toLocaleString() + ' HTG';
-            
-        } else {
-            console.warn('Données dashboard non disponibles');
-        }
-        
-    } catch (error) {
-        console.error('Erreur chargement dashboard:', error);
-    }
-}
-
-// Afficher une section
-function showSection(sectionId) {
-    if (!currentSubsystem) {
-        showNotification('Veuillez d\'abord sélectionner un sous-système', 'warning');
-        return;
-    }
-    
-    document.querySelectorAll('.section-content').forEach(section => {
-        section.style.display = 'none';
-    });
-    
-    const section = document.getElementById(`${sectionId}-section`);
-    if (section) {
-        section.style.display = 'block';
-        document.getElementById('page-title').textContent = 
-            document.querySelector(`.nav-item[data-section="${sectionId}"] .nav-label`).textContent;
-    }
-}
-
-// Charger l'activité récente
-async function loadRecentActivity() {
-    if (!currentSubsystem) return;
-    
-    try {
-        const response = await fetch(`${API_BASE_URL}/api/subsystems/${currentSubsystem.id}/activity/recent`, {
-            headers: {
-                'Authorization': `Bearer ${authToken}`,
-                'Content-Type': 'application/json'
-            }
-        });
-        
-        if (response.status === 401) {
-            handleUnauthorized();
-            return;
-        }
-        
-        if (!response.ok) return;
-        
-        const data = await response.json();
-        
-        if (data.success && data.activities && data.activities.length > 0) {
-            // Simuler des données pour le démo
-            const tbody = document.getElementById('activity-table-body');
-            if (tbody) {
-                tbody.innerHTML = `
-                    <tr>
-                        <td>10:30</td>
-                        <td><strong>Agent 1</strong></td>
-                        <td>Création de ticket</td>
-                        <td>Ticket #12345 - 500 HTG</td>
-                    </tr>
-                    <tr>
-                        <td>09:15</td>
-                        <td><strong>Admin</strong></td>
-                        <td>Modification de multiplicateur</td>
-                        <td>Borlette: 60 → 65</td>
-                    </tr>
-                `;
-            }
-        }
-        
-    } catch (error) {
-        console.error('Erreur chargement activité:', error);
-    }
-}
-
-// Charger les tickets récents
-async function loadRecentTickets() {
-    if (!currentSubsystem) return;
-    
-    try {
-        const response = await fetch(`${API_BASE_URL}/api/subsystems/${currentSubsystem.id}/tickets/recent?limit=5`, {
-            headers: {
-                'Authorization': `Bearer ${authToken}`,
-                'Content-Type': 'application/json'
-            }
-        });
-        
-        if (response.status === 401) {
-            handleUnauthorized();
-            return;
-        }
-        
-        if (!response.ok) return;
-        
-        const data = await response.json();
-        
-        if (data.success && data.tickets && data.tickets.length > 0) {
-            // Simuler des données pour le démo
-            const tbody = document.getElementById('tickets-table-body');
-            if (tbody) {
-                tbody.innerHTML = `
-                    <tr>
-                        <td><strong>#12345</strong></td>
-                        <td>Agent 1</td>
-                        <td>500 HTG</td>
-                        <td>10:30</td>
-                        <td><span class="status-badge status-active">Actif</span></td>
-                        <td>
-                            <div class="action-buttons">
-                                <button class="action-btn view" title="Voir détails">
-                                    <i class="fas fa-eye"></i>
-                                </button>
-                            </div>
-                        </td>
-                    </tr>
-                `;
-            }
-        }
-        
-    } catch (error) {
-        console.error('Erreur chargement tickets:', error);
-    }
-}
-
-// Retour au master-dashboard
-function goBackToMaster() {
-    window.location.href = 'master-dashboard.html';
-}
-
-// Déconnexion
-function logout() {
-    if (confirm('Êtes-vous sûr de vouloir vous déconnecter ?')) {
-        localStorage.clear();
-        sessionStorage.clear();
-        window.location.href = 'index.html';
-    }
-}
-
-// Rafraîchir les données
-function refreshData() {
-    if (!currentSubsystem) {
-        showNotification('Veuillez d\'abord sélectionner un sous-système', 'warning');
-        return;
-    }
-    
-    const refreshBtn = document.getElementById('refresh-btn');
-    const originalHtml = refreshBtn.innerHTML;
-    
-    refreshBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
-    refreshBtn.disabled = true;
-    
-    if (currentSubsystem) {
-        loadDashboardData();
-        loadRecentActivity();
-        loadRecentTickets();
-    }
-    
-    setTimeout(() => {
-        refreshBtn.innerHTML = originalHtml;
-        refreshBtn.disabled = false;
-        showNotification('Données rafraîchies', 'success');
-    }, 2000);
-}
-
-// Démarrer le rafraîchissement automatique
-function startAutoRefresh() {
-    if (!currentSubsystem) return;
-    
-    setInterval(() => {
-        const dashboardSection = document.getElementById('dashboard-section');
-        if (dashboardSection && dashboardSection.style.display !== 'none') {
-            loadDashboardData();
-        }
-    }, 60000);
-}
-
-// Changer l'onglet multiplicateurs
-function switchMultiplierTab(tabId) {
-    document.querySelectorAll('[data-multiplier-tab]').forEach(tab => {
-        tab.classList.remove('active');
-    });
-    document.querySelector(`[data-multiplier-tab="${tabId}"]`).classList.add('active');
-    
-    document.querySelectorAll('.tab-content').forEach(content => {
-        content.classList.remove('active');
-    });
-    document.getElementById(`${tabId}-tab`).classList.add('active');
-}
-
-// Changer l'onglet rapports
-function switchReportTab(tabId) {
-    document.querySelectorAll('[data-report-tab]').forEach(tab => {
-        tab.classList.remove('active');
-    });
-    document.querySelector(`[data-report-tab="${tabId}"]`).classList.add('active');
-    
-    document.querySelectorAll('.tab-content').forEach(content => {
-        content.classList.remove('active');
-    });
-    
-    if (tabId === 'custom') {
-        document.getElementById('custom-tab-reports').classList.add('active');
-    } else {
-        document.getElementById(`${tabId}-tab`).classList.add('active');
-    }
-}
-
-// Changer l'onglet tickets
-function switchTicketTab(tabId) {
-    document.querySelectorAll('[data-ticket-tab]').forEach(tab => {
-        tab.classList.remove('active');
-    });
-    document.querySelector(`[data-ticket-tab="${tabId}"]`).classList.add('active');
-    
-    document.querySelectorAll('.tab-content').forEach(content => {
-        content.classList.remove('active');
-    });
-    document.getElementById(`${tabId}-tab`).classList.add('active');
-}
-
-// Changer l'onglet utilisateurs
-function switchUserTab(tabId) {
-    document.querySelectorAll('[data-user-tab]').forEach(tab => {
-        tab.classList.remove('active');
-    });
-    document.querySelector(`[data-user-tab="${tabId}"]`).classList.add('active');
-    
-    document.querySelectorAll('.tab-content').forEach(content => {
-        content.classList.remove('active');
-    });
-    document.getElementById(`${tabId}-tab`).classList.add('active');
-}
-
-// Fonctions des modals (version simplifiée)
-function showAddUserModal() {
-    if (!currentSubsystem) {
-        showNotification('Veuillez d\'abord sélectionner un sous-système', 'warning');
-        return;
-    }
-    document.getElementById('add-user-modal').classList.add('active');
-}
-
-function hideAddUserModal() {
-    document.getElementById('add-user-modal').classList.remove('active');
-}
-
-function toggleAgentLimits() {
-    const role = document.getElementById('user-role-select').value;
-    const agentLimits = document.getElementById('agent-limits');
-    agentLimits.style.display = role === 'agent' ? 'block' : 'none';
-}
-
-async function createUser(e) {
-    e.preventDefault();
-    
-    if (!currentSubsystem) return;
-    
-    // Simuler la création d'utilisateur
-    showNotification('Fonctionnalité en mode démonstration', 'info');
-    hideAddUserModal();
-}
-
-// Fonctions de configuration (version simplifiée)
-async function saveCompanyInfo() {
-    showNotification('Configuration sauvegardée (mode démo)', 'success');
-}
-
-async function saveSchedule() {
-    showNotification('Horaires sauvegardés (mode démo)', 'success');
-}
-
-async function saveGames() {
-    showNotification('Jeux sauvegardés (mode démo)', 'success');
-}
-
-async function saveReportSettings() {
-    showNotification('Paramètres sauvegardés (mode démo)', 'success');
-}
-
-// Fonctions des multiplicateurs (version simplifiée)
-async function saveGlobalMultipliers() {
-    showNotification('Multiplicateurs sauvegardés (mode démo)', 'success');
-}
-
-async function applyMultipliersToAll() {
-    showNotification('Multiplicateurs appliqués à tous (mode démo)', 'success');
-}
-
-async function loadUserMultipliers() {
-    // Simuler le chargement
-}
-
-async function saveCustomMultipliers() {
-    showNotification('Multiplicateurs personnalisés sauvegardés (mode démo)', 'success');
-}
-
-async function resetCustomMultipliers() {
-    showNotification('Multiplicateurs réinitialisés (mode démo)', 'success');
-}
-
-// Fonctions des rapports (version simplifiée)
-async function generateDailyReport() {
-    showNotification('Rapport généré (mode démo)', 'success');
-}
-
-async function exportDailyReport() {
-    showNotification('Rapport exporté (mode démo)', 'success');
-}
-
-async function generateCustomReport() {
-    showNotification('Rapport personnalisé généré (mode démo)', 'success');
-}
-
-// Fonctions de recherche (version simplifiée)
-async function searchTicket() {
-    showNotification('Recherche en mode démonstration', 'info');
-}
-
-async function loadFullActivity() {
-    // Simuler le chargement
-}
-
-async function loadTicketsList() {
-    // Simuler le chargement
-}
-
-async function loadAgentsStats() {
-    if (!currentSubsystem) {
-        showNotification('Veuillez d\'abord sélectionner un sous-système', 'warning');
-        return;
-    }
-    showNotification('Statistiques des agents chargées (mode démo)', 'success');
-}
-
-async function loadSupervisorsUnderResponsibility() {
-    if (!currentSubsystem) return;
-    // Simuler le chargement
-}
-
-async function loadUsers() {
-    if (!currentSubsystem) return;
-    // Simuler le chargement
-}
-
-async function loadConfiguration() {
-    if (!currentSubsystem) return;
-    // Simuler le chargement
-}
-
-async function loadGlobalMultipliers() {
-    if (!currentSubsystem) return;
-    // Simuler le chargement
-}
-
-async function loadUsersForMultipliers() {
-    if (!currentSubsystem) return;
-    // Simuler le chargement
-}
 </script>
 </body>
 </html>

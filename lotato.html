@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -1594,6 +1595,18 @@
         .game-category {
             display: block !important;
         }
+        
+        /* NOUVEAU: Style pour l'affichage du total dans le header */
+        .total-display {
+            margin-left: 15px;
+            padding: 5px 12px;
+            background-color: var(--success-color);
+            color: white;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: bold;
+            display: none;
+        }
     </style>
 </head>
 <body>
@@ -1803,6 +1816,8 @@
                 <i class="fas fa-arrow-left"></i>
             </button>
             <h2 class="betting-title" id="betting-title">Mete Paryaj ou</h2>
+            <!-- NOUVEAU: Afficher le total à côté du bouton -->
+            <div class="total-display" id="header-total-display">Total: 0 G</div>
             <div style="margin-left: auto;">
                 <button class="submit-bet" id="confirm-bet-top" style="padding: 8px 15px; font-size: 0.9rem;">
                     <i class="fas fa-check"></i> Konfime Parye
@@ -2873,23 +2888,34 @@ async function checkExistingSession() {
             document.getElementById('bet-form').style.display = 'none';
             document.getElementById('active-bets').style.display = 'block';
             
+            // NOUVEAU: Configurer les écouteurs d'événements pour les jeux
             setupGameSelection();
             updateBetsList();
         }
         
         // Configurer la sélection des jeux
         function setupGameSelection() {
-            document.querySelectorAll('.game-item').forEach(item => {
-                item.addEventListener('click', function() {
-                    const gameType = this.getAttribute('data-game');
-                    
-                    if (gameType === 'auto-marriage' || gameType === 'auto-lotto4') {
-                        showAutoGameForm(gameType);
-                    } else {
-                        showBetForm(gameType);
-                    }
-                });
+            // Retirer les anciens écouteurs d'événements
+            const oldItems = document.querySelectorAll('.game-item');
+            oldItems.forEach(item => {
+                item.removeEventListener('click', handleGameClick);
             });
+            
+            // Ajouter les nouveaux écouteurs
+            document.querySelectorAll('.game-item').forEach(item => {
+                item.addEventListener('click', handleGameClick);
+            });
+        }
+        
+        // Gérer le clic sur un jeu
+        function handleGameClick() {
+            const gameType = this.getAttribute('data-game');
+            
+            if (gameType === 'auto-marriage' || gameType === 'auto-lotto4') {
+                showAutoGameForm(gameType);
+            } else {
+                showBetForm(gameType);
+            }
         }
         
         // Afficher le formulaire de pari
@@ -2906,42 +2932,6 @@ async function checkExistingSession() {
             let formHTML = '';
             
             switch(gameType) {
-                case 'lotto3':
-                    formHTML = `
-                        <h3>${bet.name} - ${bet.description}</h3>
-                        <div class="quick-bet-form">
-                            <input type="text" id="lotto3-number" class="quick-number-input" 
-                                   placeholder="000" maxlength="3" pattern="[0-9]{3}">
-                            <input type="number" id="lotto3-amount" class="quick-amount-input" 
-                                   placeholder="Kantite" min="1">
-                            <button class="btn-primary" id="add-bet">Ajoute</button>
-                        </div>
-                        <div class="bet-actions">
-                            <button class="btn-secondary" id="return-to-types">Retounen</button>
-                        </div>
-                    `;
-                    break;
-                    
-                case 'marriage':
-                    formHTML = `
-                        <h3>${bet.name} - ${bet.description}</h3>
-                        <div class="form-group">
-                            <label>2 Chif yo</label>
-                            <div class="number-inputs">
-                                <input type="text" id="marriage-number1" placeholder="00" maxlength="2" pattern="[0-9]{2}">
-                                <input type="text" id="marriage-number2" placeholder="00" maxlength="2" pattern="[0-9]{2}">
-                            </div>
-                        </div>
-                        <div class="quick-bet-form">
-                            <input type="number" id="marriage-amount" class="quick-amount-input" placeholder="Kantite" min="1">
-                            <button class="btn-primary" id="add-bet">Ajoute</button>
-                        </div>
-                        <div class="bet-actions">
-                            <button class="btn-secondary" id="return-to-types">Retounen</button>
-                        </div>
-                    `;
-                    break;
-                    
                 case 'borlette':
                     formHTML = `
                         <h3>${bet.name} - ${bet.description}</h3>
@@ -2977,6 +2967,42 @@ async function checkExistingSession() {
                                 <div class="n-ball" data-number="${num}">${num}</div>
                             `).join('')}
                             <div class="bo-ball" id="bo-all">BO</div>
+                        </div>
+                    `;
+                    break;
+                    
+                case 'lotto3':
+                    formHTML = `
+                        <h3>${bet.name} - ${bet.description}</h3>
+                        <div class="quick-bet-form">
+                            <input type="text" id="lotto3-number" class="quick-number-input" 
+                                   placeholder="000" maxlength="3" pattern="[0-9]{3}">
+                            <input type="number" id="lotto3-amount" class="quick-amount-input" 
+                                   placeholder="Kantite" min="1">
+                            <button class="btn-primary" id="add-bet">Ajoute</button>
+                        </div>
+                        <div class="bet-actions">
+                            <button class="btn-secondary" id="return-to-types">Retounen</button>
+                        </div>
+                    `;
+                    break;
+                    
+                case 'marriage':
+                    formHTML = `
+                        <h3>${bet.name} - ${bet.description}</h3>
+                        <div class="form-group">
+                            <label>2 Chif yo</label>
+                            <div class="number-inputs">
+                                <input type="text" id="marriage-number1" placeholder="00" maxlength="2" pattern="[0-9]{2}">
+                                <input type="text" id="marriage-number2" placeholder="00" maxlength="2" pattern="[0-9]{2}">
+                            </div>
+                        </div>
+                        <div class="quick-bet-form">
+                            <input type="number" id="marriage-amount" class="quick-amount-input" placeholder="Kantite" min="1">
+                            <button class="btn-primary" id="add-bet">Ajoute</button>
+                        </div>
+                        <div class="bet-actions">
+                            <button class="btn-secondary" id="return-to-types">Retounen</button>
                         </div>
                     `;
                     break;
@@ -3072,6 +3098,8 @@ async function checkExistingSession() {
                 returnButton.addEventListener('click', function() {
                     betForm.style.display = 'none';
                     document.getElementById('games-interface').style.display = 'block';
+                    // NOUVEAU: Re-configurer les écouteurs
+                    setupGameSelection();
                 });
             }
             
@@ -3220,6 +3248,26 @@ async function checkExistingSession() {
             let number, amount;
             
             switch(betType) {
+                case 'borlette':
+                    number = document.getElementById('borlette-number').value;
+                    amount = parseInt(document.getElementById('borlette-amount').value);
+                    
+                    if (!bet.validate(number)) {
+                        showNotification("Borlette dwe gen 2 chif", "warning");
+                        return;
+                    }
+                    break;
+                    
+                case 'boulpe':
+                    number = document.getElementById('boulpe-number').value;
+                    amount = parseInt(document.getElementById('boulpe-amount').value);
+                    
+                    if (!bet.validate(number)) {
+                        showNotification("Pou boul pe, fòk de chif yo menm! (ex: 00, 11, 22)", "warning");
+                        return;
+                    }
+                    break;
+                    
                 case 'lotto3':
                     number = document.getElementById('lotto3-number').value;
                     amount = parseInt(document.getElementById('lotto3-amount').value);
@@ -3238,26 +3286,6 @@ async function checkExistingSession() {
                     
                     if (!bet.validate(number)) {
                         showNotification("Chak chif maryaj dwe gen 2 chif", "warning");
-                        return;
-                    }
-                    break;
-                    
-                case 'borlette':
-                    number = document.getElementById('borlette-number').value;
-                    amount = parseInt(document.getElementById('borlette-amount').value);
-                    
-                    if (!bet.validate(number)) {
-                        showNotification("Borlette dwe gen 2 chif", "warning");
-                        return;
-                    }
-                    break;
-                    
-                case 'boulpe':
-                    number = document.getElementById('boulpe-number').value;
-                    amount = parseInt(document.getElementById('boulpe-amount').value);
-                    
-                    if (!bet.validate(number)) {
-                        showNotification("Pou boul pe, fòk de chif yo menm! (ex: 00, 11, 22)", "warning");
                         return;
                     }
                     break;
@@ -3308,6 +3336,8 @@ async function checkExistingSession() {
             setTimeout(() => {
                 document.getElementById('bet-form').style.display = 'none';
                 document.getElementById('games-interface').style.display = 'block';
+                // NOUVEAU: Re-configurer les écouteurs
+                setupGameSelection();
             }, 500);
         }
         
@@ -3315,12 +3345,18 @@ async function checkExistingSession() {
         function updateBetsList() {
             const betsList = document.getElementById('bets-list');
             const betTotal = document.getElementById('bet-total');
+            const headerTotal = document.getElementById('header-total-display');
             
             betsList.innerHTML = '';
             
             if (activeBets.length === 0) {
                 betsList.innerHTML = '<p>Pa gen okenn parye aktif.</p>';
                 betTotal.textContent = '0 goud';
+                // NOUVEAU: Mettre à jour le total dans le header
+                if (headerTotal) {
+                    headerTotal.textContent = 'Total: 0 G';
+                    headerTotal.style.display = 'none';
+                }
                 return;
             }
             
@@ -3397,6 +3433,12 @@ async function checkExistingSession() {
             
             const total = activeBets.reduce((sum, bet) => sum + bet.amount, 0);
             betTotal.textContent = `${total} goud`;
+            
+            // NOUVEAU: Mettre à jour le total dans le header
+            if (headerTotal) {
+                headerTotal.textContent = `Total: ${total} G`;
+                headerTotal.style.display = 'block';
+            }
         }
         
         // Soumettre les paris au backend
@@ -4290,7 +4332,7 @@ async function checkExistingSession() {
             }, 5000);
         }
         
-        // Afficher le formulaire pour les jeux automatiques (simplifié)
+        // Afficher le formulaire pour les jeux automatiques
         function showAutoGameForm(gameType) {
             const bet = betTypes[gameType];
             
@@ -4311,6 +4353,8 @@ async function checkExistingSession() {
             document.getElementById('return-to-types').addEventListener('click', function() {
                 betForm.style.display = 'none';
                 document.getElementById('games-interface').style.display = 'block';
+                // NOUVEAU: Re-configurer les écouteurs
+                setupGameSelection();
             });
             
             document.getElementById('active-bets').style.display = 'block';

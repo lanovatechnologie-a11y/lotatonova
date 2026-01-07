@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="manifest" href="/manifest.json">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="manifest" href="/manifest.json">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Lotato - Connexion</title>
     <style>
         * {
@@ -223,7 +223,7 @@
                 <label for="agent-password">Mot de passe</label>
                 <input type="password" id="agent-password" placeholder="Entrez votre mot de passe">
             </div>
-            <button class="login-btn" onclick="login('agent')">Connexion Agent</button>
+            <button class="login-btn" onclick="login('agent', 1)">Connexion Agent</button>
         </div>
         
         <!-- Formulaire Superviseur 1 -->
@@ -237,7 +237,7 @@
                 <label for="supervisor1-password">Mot de passe</label>
                 <input type="password" id="supervisor1-password" placeholder="Entrez votre mot de passe">
             </div>
-            <button class="login-btn" onclick="login('supervisor1')">Connexion Superviseur 1</button>
+            <button class="login-btn" onclick="login('supervisor1', 1)">Connexion Superviseur 1</button>
         </div>
         
         <!-- Formulaire Superviseur 2 -->
@@ -251,7 +251,7 @@
                 <label for="supervisor2-password">Mot de passe</label>
                 <input type="password" id="supervisor2-password" placeholder="Entrez votre mot de passe">
             </div>
-            <button class="login-btn" onclick="login('supervisor2')">Connexion Superviseur 2</button>
+            <button class="login-btn" onclick="login('supervisor2', 2)">Connexion Superviseur 2</button>
         </div>
         
         <!-- Formulaire Admin Sous-système -->
@@ -265,7 +265,7 @@
                 <label for="subsystem-password">Mot de passe</label>
                 <input type="password" id="subsystem-password" placeholder="Entrez votre mot de passe">
             </div>
-            <button class="login-btn" onclick="login('subsystem')">Connexion PROPRIETAIRE</button>
+            <button class="login-btn" onclick="login('subsystem', 1)">Connexion PROPRIETAIRE</button>
         </div>
         
         <!-- Formulaire Master -->
@@ -279,7 +279,7 @@
                 <label for="master-password">Mot de passe</label>
                 <input type="password" id="master-password" placeholder="Entrez votre mot de passe">
             </div>
-            <button class="login-btn" onclick="login('master')">Connexion Master</button>
+            <button class="login-btn" onclick="login('master', 1)">Connexion Master</button>
         </div>
         
         <div id="status-message" class="status-message"></div>
@@ -323,19 +323,22 @@
                 if (data.success) {
                     // Stocker le token
                     localStorage.setItem('nova_token', token);
+                    localStorage.setItem('nova_user_role', data.user.role);
+                    localStorage.setItem('nova_user_level', data.user.level);
+                    localStorage.setItem('nova_user_data', JSON.stringify(data.user));
                     
-                    // Rediriger vers la page appropriée
+                    // Rediriger sans passer le token dans l'URL
                     setTimeout(() => {
                         window.location.href = data.redirectUrl;
                     }, 500);
                 } else {
                     // Token invalide, nettoyer
-                    localStorage.removeItem('nova_token');
+                    clearLocalStorage();
                     console.log("Token invalide, nettoyage effectué");
                 }
             } catch (error) {
                 console.error('Erreur vérification token:', error);
-                localStorage.removeItem('nova_token');
+                clearLocalStorage();
             }
         }
         
@@ -361,7 +364,7 @@
             });
         });
         
-        async function login(role) {
+        async function login(role, level = 1) {
             const username = document.getElementById(`${role}-username`).value;
             const password = document.getElementById(`${role}-password`).value;
             
@@ -381,7 +384,8 @@
                     body: JSON.stringify({
                         username: username,
                         password: password,
-                        role: role
+                        role: role,
+                        level: level
                     })
                 });
                 
@@ -392,7 +396,8 @@
                     
                     // Stocker le token et les infos utilisateur
                     localStorage.setItem('nova_token', data.token);
-                    localStorage.setItem('nova_user_role', role);
+                    localStorage.setItem('nova_user_role', data.user.role);
+                    localStorage.setItem('nova_user_level', data.user.level);
                     localStorage.setItem('nova_user_data', JSON.stringify(data.user));
                     
                     // Rediriger sans passer le token dans l'URL
@@ -406,6 +411,13 @@
                 showStatusMessage('Erreur de connexion au serveur', 'error');
                 console.error('Erreur:', error);
             }
+        }
+        
+        function clearLocalStorage() {
+            localStorage.removeItem('nova_token');
+            localStorage.removeItem('nova_user_role');
+            localStorage.removeItem('nova_user_level');
+            localStorage.removeItem('nova_user_data');
         }
         
         // Fonctions pour afficher/masquer les messages
@@ -430,12 +442,11 @@
         });
     </script>
     <script>
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('/service-worker.js')
-      .then(reg => console.log('Service Worker enregistré', reg))
-      .catch(err => console.log('Échec d’enregistrement', err));
-  }
-</script>
-
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/service-worker.js')
+            .then(reg => console.log('Service Worker enregistré', reg))
+            .catch(err => console.log('Échec d\'enregistrement', err));
+        }
+    </script>
 </body>
 </html>

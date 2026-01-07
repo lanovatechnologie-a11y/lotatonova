@@ -6,6 +6,7 @@
     <title>LOTATO</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="manifest" href="/manifest.json">
+    <script src="/auth-check.js"></script>
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
     <style>
@@ -1888,17 +1889,30 @@
             document.querySelector('.container').style.display = 'block';
         }
         
-        function checkExistingSession() {
-            // Vérification session
-        }
+        // Fonction de vérification de session existante
+async function checkExistingSession() {
+    try {
+        const response = await fetch('/api/auth/verify-token', {
+            method: 'POST',
+            credentials: 'include'
+        });
         
-        function showScreen(id) {
-            document.querySelectorAll('.screen, .container').forEach(el => el.style.display = 'none');
-            if(id === 'home') document.getElementById('main-container').style.display = 'block';
-            else document.getElementById(id + '-screen').style.display = 'block';
-            
-            if(id === 'winning-tickets') updateWinningTicketsScreen();
+        if (response.ok) {
+            const data = await response.json();
+            if (data.success) {
+                currentAdmin = data.user;
+                localStorage.setItem('lotatoAgent', JSON.stringify(currentAdmin));
+                showMainApp();
+                return;
+            }
         }
+    } catch (error) {
+        console.error("Session check error:", error);
+    }
+    
+    // Si pas connecté, montrer l'écran de login
+    document.getElementById('login-screen').style.display = 'flex';
+}
 
         // Génération rapport (inchangée visuellement, mais données devraient venir de la BD)
         function generateEndOfDrawReport() {

@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>LOTATO - Agent</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-<script src="/auth-check.js"></script>
+    <script src="/auth-check.js"></script>
     <style>
         :root {
             --primary-color: #ad00f1;
@@ -292,7 +292,6 @@
             margin-bottom: 5px;
         }
         
-        /* Panneau multi-tirages avec impression */
         .multi-draw-panel {
             background-color: white;
             border-radius: 12px;
@@ -362,7 +361,6 @@
             margin-bottom: 15px;
         }
         
-        /* Bouton d'impression multi-tirages */
         .multi-draw-print-btn {
             background-color: var(--warning-color);
             color: white;
@@ -384,7 +382,6 @@
             background-color: #e67e22;
         }
         
-        /* Styles pour les écrans de paris */
         .betting-screen {
             display: none;
             position: fixed;
@@ -420,6 +417,17 @@
         .betting-title {
             font-size: 1.5rem;
             color: var(--primary-color);
+        }
+        
+        .total-display {
+            margin-left: 15px;
+            padding: 5px 12px;
+            background-color: var(--success-color);
+            color: white;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: bold;
+            display: none;
         }
         
         .bet-types-container {
@@ -620,7 +628,6 @@
             background-color: #219955;
         }
         
-        /* Styles pour les options Lotto 5 */
         .lotto-options {
             margin-bottom: 15px;
         }
@@ -638,7 +645,6 @@
             cursor: pointer;
         }
         
-        /* Styles pour les boules terminant par N */
         .n-balls-container {
             display: grid;
             grid-template-columns: repeat(5, 1fr);
@@ -660,7 +666,6 @@
             color: white;
         }
         
-        /* Styles pour l'interface optimisée */
         .quick-bet-form {
             display: flex;
             gap: 10px;
@@ -675,7 +680,6 @@
             flex: 1;
         }
         
-        /* Styles pour les autres écrans */
         .screen {
             display: none;
             position: fixed;
@@ -704,7 +708,6 @@
             color: var(--primary-color);
         }
         
-        /* Animation pour l'affichage des écrans */
         @keyframes slideIn {
             from { transform: translateX(100%); }
             to { transform: translateX(0); }
@@ -723,7 +726,6 @@
             animation: slideOut 0.3s forwards;
         }
         
-        /* Styles pour l'impression */
         @media print {
             body * {
                 visibility: hidden;
@@ -744,7 +746,6 @@
             }
         }
         
-        /* Styles pour la configuration */
         .config-section {
             background-color: white;
             border-radius: 12px;
@@ -787,7 +788,6 @@
             margin-bottom: 5px;
         }
 
-        /* Nouveaux styles pour les boutons BO */
         .bo-ball {
             background-color: var(--warning-color);
             color: white;
@@ -803,7 +803,6 @@
             background-color: #e67e22;
         }
 
-        /* Styles pour les options multiples */
         .multi-option {
             display: flex;
             align-items: center;
@@ -828,7 +827,6 @@
             width: auto;
         }
         
-        /* Nouveaux styles pour les boutons d'impression */
         .ticket-actions {
             display: flex;
             gap: 10px;
@@ -864,7 +862,6 @@
             background-color: #219955;
         }
         
-        /* Styles pour l'historique */
         .history-stats {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
@@ -936,7 +933,6 @@
             font-weight: bold;
         }
         
-        /* Nouveaux styles pour les boutons enregistrer et imprimer */
         .ticket-footer {
             display: flex;
             gap: 10px;
@@ -976,7 +972,6 @@
             background-color: #2980b9;
         }
         
-        /* Styles pour les rapports */
         .reports-container {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
@@ -1029,7 +1024,6 @@
             border-bottom: none;
         }
 
-        /* Nouveau style pour le bouton enregistrer et imprimer */
         .save-print-btn {
             background-color: var(--warning-color);
             color: white;
@@ -1039,7 +1033,6 @@
             background-color: #e67e22;
         }
 
-        /* Styles pour l'écran de connexion */
         .login-screen {
             position: fixed;
             top: 0;
@@ -1090,7 +1083,6 @@
             display: none;
         }
         
-        /* Nouveaux styles pour l'affichage des paris groupés */
         .bets-table {
             width: 100%;
             border-collapse: collapse;
@@ -1175,7 +1167,6 @@
             font-weight: bold;
         }
         
-        /* Styles pour la synchronisation */
         .sync-status {
             position: fixed;
             top: 10px;
@@ -1205,7 +1196,6 @@
             color: white;
         }
         
-        /* Nouveaux styles pour les notifications */
         .notification {
             position: fixed;
             bottom: 80px;
@@ -1251,7 +1241,6 @@
             font-size: 1.2rem;
         }
         
-        /* Styles pour le logo dans le ticket */
         .ticket-logo-container {
             text-align: center;
             margin-bottom: 15px;
@@ -1265,7 +1254,6 @@
             border-radius: 10px;
         }
         
-        /* Style pour le bouton de vérification des fiches */
         .sync-check-btn {
             background-color: var(--warning-color);
             color: white;
@@ -1275,7 +1263,6 @@
             background-color: #e67e22;
         }
         
-        /* Indicateur de fiches en attente */
         .pending-badge {
             position: absolute;
             top: -5px;
@@ -1292,7 +1279,6 @@
             font-weight: bold;
         }
         
-        /* Améliorations pour la navigation après ajout */
         .bet-type-navigation {
             display: flex;
             gap: 10px;
@@ -1321,7 +1307,6 @@
             border-color: var(--secondary-color);
         }
         
-        /* Styles pour les boutons de modification */
         .edit-btn {
             background-color: var(--warning-color);
             color: white;
@@ -1350,7 +1335,6 @@
             background-color: #c0392b;
         }
         
-        /* Styles pour les boutons automatiques */
         .auto-buttons {
             display: flex;
             gap: 10px;
@@ -1381,7 +1365,6 @@
             background-color: #16a085;
         }
         
-        /* Styles pour les boules paire (GRAP corrigé) */
         .pair-ball {
             background-color: var(--light-color);
             padding: 15px;
@@ -1397,7 +1380,6 @@
             color: white;
         }
         
-        /* Styles pour l'écran de rapport */
         .report-screen {
             display: none;
             position: fixed;
@@ -1453,7 +1435,6 @@
             font-weight: bold;
         }
         
-        /* Nouveaux styles pour la sélection multiple de graps */
         .all-graps-btn {
             background-color: var(--warning-color);
             color: white;
@@ -1469,7 +1450,6 @@
             background-color: #e67e22;
         }
         
-        /* Styles pour la sélection des jeux multi-tirages */
         .multi-game-select {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
@@ -1496,7 +1476,6 @@
             color: white;
         }
         
-        /* Styles pour la gestion des fiches */
         .ticket-management {
             background-color: white;
             border-radius: 8px;
@@ -1528,7 +1507,6 @@
             margin-top: 10px;
         }
         
-        /* Organisation améliorée des jeux */
         .game-category {
             margin-bottom: 20px;
         }
@@ -1587,7 +1565,6 @@
             font-weight: bold;
         }
         
-        /* NOUVEAU: Styles pour l'affichage simultané de toutes les catégories */
         .all-categories-container {
             display: block;
         }
@@ -1595,22 +1572,9 @@
         .game-category {
             display: block !important;
         }
-        
-        /* NOUVEAU: Style pour l'affichage du total dans le header */
-        .total-display {
-            margin-left: 15px;
-            padding: 5px 12px;
-            background-color: var(--success-color);
-            color: white;
-            border-radius: 20px;
-            font-size: 0.9rem;
-            font-weight: bold;
-            display: none;
-        }
     </style>
 </head>
 <body>
-    <!-- Écran de connexion -->
     <div class="login-screen" id="login-screen">
         <div class="login-container">
             <div class="login-logo">
@@ -1634,7 +1598,6 @@
         </div>
     </div>
     
-    <!-- Indicateur de synchronisation -->
     <div class="sync-status sync-disconnected" id="sync-status" style="display: none;">
         <i class="fas fa-cloud"></i> <span id="sync-text">Pa Konekte</span>
     </div>
@@ -1658,7 +1621,6 @@
             </div>
         </header>
         
-        <!-- Panneau Multi-Tirages avec impression -->
         <div class="multi-draw-panel">
             <div class="multi-draw-header">
                 <h3 class="multi-draw-title">Jwe nan Plizyè Tiraj</h3>
@@ -1668,17 +1630,13 @@
             </div>
             <div class="multi-draw-content" id="multi-draw-content">
                 <div class="multi-draw-grid" id="multi-draw-options">
-                    <!-- Les options seront ajoutées dynamiquement -->
                 </div>
                 
-                <!-- Sélection des jeux -->
                 <div class="multi-game-select" id="multi-game-select">
-                    <!-- Les jeux seront ajoutés dynamiquement -->
                 </div>
                 
                 <div class="multi-draw-form">
                     <div class="form-group" id="multi-number-inputs">
-                        <!-- Les champs de nombre seront ajoutés dynamiquement -->
                     </div>
                     <div class="form-group">
                         <label for="multi-draw-amount">Kantite pa tiraj</label>
@@ -1688,7 +1646,6 @@
                         <button class="btn-primary" id="add-multi-draw">Ajoute nan Tout Tiraj</button>
                     </div>
                     
-                    <!-- NOUVEAU: Bouton d'impression pour multi-tirages -->
                     <button class="multi-draw-print-btn" id="print-multi-draw-ticket" style="display: none;">
                         <i class="fas fa-print"></i> Enprime Fiche Multi-Tiraj
                     </button>
@@ -1765,10 +1722,8 @@
             </div>
             
             <div class="results-grid" id="latest-results">
-                <!-- Les résultats seront chargés dynamiquement -->
             </div>
             
-            <!-- Bouton pour générer le rapport -->
             <div class="ticket-actions" style="margin-top: 15px;">
                 <button class="ticket-action-btn save-print-btn" id="generate-report-btn">
                     <i class="fas fa-file-alt"></i> Jenere Rapò Fin Tiraj
@@ -1776,9 +1731,7 @@
             </div>
         </div>
         
-        <!-- Notification des gagnants -->
         <div id="winners-notification-container" style="display: none;">
-            <!-- Les notifications de gagnants apparaîtront ici -->
         </div>
     </div>
     
@@ -1809,14 +1762,12 @@
         </div>
     </div>
     
-    <!-- Écran de sélection des paris -->
     <div class="betting-screen" id="betting-screen">
         <div class="betting-header">
             <button class="back-button" id="back-button">
                 <i class="fas fa-arrow-left"></i>
             </button>
             <h2 class="betting-title" id="betting-title">Mete Paryaj ou</h2>
-            <!-- NOUVEAU: Afficher le total à côté du bouton -->
             <div class="total-display" id="header-total-display">Total: 0 G</div>
             <div style="margin-left: auto;">
                 <button class="submit-bet" id="confirm-bet-top" style="padding: 8px 15px; font-size: 0.9rem;">
@@ -1825,7 +1776,6 @@
             </div>
         </div>
         
-        <!-- Interface des jeux -->
         <div id="games-interface" class="all-categories-container">
             <div class="game-category" id="borlette-category">
                 <div class="game-category-title">BORLETTE</div>
@@ -1891,7 +1841,6 @@
             </div>
         </div>
         
-        <!-- Boutons pour les paris automatiques -->
         <div class="auto-buttons" id="auto-buttons" style="display: none;">
             <button class="auto-btn" id="auto-marriage-btn">Maryaj Otomatik</button>
             <button class="auto-btn" id="auto-lotto4-btn">Lotto 4 Otomatik</button>
@@ -1899,7 +1848,6 @@
         </div>
         
         <div class="bet-form" id="bet-form">
-            <!-- Le formulaire de pari sera chargé dynamiquement -->
         </div>
         
         <div class="active-bets" id="active-bets">
@@ -1908,7 +1856,6 @@
             </div>
             <h3>Parye Aktif</h3>
             <div id="bets-list">
-                <!-- Liste des paris actifs -->
             </div>
             <div class="bet-total">
                 <span>Total:</span>
@@ -1917,7 +1864,6 @@
         </div>
     </div>
     
-    <!-- Écran de gestion des fiches -->
     <div class="screen" id="ticket-management-screen">
         <div class="screen-header">
             <button class="back-button" data-screen="home">
@@ -1940,11 +1886,9 @@
         </div>
         
         <div id="ticket-management-list">
-            <!-- Les fiches seront chargées depuis MongoDB -->
         </div>
     </div>
     
-    <!-- Écran des fiches gagnantes -->
     <div class="screen" id="winning-tickets-screen">
         <div class="screen-header">
             <button class="back-button" data-screen="home">
@@ -1961,11 +1905,9 @@
         </div>
         
         <div id="winning-tickets-list">
-            <!-- Les fiches gagnantes seront chargées depuis MongoDB -->
         </div>
     </div>
     
-    <!-- Écran historique -->
     <div class="screen" id="history-screen">
         <div class="screen-header">
             <button class="back-button" data-screen="home">
@@ -1982,19 +1924,15 @@
         </div>
         
         <div class="reports-container" id="reports-container">
-            <!-- Les boutons de rapport seront chargés dynamiquement -->
         </div>
         
         <div id="report-results">
-            <!-- Les résultats des rapports seront chargés dynamiquement -->
         </div>
         
         <div id="history-list">
-            <!-- L'historique sera chargé depuis MongoDB -->
         </div>
     </div>
     
-    <!-- Écran de rapport -->
     <div class="report-screen" id="report-screen">
         <div class="screen-header">
             <button class="back-button" id="back-from-report">
@@ -2003,7 +1941,6 @@
             <h2 class="screen-title">Rapò Fin Tiraj</h2>
         </div>
         <div class="report-container" id="report-content">
-            <!-- Le rapport sera généré ici -->
         </div>
     </div>
 
@@ -2020,18 +1957,16 @@
             reports: `${API_BASE_URL}/api/reports`
         };
         
-        // Logique des résultats avec 3 lots
         const LOT_MULTIPLIERS = {
-            first: 60,    // Premier lot
-            second: 20,   // Deuxième lot
-            third: 10     // Troisième lot
+            first: 60,
+            second: 20,
+            third: 10
         };
         
-        // Types de paris avec nouvelles logiques
         const betTypes = {
             borlette: {
                 name: "BORLETTE",
-                multiplier: LOT_MULTIPLIERS.first, // Premier lot seulement
+                multiplier: LOT_MULTIPLIERS.first,
                 icon: "fas fa-dice",
                 description: "2 chif (1er lot seulement)",
                 category: "borlette",
@@ -2039,7 +1974,7 @@
             },
             boulpe: {
                 name: "BOUL PE",
-                multiplier: LOT_MULTIPLIERS.first, // Premier lot seulement
+                multiplier: LOT_MULTIPLIERS.first,
                 icon: "fas fa-circle",
                 description: "Boul pe (00-99)",
                 category: "borlette",
@@ -2051,12 +1986,7 @@
                 icon: "fas fa-list-ol",
                 description: "3 chif (ex: 123)",
                 category: "lotto",
-                validate: (number) => /^\d{3}$/.test(number),
-                // Pour Lotto 3, on utilise le premier lot (ex: 23 devient 123)
-                getNumbersFromLots: (lots) => {
-                    const firstLot = lots.first.toString().padStart(2, '0');
-                    return [`${firstLot.charAt(0)}${firstLot}`, `${firstLot.charAt(1)}${firstLot}`];
-                }
+                validate: (number) => /^\d{3}$/.test(number)
             },
             grap: {
                 name: "GRAP",
@@ -2075,12 +2005,6 @@
                 validate: (numbers) => {
                     const [num1, num2] = numbers.split('*');
                     return /^\d{2}$/.test(num1) && /^\d{2}$/.test(num2);
-                },
-                // Pour mariage, on combine les lots (ex: 23 et 45)
-                getNumbersFromLots: (lots) => {
-                    const firstLot = lots.first.toString().padStart(2, '0');
-                    const secondLot = lots.second.toString().padStart(2, '0');
-                    return [`${firstLot}*${secondLot}`, `${secondLot}*${firstLot}`];
                 }
             },
             lotto4: {
@@ -2092,12 +2016,6 @@
                 validate: (numbers) => {
                     const [num1, num2] = numbers.split('*');
                     return /^\d{2}$/.test(num1) && /^\d{2}$/.test(num2);
-                },
-                // Pour Lotto 4, on combine 2 lots (ex: 23 et 45)
-                getNumbersFromLots: (lots) => {
-                    const firstLot = lots.first.toString().padStart(2, '0');
-                    const secondLot = lots.second.toString().padStart(2, '0');
-                    return [`${firstLot}*${secondLot}`];
                 }
             },
             lotto5: {
@@ -2109,16 +2027,6 @@
                 validate: (numbers) => {
                     const [num1, num2] = numbers.split('*');
                     return /^\d{3}$/.test(num1) && /^\d{2}$/.test(num2);
-                },
-                // Pour Lotto 5, on combine 3 lots (ex: 23, 45, 67)
-                getNumbersFromLots: (lots) => {
-                    const firstLot = lots.first.toString().padStart(2, '0');
-                    const secondLot = lots.second.toString().padStart(2, '0');
-                    const thirdLot = lots.third.toString().padStart(2, '0');
-                    // Forme 3 chiffres avec les deux premiers lots
-                    const threeDigits = `${firstLot}${secondLot.charAt(0)}`;
-                    const twoDigits = `${secondLot.charAt(1)}${thirdLot}`;
-                    return [`${threeDigits}*${twoDigits}`];
                 }
             },
             'auto-marriage': {
@@ -2139,7 +2047,6 @@
             }
         };
         
-        // Variables globales
         let currentDraw = null;
         let currentDrawTime = null;
         let activeBets = [];
@@ -2151,7 +2058,6 @@
         let selectedBalls = [];
         let latestResults = {};
         
-        // Données des tirages
         const draws = {
             miami: {
                 name: "Miami",
@@ -2190,23 +2096,39 @@
             }
         };
         
-        // Initialisation
+        // CORRECTION PRINCIPALE: Gestion des événements pour les jeux
+        function initializeGameListeners() {
+            // Supprimer les anciens écouteurs
+            const gameItems = document.querySelectorAll('.game-item');
+            gameItems.forEach(item => {
+                const newItem = item.cloneNode(true);
+                item.parentNode.replaceChild(newItem, item);
+            });
+            
+            // Ajouter les nouveaux écouteurs
+            document.querySelectorAll('.game-item').forEach(item => {
+                item.addEventListener('click', function() {
+                    const gameType = this.getAttribute('data-game');
+                    console.log('Game clicked:', gameType);
+                    
+                    if (gameType === 'auto-marriage' || gameType === 'auto-lotto4') {
+                        showAutoGameForm(gameType);
+                    } else {
+                        showBetForm(gameType);
+                    }
+                });
+            });
+        }
+        
         document.addEventListener('DOMContentLoaded', function() {
             console.log("LOTATO Agent - Initialisation...");
             
-            // Vérifier session existante
             checkExistingSession();
-            
-            // Mettre à jour l'heure
             updateCurrentTime();
-            
-            // Configurer détection de connexion
             setupConnectionDetection();
-            
-            // Charger les résultats
             loadLatestResults();
             
-            // Écouteurs d'événements pour les tirages
+            // Écouteurs pour les tirages
             document.querySelectorAll('.draw-card').forEach(card => {
                 card.addEventListener('click', function() {
                     const drawId = this.getAttribute('data-draw');
@@ -2230,16 +2152,10 @@
                 });
             });
             
-            // Bouton de retour
             document.getElementById('back-button').addEventListener('click', closeBettingScreen);
-            
-            // Bouton de confirmation
             document.getElementById('confirm-bet-top').addEventListener('click', submitBets);
-            
-            // Bouton sauvegarder/imprimer
             document.getElementById('save-print-ticket').addEventListener('click', saveAndPrintTicket);
             
-            // Navigation
             document.querySelectorAll('.nav-item').forEach(item => {
                 item.addEventListener('click', function() {
                     const screen = this.getAttribute('data-screen');
@@ -2247,7 +2163,6 @@
                 });
             });
             
-            // Boutons de retour
             document.querySelectorAll('.back-button').forEach(btn => {
                 btn.addEventListener('click', function() {
                     const screen = this.getAttribute('data-screen') || 'home';
@@ -2255,13 +2170,11 @@
                 });
             });
             
-            // Bouton retour du rapport
             document.getElementById('back-from-report').addEventListener('click', function() {
                 document.getElementById('report-screen').style.display = 'none';
                 document.querySelector('.container').style.display = 'block';
             });
             
-            // Connexion
             document.getElementById('login-btn').addEventListener('click', adminLogin);
             
             document.getElementById('admin-password').addEventListener('keypress', function(e) {
@@ -2270,64 +2183,54 @@
                 }
             });
             
-            // Bouton pour générer le rapport
             document.getElementById('generate-report-btn').addEventListener('click', generateEndOfDrawReport);
             
-            // Multi-tirages
             document.getElementById('multi-draw-toggle').addEventListener('click', toggleMultiDrawPanel);
             document.getElementById('add-multi-draw').addEventListener('click', addToMultipleDraws);
             document.getElementById('print-multi-draw-ticket').addEventListener('click', printMultiDrawTicket);
             
-            // Initialiser le panneau multi-tirages
             initMultiDrawPanel();
             
-            // Gestion des fiches
             document.getElementById('search-ticket-btn').addEventListener('click', searchTicket);
             document.getElementById('show-all-tickets').addEventListener('click', showAllTickets);
             document.getElementById('show-today-tickets').addEventListener('click', showTodayTickets);
             
-            // Recherche historique
             document.getElementById('search-history-btn').addEventListener('click', searchHistory);
             document.getElementById('search-winning-btn').addEventListener('click', searchWinningTickets);
             
-            // Actualiser périodiquement
             setInterval(updateCurrentTime, 60000);
-            setInterval(loadLatestResults, 30000); // Actualiser les résultats toutes les 30 secondes
-            setInterval(checkForWinners, 60000); // Vérifier les gagnants toutes les minutes
+            setInterval(loadLatestResults, 30000);
+            setInterval(checkForWinners, 60000);
             
-            // Initialiser les countdowns
             updateDrawCountdowns();
             setInterval(updateDrawCountdowns, 60000);
             
             console.log("Initialisation terminée");
         });
         
-        // Fonction de vérification de session existante
-async function checkExistingSession() {
-    try {
-        const response = await fetch('/api/auth/verify-token', {
-            method: 'POST',
-            credentials: 'include'
-        });
-        
-        if (response.ok) {
-            const data = await response.json();
-            if (data.success) {
-                currentAdmin = data.user;
-                localStorage.setItem('lotatoAgent', JSON.stringify(currentAdmin));
-                showMainApp();
-                return;
+        async function checkExistingSession() {
+            try {
+                const response = await fetch('/api/auth/verify-token', {
+                    method: 'POST',
+                    credentials: 'include'
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.success) {
+                        currentAdmin = data.user;
+                        localStorage.setItem('lotatoAgent', JSON.stringify(currentAdmin));
+                        showMainApp();
+                        return;
+                    }
+                }
+            } catch (error) {
+                console.error("Session check error:", error);
             }
+            
+            document.getElementById('login-screen').style.display = 'flex';
         }
-    } catch (error) {
-        console.error("Session check error:", error);
-    }
-    
-    // Si pas connecté, montrer l'écran de login
-    document.getElementById('login-screen').style.display = 'flex';
-}
         
-        // Connexion administrateur
         async function adminLogin() {
             const username = document.getElementById('admin-username').value.trim();
             const password = document.getElementById('admin-password').value.trim();
@@ -2360,10 +2263,8 @@ async function checkExistingSession() {
                     showMainApp();
                     showNotification("Koneksyon reyisi!", "success");
                     
-                    // Mettre à jour le nom de l'agent
                     document.getElementById('agent-name').textContent = currentAdmin.name;
                     
-                    // Charger les données de l'agent
                     loadAgentTickets();
                     loadWinningTickets();
                     
@@ -2376,7 +2277,6 @@ async function checkExistingSession() {
             }
         }
         
-        // Afficher l'application principale
         function showMainApp() {
             document.getElementById('login-screen').style.display = 'none';
             document.getElementById('main-container').style.display = 'block';
@@ -2386,7 +2286,6 @@ async function checkExistingSession() {
             updateSyncStatus(true);
         }
         
-        // Mettre à jour le statut de synchronisation
         function updateSyncStatus(connected) {
             const syncStatus = document.getElementById('sync-status');
             const syncText = document.getElementById('sync-text');
@@ -2400,13 +2299,11 @@ async function checkExistingSession() {
             }
         }
         
-        // Afficher l'erreur de connexion
         function showLoginError(message = "Identifian oswa modpas la pa kòrèk.") {
             document.getElementById('login-error').textContent = message;
             document.getElementById('login-error').style.display = 'block';
         }
         
-        // Mettre à jour l'heure actuelle
         function updateCurrentTime() {
             const now = new Date();
             const options = { weekday: 'long', year: 'numeric', month: 'short', day: 'numeric' };
@@ -2416,7 +2313,6 @@ async function checkExistingSession() {
             document.getElementById('current-time').textContent = `${dateString} - ${timeString}`;
         }
         
-        // Mettre à jour les countdowns des tirages
         function updateDrawCountdowns() {
             const now = new Date();
             
@@ -2425,7 +2321,6 @@ async function checkExistingSession() {
                 const countdownElement = document.getElementById(`${drawId}-countdown`);
                 
                 if (countdownElement) {
-                    // Calculer le temps restant pour le prochain tirage
                     const nextDrawTime = calculateNextDrawTime(drawId, now);
                     const timeDiff = nextDrawTime - now;
                     
@@ -2440,7 +2335,6 @@ async function checkExistingSession() {
             });
         }
         
-        // Calculer le prochain temps de tirage
         function calculateNextDrawTime(drawId, now) {
             const draw = draws[drawId];
             const times = Object.values(draw.times).map(timeStr => {
@@ -2453,7 +2347,6 @@ async function checkExistingSession() {
                 const drawTime = new Date(now);
                 drawTime.setHours(hours, minutes, 0, 0);
                 
-                // Si l'heure est déjà passée aujourd'hui, prendre demain
                 if (drawTime < now) {
                     drawTime.setDate(drawTime.getDate() + 1);
                 }
@@ -2461,13 +2354,11 @@ async function checkExistingSession() {
                 return drawTime;
             });
             
-            // Retourner le prochain tirage
             return times.reduce((closest, time) => {
                 return time < closest ? time : closest;
             });
         }
         
-        // Charger les derniers résultats
         async function loadLatestResults() {
             try {
                 const response = await fetch(`${APP_CONFIG.results}/latest`);
@@ -2481,7 +2372,6 @@ async function checkExistingSession() {
             }
         }
         
-        // Mettre à jour l'affichage des résultats
         function updateResultsDisplay(results) {
             const resultsGrid = document.getElementById('latest-results');
             resultsGrid.innerHTML = '';
@@ -2502,7 +2392,6 @@ async function checkExistingSession() {
             });
         }
         
-        // Initialiser le panneau multi-tirages
         function initMultiDrawPanel() {
             const multiDrawOptions = document.getElementById('multi-draw-options');
             const multiGameSelect = document.getElementById('multi-game-select');
@@ -2510,7 +2399,6 @@ async function checkExistingSession() {
             multiDrawOptions.innerHTML = '';
             multiGameSelect.innerHTML = '';
             
-            // Options de tirage
             Object.keys(draws).forEach(drawId => {
                 const option = document.createElement('div');
                 option.className = 'multi-draw-option';
@@ -2527,7 +2415,6 @@ async function checkExistingSession() {
                         selectedMultiDraws.delete(drawId);
                     }
                     
-                    // Afficher/masquer le bouton d'impression
                     const printBtn = document.getElementById('print-multi-draw-ticket');
                     printBtn.style.display = selectedMultiDraws.size > 0 ? 'block' : 'none';
                 });
@@ -2535,7 +2422,6 @@ async function checkExistingSession() {
                 multiDrawOptions.appendChild(option);
             });
             
-            // Options de jeu
             const games = [
                 { id: 'borlette', name: 'BORLETTE' },
                 { id: 'boulpe', name: 'BOUL PE' },
@@ -2570,7 +2456,6 @@ async function checkExistingSession() {
             updateMultiGameForm('borlette');
         }
         
-        // Mettre à jour le formulaire pour le jeu sélectionné
         function updateMultiGameForm(gameType) {
             const numberInputs = document.getElementById('multi-number-inputs');
             const bet = betTypes[gameType];
@@ -2629,7 +2514,6 @@ async function checkExistingSession() {
             setupAutoFocusInputs();
         }
         
-        // Configurer le focus automatique
         function setupAutoFocusInputs() {
             document.querySelectorAll('input[type="text"]').forEach(input => {
                 input.addEventListener('input', function(e) {
@@ -2645,7 +2529,6 @@ async function checkExistingSession() {
             });
         }
         
-        // Afficher/masquer le panneau multi-tirages
         function toggleMultiDrawPanel() {
             const content = document.getElementById('multi-draw-content');
             const toggleBtn = document.getElementById('multi-draw-toggle');
@@ -2659,7 +2542,6 @@ async function checkExistingSession() {
             }
         }
         
-        // Ajouter un numéro à plusieurs tirages
         function addToMultipleDraws() {
             const amount = parseInt(document.getElementById('multi-draw-amount').value);
             let number = '';
@@ -2686,7 +2568,6 @@ async function checkExistingSession() {
                     break;
             }
             
-            // Validation
             let isValid = true;
             let errorMessage = '';
             
@@ -2751,21 +2632,17 @@ async function checkExistingSession() {
             updateBetsList();
             showNotification(`${totalAdded} parye ajoute nan ${selectedMultiDraws.size} tiraj!`, "success");
             
-            // Afficher le bouton d'impression
             document.getElementById('print-multi-draw-ticket').style.display = 'block';
             
-            // Réinitialiser le formulaire
             document.getElementById('multi-draw-amount').value = '1';
         }
         
-        // Imprimer la fiche multi-tirage
         function printMultiDrawTicket() {
             if (activeBets.length === 0) {
                 showNotification("Pa gen parye pou enprime", "warning");
                 return;
             }
             
-            // Filtrer les paris multi-tirages
             const multiDrawBets = activeBets.filter(bet => bet.isMultiDraw);
             
             if (multiDrawBets.length === 0) {
@@ -2773,7 +2650,6 @@ async function checkExistingSession() {
                 return;
             }
             
-            // Grouper par tirage
             const betsByDraw = {};
             multiDrawBets.forEach(bet => {
                 if (!betsByDraw[bet.draw]) {
@@ -2863,7 +2739,7 @@ async function checkExistingSession() {
             showNotification("Fiche multi-tiraj enprime avèk siksè!", "success");
         }
         
-        // Ouvrir l'écran de pari
+        // CORRECTION: Ouvrir l'écran de pari avec les bons écouteurs
         function openBettingScreen(drawId, time = null) {
             currentDraw = drawId;
             currentDrawTime = time;
@@ -2888,37 +2764,12 @@ async function checkExistingSession() {
             document.getElementById('bet-form').style.display = 'none';
             document.getElementById('active-bets').style.display = 'block';
             
-            // NOUVEAU: Configurer les écouteurs d'événements pour les jeux
-            setupGameSelection();
+            // CORRECTION: Initialiser les écouteurs pour les jeux
+            initializeGameListeners();
             updateBetsList();
         }
         
-        // Configurer la sélection des jeux
-        function setupGameSelection() {
-            // Retirer les anciens écouteurs d'événements
-            const oldItems = document.querySelectorAll('.game-item');
-            oldItems.forEach(item => {
-                item.removeEventListener('click', handleGameClick);
-            });
-            
-            // Ajouter les nouveaux écouteurs
-            document.querySelectorAll('.game-item').forEach(item => {
-                item.addEventListener('click', handleGameClick);
-            });
-        }
-        
-        // Gérer le clic sur un jeu
-        function handleGameClick() {
-            const gameType = this.getAttribute('data-game');
-            
-            if (gameType === 'auto-marriage' || gameType === 'auto-lotto4') {
-                showAutoGameForm(gameType);
-            } else {
-                showBetForm(gameType);
-            }
-        }
-        
-        // Afficher le formulaire de pari
+        // CORRECTION: Afficher le formulaire de pari
         function showBetForm(gameType) {
             const bet = betTypes[gameType];
             
@@ -3079,9 +2930,8 @@ async function checkExistingSession() {
             }
             
             betForm.innerHTML = formHTML;
-            setupAutoFocusInputs();
             
-            // Configurer les événements
+            // CORRECTION: Configurer les événements pour ce formulaire
             if (gameType === 'grap') {
                 setupGrapSelection();
             } else {
@@ -3098,8 +2948,8 @@ async function checkExistingSession() {
                 returnButton.addEventListener('click', function() {
                     betForm.style.display = 'none';
                     document.getElementById('games-interface').style.display = 'block';
-                    // NOUVEAU: Re-configurer les écouteurs
-                    setupGameSelection();
+                    // CORRECTION: Réinitialiser les écouteurs quand on retourne
+                    initializeGameListeners();
                 });
             }
             
@@ -3164,7 +3014,6 @@ async function checkExistingSession() {
             document.getElementById('active-bets').style.display = 'block';
         }
         
-        // Configurer la sélection des graps
         function setupGrapSelection() {
             const grapBalls = document.querySelectorAll('#grap-selection-container .pair-ball');
             let selectedGraps = new Set();
@@ -3203,7 +3052,6 @@ async function checkExistingSession() {
             });
         }
         
-        // Ajouter les graps sélectionnés
         function addSelectedGraps(selectedGraps) {
             const amount = parseInt(document.getElementById('grap-amount').value);
             const selectedBalls = document.querySelectorAll('#grap-selection-container .pair-ball.selected');
@@ -3242,7 +3090,6 @@ async function checkExistingSession() {
             document.getElementById('grap-amount').value = '1';
         }
         
-        // Ajouter un pari
         function addBet(betType) {
             const bet = betTypes[betType];
             let number, amount;
@@ -3336,12 +3183,11 @@ async function checkExistingSession() {
             setTimeout(() => {
                 document.getElementById('bet-form').style.display = 'none';
                 document.getElementById('games-interface').style.display = 'block';
-                // NOUVEAU: Re-configurer les écouteurs
-                setupGameSelection();
+                // CORRECTION: Réinitialiser les écouteurs
+                initializeGameListeners();
             }, 500);
         }
         
-        // Mettre à jour la liste des paris
         function updateBetsList() {
             const betsList = document.getElementById('bets-list');
             const betTotal = document.getElementById('bet-total');
@@ -3352,7 +3198,6 @@ async function checkExistingSession() {
             if (activeBets.length === 0) {
                 betsList.innerHTML = '<p>Pa gen okenn parye aktif.</p>';
                 betTotal.textContent = '0 goud';
-                // NOUVEAU: Mettre à jour le total dans le header
                 if (headerTotal) {
                     headerTotal.textContent = 'Total: 0 G';
                     headerTotal.style.display = 'none';
@@ -3434,14 +3279,12 @@ async function checkExistingSession() {
             const total = activeBets.reduce((sum, bet) => sum + bet.amount, 0);
             betTotal.textContent = `${total} goud`;
             
-            // NOUVEAU: Mettre à jour le total dans le header
             if (headerTotal) {
                 headerTotal.textContent = `Total: ${total} G`;
                 headerTotal.style.display = 'block';
             }
         }
         
-        // Soumettre les paris au backend
         async function submitBets() {
             if (activeBets.length === 0) {
                 showNotification("Pa gen okenn parye pou soumèt", "warning");
@@ -3478,10 +3321,8 @@ async function checkExistingSession() {
                     const result = await response.json();
                     showNotification("Fiche kreye avèk siksè nan MongoDB!", "success");
                     
-                    // Imprimer la fiche
                     printTicket(result.ticket);
                     
-                    // Réinitialiser
                     activeBets = [];
                     updateBetsList();
                     closeBettingScreen();
@@ -3495,7 +3336,6 @@ async function checkExistingSession() {
             }
         }
         
-        // Sauvegarder et imprimer
         async function saveAndPrintTicket() {
             if (activeBets.length === 0) {
                 showNotification("Pa gen okenn parye pou sove", "warning");
@@ -3505,7 +3345,6 @@ async function checkExistingSession() {
             await submitBets();
         }
         
-        // Imprimer une fiche
         function printTicket(ticketData) {
             const printContent = document.createElement('div');
             printContent.className = 'print-ticket';
@@ -3581,7 +3420,6 @@ async function checkExistingSession() {
             printWindow.print();
         }
         
-        // Grouper les paris par type
         function groupBetsByType(bets) {
             const grouped = {};
             
@@ -3595,7 +3433,6 @@ async function checkExistingSession() {
             return grouped;
         }
         
-        // Fermer l'écran de pari
         function closeBettingScreen() {
             const bettingScreen = document.getElementById('betting-screen');
             bettingScreen.classList.remove('slide-in');
@@ -3607,7 +3444,6 @@ async function checkExistingSession() {
             }, 300);
         }
         
-        // Afficher un écran spécifique
         function showScreen(screenId) {
             document.querySelectorAll('.screen, .betting-screen, .container, .report-screen').forEach(screen => {
                 screen.style.display = 'none';
@@ -3638,7 +3474,6 @@ async function checkExistingSession() {
             }
         }
         
-        // Charger les fiches de l'agent
         async function loadAgentTickets() {
             try {
                 const response = await fetch(`${APP_CONFIG.tickets}/agent/${currentAdmin.id}`, {
@@ -3656,7 +3491,6 @@ async function checkExistingSession() {
             }
         }
         
-        // Afficher les fiches de l'agent
         function displayAgentTickets(tickets) {
             const ticketList = document.getElementById('ticket-management-list');
             
@@ -3665,7 +3499,6 @@ async function checkExistingSession() {
                 return;
             }
             
-            // Trier par date (plus récent d'abord)
             tickets.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
             
             ticketList.innerHTML = '';
@@ -3677,7 +3510,7 @@ async function checkExistingSession() {
                 const ticketDate = new Date(ticket.createdAt);
                 const now = new Date();
                 const timeDiff = now - ticketDate;
-                const canDelete = timeDiff <= 5 * 60 * 1000; // 5 minutes
+                const canDelete = timeDiff <= 5 * 60 * 1000;
                 
                 const date = ticketDate.toLocaleString('fr-FR');
                 
@@ -3733,7 +3566,6 @@ async function checkExistingSession() {
             });
         }
         
-        // Supprimer une fiche (dans les 5 minutes)
         window.deleteTicket = async function(ticketId) {
             if (confirm("Èske w sèten ou vle efase fiche sa a?")) {
                 try {
@@ -3757,7 +3589,6 @@ async function checkExistingSession() {
             }
         };
         
-        // Réimprimer une fiche
         window.reprintTicket = async function(ticketId) {
             try {
                 const response = await fetch(`${APP_CONFIG.tickets}/${ticketId}`, {
@@ -3775,7 +3606,6 @@ async function checkExistingSession() {
             }
         };
         
-        // Rechercher une fiche
         function searchTicket() {
             const searchTerm = document.getElementById('search-ticket-number').value.trim();
             const ticketItems = document.querySelectorAll('#ticket-management-list .ticket-management');
@@ -3790,12 +3620,10 @@ async function checkExistingSession() {
             });
         }
         
-        // Afficher toutes les fiches
         function showAllTickets() {
             loadAgentTickets();
         }
         
-        // Afficher les fiches d'aujourd'hui
         function showTodayTickets() {
             const today = new Date().toISOString().split('T')[0];
             const ticketItems = document.querySelectorAll('#ticket-management-list .ticket-management');
@@ -3810,7 +3638,6 @@ async function checkExistingSession() {
             });
         }
         
-        // Charger les fiches gagnantes
         async function loadWinningTickets() {
             try {
                 const response = await fetch(`${APP_CONFIG.winners}/agent/${currentAdmin.id}`, {
@@ -3828,7 +3655,6 @@ async function checkExistingSession() {
             }
         }
         
-        // Afficher les fiches gagnantes
         function displayWinningTickets(winners) {
             const winningList = document.getElementById('winning-tickets-list');
             
@@ -3874,7 +3700,6 @@ async function checkExistingSession() {
             });
         }
         
-        // Rechercher dans les fiches gagnantes
         function searchWinningTickets() {
             const searchTerm = document.getElementById('search-winning-tickets').value.toLowerCase();
             const winningItems = document.querySelectorAll('#winning-tickets-list .history-item');
@@ -3889,7 +3714,6 @@ async function checkExistingSession() {
             });
         }
         
-        // Mettre à jour l'écran historique
         function updateHistoryScreen() {
             const reportsContainer = document.getElementById('reports-container');
             const historyList = document.getElementById('history-list');
@@ -3924,7 +3748,6 @@ async function checkExistingSession() {
             loadHistory();
         }
         
-        // Charger l'historique
         async function loadHistory() {
             try {
                 const response = await fetch(`${APP_CONFIG.tickets}/history/${currentAdmin.id}`, {
@@ -3942,7 +3765,6 @@ async function checkExistingSession() {
             }
         }
         
-        // Afficher l'historique
         function displayHistory(history) {
             const historyList = document.getElementById('history-list');
             
@@ -3984,7 +3806,6 @@ async function checkExistingSession() {
             });
         }
         
-        // Rechercher dans l'historique
         function searchHistory() {
             const searchTerm = document.getElementById('search-history').value.toLowerCase();
             const historyItems = document.querySelectorAll('#history-list .history-item');
@@ -3999,7 +3820,6 @@ async function checkExistingSession() {
             });
         }
         
-        // Générer un rapport général
         async function generateGeneralReport() {
             try {
                 const response = await fetch(`${APP_CONFIG.reports}/general/${currentAdmin.id}`, {
@@ -4017,7 +3837,6 @@ async function checkExistingSession() {
             }
         }
         
-        // Afficher le rapport général
         function displayGeneralReport(report) {
             const reportResults = document.getElementById('report-results');
             
@@ -4050,7 +3869,6 @@ async function checkExistingSession() {
             `;
         }
         
-        // Générer un rapport pour un tirage
         async function generateDrawReport(drawId, time) {
             try {
                 const response = await fetch(`${APP_CONFIG.reports}/draw/${currentAdmin.id}/${drawId}/${time}`, {
@@ -4068,7 +3886,6 @@ async function checkExistingSession() {
             }
         }
         
-        // Afficher le rapport tirage
         function displayDrawReport(drawId, time, report) {
             const reportResults = document.getElementById('report-results');
             const drawName = draws[drawId].name;
@@ -4103,7 +3920,6 @@ async function checkExistingSession() {
             `;
         }
         
-        // Générer un rapport de fin de tirage
         async function generateEndOfDrawReport() {
             try {
                 const response = await fetch(`${APP_CONFIG.reports}/end-of-draw/${currentAdmin.id}`, {
@@ -4121,7 +3937,6 @@ async function checkExistingSession() {
             }
         }
         
-        // Afficher le rapport fin tirage
         function displayEndOfDrawReport(report) {
             const reportScreen = document.getElementById('report-screen');
             const reportContent = document.getElementById('report-content');
@@ -4182,7 +3997,6 @@ async function checkExistingSession() {
             reportScreen.style.display = 'block';
         }
         
-        // Imprimer le rapport fin tirage
         window.printEndOfDrawReport = function(report) {
             const printContent = document.createElement('div');
             printContent.className = 'print-ticket';
@@ -4238,7 +4052,6 @@ async function checkExistingSession() {
             printWindow.print();
         };
         
-        // Vérifier les gagnants
         async function checkForWinners() {
             try {
                 const response = await fetch(`${APP_CONFIG.winners}/check/${currentAdmin.id}`, {
@@ -4258,7 +4071,6 @@ async function checkExistingSession() {
             }
         }
         
-        // Afficher notification des gagnants
         function showWinnersNotification(winners) {
             const notificationContainer = document.getElementById('winners-notification-container');
             
@@ -4276,7 +4088,6 @@ async function checkExistingSession() {
                 notificationContainer.appendChild(notification);
                 notificationContainer.style.display = 'block';
                 
-                // Retirer après 10 secondes
                 setTimeout(() => {
                     notification.remove();
                     if (notificationContainer.children.length === 0) {
@@ -4285,11 +4096,9 @@ async function checkExistingSession() {
                 }, 10000);
             });
             
-            // Recharger les fiches gagnantes
             loadWinningTickets();
         }
         
-        // Configurer la détection de connexion
         function setupConnectionDetection() {
             window.addEventListener('online', function() {
                 isOnline = true;
@@ -4304,7 +4113,6 @@ async function checkExistingSession() {
             });
         }
         
-        // Afficher une notification
         function showNotification(message, type = 'info') {
             const notification = document.createElement('div');
             notification.className = `notification ${type}`;
@@ -4332,7 +4140,6 @@ async function checkExistingSession() {
             }, 5000);
         }
         
-        // Afficher le formulaire pour les jeux automatiques
         function showAutoGameForm(gameType) {
             const bet = betTypes[gameType];
             
@@ -4353,8 +4160,7 @@ async function checkExistingSession() {
             document.getElementById('return-to-types').addEventListener('click', function() {
                 betForm.style.display = 'none';
                 document.getElementById('games-interface').style.display = 'block';
-                // NOUVEAU: Re-configurer les écouteurs
-                setupGameSelection();
+                initializeGameListeners();
             });
             
             document.getElementById('active-bets').style.display = 'block';

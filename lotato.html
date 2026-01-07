@@ -2,15 +2,12 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>LOTATO</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="manifest" href="/manifest.json">
     <script src="/auth-check.js"></script>
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-
     <style>
-        /* TOUS LES STYLES ORIGINAUX SONT CONSERVÉS */
         :root {
             --primary-color: #ad00f1;
             --secondary-color: #3498db;
@@ -26,1901 +23,289 @@
             --tunisia-color: #1abc9c;
         }
         
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
-        
-        body {
-            background-color: #f5f7fa;
-            color: var(--dark-color);
-            line-height: 1.6;
-            max-width: 500px;
-            margin: 0 auto;
-            position: relative;
-            min-height: 100vh;
-        }
-        
-        .container {
-            padding: 15px;
-            padding-bottom: 80px;
-        }
-        
-        header {
-            background: linear-gradient(135deg, var(--primary-color), #1a2530);
-            color: white;
-            padding: 15px;
-            text-align: center;
-            border-radius: 12px;
-            margin-bottom: 20px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            position: relative;
-        }
-        
-        .header-content {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 15px;
-        }
-        
-        .logo-container {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        
-        .logo-image {
-            width: 50px;
-            height: 50px;
-            border-radius: 50%;
-            object-fit: cover;
-            border: 2px solid var(--warning-color);
-        }
-        
-        .logo {
-            font-size: 2.5rem;
-            color: var(--warning-color);
-        }
-        
-        .header-text h1 {
-            font-size: 1.8rem;
-            margin-bottom: 5px;
-        }
-        
-        .header-text p {
-            font-size: 0.9rem;
-            opacity: 0.9;
-        }
-        
-        .time-display {
-            background-color: rgba(255, 255, 255, 0.1);
-            padding: 8px 15px;
-            border-radius: 20px;
-            margin-top: 10px;
-            font-size: 0.9rem;
-        }
-        
-        .draws-container {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 15px;
-            margin-bottom: 20px;
-        }
-        
-        .draw-card {
-            background-color: white;
-            border-radius: 12px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            padding: 15px;
-            text-align: center;
-            transition: transform 0.3s, box-shadow 0.3s;
-            cursor: pointer;
-        }
-        
-        .draw-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
-        }
-        
-        .draw-card.miami {
-            border-top: 5px solid var(--miami-color);
-        }
-        
-        .draw-card.georgia {
-            border-top: 5px solid var(--georgia-color);
-        }
-        
-        .draw-card.newyork {
-            border-top: 5px solid var(--newyork-color);
-        }
-        
-        .draw-card.texas {
-            border-top: 5px solid var(--texas-color);
-        }
-        
-        .draw-card.tunisia {
-            border-top: 5px solid var(--tunisia-color);
-        }
-        
-        .draw-icon {
-            font-size: 2.5rem;
-            margin-bottom: 10px;
-        }
-        
-        .miami .draw-icon {
-            color: var(--miami-color);
-        }
-        
-        .georgia .draw-icon {
-            color: var(--georgia-color);
-        }
-        
-        .newyork .draw-icon {
-            color: var(--newyork-color);
-        }
-        
-        .texas .draw-icon {
-            color: var(--texas-color);
-        }
-        
-        .tunisia .draw-icon {
-            color: var(--tunisia-color);
-        }
-        
-        .draw-card h3 {
-            font-size: 1.2rem;
-            margin-bottom: 5px;
-        }
-        
-        .draw-buttons {
-            display: flex;
-            gap: 5px;
-            margin-top: 10px;
-        }
-        
-        .draw-btn {
-            flex: 1;
-            padding: 6px;
-            border: none;
-            border-radius: 6px;
-            font-size: 0.8rem;
-            cursor: pointer;
-            background-color: var(--light-color);
-            transition: background-color 0.3s;
-        }
-        
-        .draw-btn:hover {
-            background-color: #dde4e6;
-        }
-        
-        .draw-btn.active {
-            background-color: var(--secondary-color);
-            color: white;
-        }
-        
-        .draw-btn.morning {
-            background-color: #f39c12;
-            color: white;
-        }
-        
-        .draw-btn.evening {
-            background-color: #2c3e50;
-            color: white;
-        }
-        
-        .results-section {
-            background-color: white;
-            border-radius: 12px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            padding: 15px;
-            margin-bottom: 20px;
-        }
-        
-        .section-title {
-            display: flex;
-            align-items: center;
-            margin-bottom: 15px;
-            padding-bottom: 10px;
-            border-bottom: 1px solid var(--light-color);
-        }
-        
-        .section-title i {
-            margin-right: 10px;
-            color: var(--secondary-color);
-        }
-        
-        .section-title h2 {
-            font-size: 1.2rem;
-            color: var(--primary-color);
-        }
-        
-        .results-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 10px;
-        }
-        
-        .result-card {
-            background-color: var(--light-color);
-            padding: 12px;
-            border-radius: 8px;
-            text-align: center;
-        }
-        
-        .result-card h4 {
-            font-size: 0.9rem;
-            margin-bottom: 5px;
-            color: var(--primary-color);
-        }
-        
-        .result-number {
-            font-size: 1.5rem;
-            font-weight: bold;
-            color: var(--accent-color);
-        }
-        
-        .bottom-nav {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            background-color: white;
-            display: flex;
-            justify-content: space-around;
-            padding: 15px;
-            box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
-            max-width: 500px;
-            margin: 0 auto;
-            z-index: 1000;
-        }
-        
-        .nav-item {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            color: #7f8c8d;
-            font-size: 0.8rem;
-            cursor: pointer;
-        }
-        
-        .nav-item.active {
-            color: var(--secondary-color);
-        }
-        
-        .nav-icon {
-            font-size: 1.5rem;
-            margin-bottom: 5px;
-        }
-        
-        .multi-draw-panel {
-            background-color: white;
-            border-radius: 12px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            padding: 15px;
-            margin-bottom: 20px;
-        }
-        
-        .multi-draw-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 15px;
-        }
-        
-        .multi-draw-title {
-            font-size: 1.2rem;
-            color: var(--primary-color);
-        }
-        
-        .multi-draw-toggle {
-            background: none;
-            border: none;
-            color: var(--secondary-color);
-            font-size: 1.2rem;
-            cursor: pointer;
-        }
-        
-        .multi-draw-content {
-            display: none;
-        }
-        
-        .multi-draw-content.expanded {
-            display: block;
-        }
-        
-        .multi-draw-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 10px;
-            margin-bottom: 15px;
-        }
-        
-        .multi-draw-option {
-            background-color: var(--light-color);
-            padding: 12px;
-            border-radius: 8px;
-            text-align: center;
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-        
-        .multi-draw-option:hover {
-            background-color: var(--secondary-color);
-            color: white;
-        }
-        
-        .multi-draw-option.selected {
-            background-color: var(--success-color);
-            color: white;
-        }
-        
-        .multi-draw-form {
-            background-color: #f8f9fa;
-            padding: 15px;
-            border-radius: 8px;
-            margin-bottom: 15px;
-        }
-        
-        .betting-screen {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background-color: white;
-            z-index: 100;
-            padding: 20px;
-            overflow-y: auto;
-            max-width: 500px;
-            margin: 0 auto;
-        }
-        
-        .betting-header {
-            display: flex;
-            align-items: center;
-            margin-bottom: 20px;
-            padding-bottom: 15px;
-            border-bottom: 1px solid var(--light-color);
-        }
-        
-        .back-button {
-            background: none;
-            border: none;
-            font-size: 1.5rem;
-            color: var(--primary-color);
-            margin-right: 15px;
-            cursor: pointer;
-        }
-        
-        .betting-title {
-            font-size: 1.5rem;
-            color: var(--primary-color);
-        }
-        
-        .bet-form {
-            background-color: white;
-            border-radius: 12px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            padding: 20px;
-            margin-bottom: 20px;
-        }
-        
-        .form-group {
-            margin-bottom: 15px;
-        }
-        
-        label {
-            display: block;
-            margin-bottom: 5px;
-            font-weight: 600;
-        }
-        
-        input, select {
-            width: 100%;
-            padding: 12px;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            font-size: 1rem;
-        }
-        
-        .number-inputs {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 15px;
-        }
-        
-        .number-inputs input {
-            text-align: center;
-            font-size: 1.2rem;
-        }
-        
-        .bet-actions {
-            display: flex;
-            gap: 10px;
-        }
-        
-        button {
-            padding: 12px 20px;
-            border: none;
-            border-radius: 8px;
-            font-size: 1rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: background-color 0.3s;
-        }
-        
-        .btn-primary {
-            background-color: var(--secondary-color);
-            color: white;
-            flex: 2;
-        }
-        
-        .btn-primary:hover {
-            background-color: #2980b9;
-        }
-        
-        .btn-secondary {
-            background-color: var(--light-color);
-            color: var(--dark-color);
-            flex: 1;
-        }
-        
-        .btn-secondary:hover {
-            background-color: #dde4e6;
-        }
-        
-        .active-bets {
-            background-color: white;
-            border-radius: 12px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            padding: 20px;
-            margin-bottom: 20px;
-        }
-        
-        .bet-item {
-            display: flex;
-            justify-content: space-between;
-            padding: 12px 0;
-            border-bottom: 1px solid var(--light-color);
-        }
-        
-        .bet-item:last-child {
-            border-bottom: none;
-        }
-        
-        .bet-details {
-            flex: 2;
-        }
-        
-        .bet-amount {
-            flex: 1;
-            text-align: right;
-            font-weight: bold;
-        }
-        
-        .bet-remove {
-            color: var(--accent-color);
-            margin-left: 10px;
-            cursor: pointer;
-        }
-        
-        .bet-total {
-            display: flex;
-            justify-content: space-between;
-            margin-top: 15px;
-            padding-top: 15px;
-            border-top: 2px solid var(--light-color);
-            font-weight: bold;
-            font-size: 1.1rem;
-        }
-        
-        .submit-bet {
-            background-color: var(--success-color);
-            color: white;
-            width: 100%;
-            padding: 15px;
-            margin-top: 20px;
-            font-size: 1.1rem;
-        }
-        
-        .submit-bet:hover {
-            background-color: #219955;
-        }
-        
-        /* Styles pour les boules terminant par N */
-        .n-balls-container {
-            display: grid;
-            grid-template-columns: repeat(5, 1fr);
-            gap: 10px;
-            margin-bottom: 15px;
-        }
-        
-        .n-ball {
-            background-color: var(--light-color);
-            padding: 10px;
-            border-radius: 8px;
-            text-align: center;
-            cursor: pointer;
-            transition: background-color 0.3s;
-        }
-        
-        .n-ball:hover {
-            background-color: var(--secondary-color);
-            color: white;
-        }
-        
-        .quick-bet-form {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 15px;
-        }
-        
-        .quick-number-input {
-            flex: 2;
-        }
-        
-        .quick-amount-input {
-            flex: 1;
-        }
-        
-        .screen {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background-color: white;
-            z-index: 100;
-            padding: 20px;
-            overflow-y: auto;
-            max-width: 500px;
-            margin: 0 auto;
-        }
-        
-        .screen-header {
-            display: flex;
-            align-items: center;
-            margin-bottom: 20px;
-            padding-bottom: 15px;
-            border-bottom: 1px solid var(--light-color);
-        }
-        
-        .screen-title {
-            font-size: 1.5rem;
-            color: var(--primary-color);
-        }
-        
-        @keyframes slideIn {
-            from { transform: translateX(100%); }
-            to { transform: translateX(0); }
-        }
-        
-        .slide-in {
-            animation: slideIn 0.3s forwards;
-        }
-        
-        @keyframes slideOut {
-            from { transform: translateX(0); }
-            to { transform: translateX(100%); }
-        }
-        
-        .slide-out {
-            animation: slideOut 0.3s forwards;
-        }
-        
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        
+        body { background-color: #f5f7fa; color: var(--dark-color); line-height: 1.6; max-width: 500px; margin: 0 auto; position: relative; min-height: 100vh; overflow-x: hidden; }
+
+        /* Animations & Styles Originaux Restaurés */
+        .btn-animate { transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        .btn-animate:active { transform: scale(0.92); }
+
+        header { background: linear-gradient(135deg, var(--primary-color), #1a2530); color: white; padding: 15px; text-align: center; border-radius: 0 0 20px 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
+        .logo { font-size: 2.5rem; color: var(--warning-color); font-weight: bold; text-shadow: 2px 2px #000; }
+
+        /* Nouveau Bouton Impression Multi-Tirages */
+        .multi-print-banner { background: var(--warning-color); color: black; padding: 10px; margin: 10px; border-radius: 10px; display: flex; justify-content: space-between; align-items: center; font-weight: bold; cursor: pointer; box-shadow: 0 4px 0 #16ba00; }
+
+        .draw-selector { display: flex; overflow-x: auto; padding: 10px; gap: 10px; scrollbar-width: none; }
+        .draw-chip { padding: 8px 15px; border-radius: 20px; background: white; white-space: nowrap; font-weight: bold; box-shadow: 0 2px 5px rgba(0,0,0,0.1); border: 2px solid transparent; }
+        .draw-chip.active { border-color: var(--primary-color); background: var(--primary-color); color: white; }
+
+        .game-types { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; padding: 10px; }
+        .game-btn { background: white; border: none; padding: 10px 5px; border-radius: 8px; font-weight: bold; font-size: 0.8rem; box-shadow: 0 3px 6px rgba(0,0,0,0.1); cursor: pointer; }
+        .game-btn.active { background: var(--primary-color); color: white; }
+
+        /* Clavier et Saisie */
+        .input-section { padding: 15px; background: white; border-radius: 20px 20px 0 0; box-shadow: 0 -5px 15px rgba(0,0,0,0.05); margin-top: 10px; }
+        .numpad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 15px; }
+        .num-btn { background: #f8f9fa; border: none; padding: 15px; border-radius: 10px; font-size: 1.5rem; font-weight: bold; cursor: pointer; border-bottom: 3px solid #dee2e6; }
+        .num-btn:active { background: #e9ecef; border-bottom: 0; transform: translateY(3px); }
+
+        /* Liste des paris (Pannier) */
+        .bet-list { max-height: 200px; overflow-y: auto; margin: 15px 0; border: 1px inset #eee; padding: 5px; }
+        .bet-row { display: flex; justify-content: space-between; padding: 8px; border-bottom: 1px solid #eee; background: #fff; }
+
+        /* Notification de Gain */
+        #gain-notif { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: gold; color: black; padding: 15px 25px; border-radius: 50px; font-weight: bold; z-index: 9999; display: none; box-shadow: 0 5px 20px rgba(0,0,0,0.3); animation: bounceIn 0.5s; }
+
+        @keyframes bounceIn {
+            0% { transform: translateX(-50%) scale(0.3); opacity: 0; }
+            50% { transform: translateX(-50%) scale(1.05); }
+            70% { transform: translateX(-50%) scale(0.9); }
+            100% { transform: translateX(-50%) scale(1); opacity: 1; }
+        }
+
+        /* Styles Impression */
         @media print {
-            body * {
-                visibility: hidden;
-            }
-            .print-ticket, .print-ticket * {
-                visibility: visible;
-            }
-            .print-ticket {
-                position: absolute;
-                left: 0;
-                top: 0;
-                width: 100%;
-            }
-            .ticket-logo {
-                max-width: 80px;
-                height: auto;
-            }
-        }
-        
-        .bo-ball {
-            background-color: var(--warning-color);
-            color: white;
-            padding: 10px;
-            border-radius: 8px;
-            text-align: center;
-            cursor: pointer;
-            transition: background-color 0.3s;
-            font-weight: bold;
-        }
-        
-        .bo-ball:hover {
-            background-color: #e67e22;
-        }
-        
-        .ticket-actions {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 20px;
-            flex-wrap: wrap; /* Ajouté pour permettre plusieurs lignes de boutons */
-        }
-        
-        .ticket-action-btn {
-            flex: 1;
-            padding: 12px;
-            border: none;
-            border-radius: 8px;
-            font-size: 1rem;
-            font-weight: bold;
-            cursor: pointer;
-            transition: background-color 0.3s;
-            min-width: 45%; /* S'assure que les boutons ne sont pas trop petits */
-        }
-        
-        .save-ticket {
-            background-color: var(--secondary-color);
-            color: white;
-        }
-        
-        .save-ticket:hover {
-            background-color: #2300a0;
-        }
-        
-        .print-ticket-btn {
-            background-color: var(--success-color);
-            color: white;
-        }
-        
-        .print-ticket-btn:hover {
-            background-color: #219955;
-        }
-        
-        /* Nouveau style pour bouton Multi-Tirages */
-        .print-multi-btn {
-            background-color: var(--primary-color);
-            color: white;
-        }
-        
-        .print-multi-btn:hover {
-            background-color: #8e00c4;
-        }
-        
-        .history-item {
-            background-color: white;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-            padding: 15px;
-            margin-bottom: 10px;
-            position: relative;
-        }
-        
-        .history-header {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 10px;
-            padding-bottom: 5px;
-            border-bottom: 1px solid var(--light-color);
-        }
-        
-        .history-draw {
-            font-weight: bold;
-            color: var(--primary-color);
-        }
-        
-        .history-date {
-            color: #7f8c8d;
-            font-size: 0.9rem;
-        }
-        
-        .history-bets {
-            margin-bottom: 10px;
-        }
-        
-        .history-bet {
-            display: flex;
-            justify-content: space-between;
-            padding: 5px 0;
-            font-size: 0.9rem;
-        }
-        
-        .history-total {
-            display: flex;
-            justify-content: space-between;
-            padding-top: 10px;
-            border-top: 1px solid var(--light-color);
-            font-weight: bold;
-        }
-        
-        .ticket-footer {
-            display: flex;
-            gap: 10px;
-            margin-top: 20px;
-            padding-top: 20px;
-            border-top: 2px solid var(--light-color);
-        }
-        
-        .ticket-footer-btn {
-            flex: 1;
-            padding: 15px;
-            border: none;
-            border-radius: 8px;
-            font-size: 1.1rem;
-            font-weight: bold;
-            cursor: pointer;
-            transition: background-color 0.3s;
-        }
-        
-        .search-history {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 15px;
-        }
-        
-        .search-input {
-            flex: 2;
-        }
-        
-        .search-btn {
-            flex: 1;
-            background-color: var(--secondary-color);
-            color: white;
-        }
-        
-        .search-btn:hover {
-            background-color: #2980b9;
-        }
-        
-        .reports-container {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 10px;
-            margin-bottom: 15px;
-        }
-        
-        .report-btn {
-            background-color: var(--light-color);
-            padding: 15px;
-            border-radius: 8px;
-            text-align: center;
-            cursor: pointer;
-            transition: background-color 0.3s;
-            border: none;
-            font-weight: bold;
-        }
-        
-        .report-btn:hover {
-            background-color: var(--secondary-color);
-            color: white;
-        }
-        
-        .report-btn.general {
-            grid-column: 1 / -1;
-            background-color: var(--warning-color);
-            color: white;
-        }
-        
-        .report-btn.general:hover {
-            background-color: #e67e22;
-        }
-        
-        .report-results {
-            background-color: white;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-            padding: 15px;
-            margin-top: 15px;
-        }
-        
-        .report-item {
-            display: flex;
-            justify-content: space-between;
-            padding: 10px 0;
-            border-bottom: 1px solid var(--light-color);
-        }
-        
-        .report-item:last-child {
-            border-bottom: none;
-        }
-        
-        .save-print-btn {
-            background-color: var(--warning-color);
-            color: white;
-        }
-        
-        .save-print-btn:hover {
-            background-color: #e67e22;
-        }
-        
-        .login-screen {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: linear-gradient(135deg, var(--primary-color), #1a2530);
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            z-index: 2000;
-            padding: 20px;
-        }
-        
-        .login-container {
-            background-color: white;
-            border-radius: 12px;
-            padding: 30px;
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
-            width: 100%;
-            max-width: 400px;
-        }
-        
-        .login-logo {
-            text-align: center;
-            margin-bottom: 20px;
-        }
-        
-        .login-logo .logo {
-            font-size: 3rem;
-            color: var(--warning-color);
-        }
-        
-        .login-title {
-            text-align: center;
-            margin-bottom: 20px;
-            color: var(--primary-color);
-        }
-        
-        .login-error {
-            background-color: #f8d7da;
-            color: #721c24;
-            padding: 10px;
-            border-radius: 6px;
-            margin-bottom: 15px;
-            text-align: center;
-            display: none;
-        }
-        
-        .sync-status {
-            position: fixed;
-            top: 10px;
-            right: 10px;
-            z-index: 1000;
-            padding: 8px 12px;
-            border-radius: 20px;
-            font-size: 0.8rem;
-            display: flex;
-            align-items: center;
-            gap: 5px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-        }
-        
-        .sync-connected {
-            background-color: var(--success-color);
-            color: white;
-        }
-        
-        .sync-disconnected {
-            background-color: var(--accent-color);
-            color: white;
-        }
-        
-        .notification {
-            position: fixed;
-            bottom: 80px;
-            left: 50%;
-            transform: translateX(-50%);
-            background-color: var(--primary-color);
-            color: white;
-            padding: 12px 20px;
-            border-radius: 8px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-            z-index: 1000;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            max-width: 90%;
-            animation: slideUp 0.3s ease-out;
-        }
-        
-        @keyframes slideUp {
-            from { opacity: 0; transform: translate(-50%, 20px); }
-            to { opacity: 1; transform: translate(-50%, 0); }
-        }
-        
-        .notification.success { background-color: var(--success-color); }
-        .notification.warning { background-color: var(--warning-color); }
-        .notification.error { background-color: var(--accent-color); }
-        
-        .ticket-logo-container {
-            text-align: center;
-            margin-bottom: 15px;
-            padding-bottom: 15px;
-            border-bottom: 2px solid var(--light-color);
-        }
-        
-        .ticket-logo {
-            max-width: 100px;
-            height: auto;
-            border-radius: 10px;
-        }
-        
-        .game-category {
-            margin-bottom: 20px;
-        }
-        
-        .game-category-title {
-            font-size: 1.1rem;
-            font-weight: bold;
-            color: var(--primary-color);
-            margin-bottom: 10px;
-            padding-bottom: 5px;
-            border-bottom: 2px solid var(--light-color);
-        }
-        
-        .game-category-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 10px;
-        }
-        
-        .game-item {
-            background-color: white;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            padding: 15px;
-            text-align: center;
-            cursor: pointer;
-            transition: all 0.3s;
-            border-left: 4px solid var(--secondary-color);
-        }
-        
-        .game-item:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
-        }
-        
-        .game-item.borlette { border-left-color: var(--miami-color); }
-        .game-item.lotto { border-left-color: var(--newyork-color); }
-        .game-item.special { border-left-color: var(--success-color); }
-        
-        .game-name { font-weight: bold; margin-bottom: 5px; }
-        .game-multiplier { font-size: 0.9rem; color: var(--warning-color); font-weight: bold; }
-        
-        .all-categories-container { display: block; }
-        .game-category { display: block !important; }
-        
-        /* Styles pour boules paires */
-        .pair-ball {
-            background-color: var(--light-color);
-            padding: 15px;
-            border-radius: 8px;
-            text-align: center;
-            cursor: pointer;
-            transition: all 0.3s;
-            font-weight: bold;
-        }
-        .pair-ball:hover {
-            background-color: var(--secondary-color);
-            color: white;
-        }
-        
-        /* Styles multi-option */
-        .multi-game-select {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 10px;
-            margin-bottom: 15px;
-        }
-        
-        .multi-game-option {
-            background-color: var(--light-color);
-            padding: 12px;
-            border-radius: 8px;
-            text-align: center;
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-        
-        .multi-game-option.selected {
-            background-color: var(--success-color);
-            color: white;
-        }
-        
-        /* Navigation Bet Type */
-        .bet-type-navigation {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 20px;
-            overflow-x: auto;
-            padding-bottom: 10px;
-        }
-        
-        .bet-type-nav-item {
-            background-color: var(--light-color);
-            padding: 10px 15px;
-            border-radius: 20px;
-            white-space: nowrap;
-            cursor: pointer;
-            transition: all 0.3s;
-            border: 2px solid transparent;
-        }
-        
-        .bet-type-nav-item.active {
-            background-color: var(--secondary-color);
-            color: white;
-            border-color: var(--secondary-color);
-        }
-        
-        .auto-buttons {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 15px;
-        }
-        
-        .auto-btn {
-            flex: 1;
-            background-color: var(--secondary-color);
-            color: white;
-            padding: 10px;
-            border-radius: 8px;
-            text-align: center;
-            cursor: pointer;
-            font-weight: bold;
-        }
-        
-        .auto-btn.reverse { background-color: var(--tunisia-color); }
-
-        .ticket-management {
-            background-color: white;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-            padding: 15px;
-            margin-bottom: 10px;
-        }
-        
-        .ticket-management-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 15px;
-        }
-        
-        .ticket-actions-buttons {
-            display: flex;
-            gap: 10px;
-        }
-        
-        .ticket-details {
-            background-color: #f8f9fa;
-            padding: 10px;
-            border-radius: 6px;
-            margin-top: 10px;
-        }
-        
-        .edit-btn, .delete-btn {
-            color: white;
-            padding: 5px 10px;
-            border-radius: 4px;
-            font-size: 0.8rem;
-            cursor: pointer;
-            margin-left: 5px;
-        }
-        .edit-btn { background-color: var(--warning-color); }
-        .delete-btn { background-color: var(--accent-color); }
-
-        /* Animation Gain */
-        @keyframes winPulse {
-            0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(28, 241, 0, 0.7); }
-            70% { transform: scale(1.05); box-shadow: 0 0 0 10px rgba(28, 241, 0, 0); }
-            100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(28, 241, 0, 0); }
-        }
-        
-        .winning-notification-card {
-            border: 2px solid var(--warning-color);
-            animation: winPulse 2s infinite;
+            body * { visibility: hidden; }
+            #print-area, #print-area * { visibility: visible; }
+            #print-area { position: absolute; left: 0; top: 0; width: 100%; }
         }
     </style>
 </head>
 <body>
-    <div class="login-screen" id="login-screen">
-        <div class="login-container">
-            <div class="login-logo">
-                <div class="logo">
-                    <i class="fas fa-dice"></i>
-                </div>
-            </div>
-            <h2 class="login-title">LOTATO</h2>
-            <div class="login-error" id="login-error">
-                Identifiant ou mot de passe incorrect
-            </div>
-            <div class="form-group">
-                <label for="admin-username">Identifiant</label>
-                <input type="text" id="admin-username" placeholder="admin">
-            </div>
-            <div class="form-group">
-                <label for="admin-password">Mot de passe</label>
-                <input type="password" id="admin-password" placeholder="••••••••">
-            </div>
-            <button class="submit-bet" id="login-btn">Konekte</button>
-        </div>
+
+    <div id="gain-notif"><i class="fas fa-trophy"></i> TICKET GAGNANT DÉTECTÉ !</div>
+
+    <div id="loading-screen" style="position:fixed; inset:0; background:white; z-index:10000; display:flex; flex-direction:column; align-items:center; justify-content:center;">
+        <i class="fas fa-spinner fa-spin fa-3x" style="color:var(--primary-color)"></i>
+        <p style="margin-top:20px; font-weight:bold;">Vérification de session...</p>
     </div>
-    
-    <div class="report-screen" id="report-screen">
-        <div class="screen-header">
-            <button class="back-button" id="back-from-report">
-                <i class="fas fa-arrow-left"></i>
-            </button>
-            <h2 class="screen-title">Rapò Fin Tiraj</h2>
-        </div>
-        <div class="report-container" id="report-content">
-            </div>
-    </div>
-    
-    <div class="sync-status sync-connected" id="sync-status" style="display: none;">
-        <i class="fas fa-cloud"></i> <span id="sync-text">Konekte (MongoDB)</span>
-    </div>
-    
-    <div class="admin-panel" id="admin-panel" style="display: none;">
-        <div class="admin-btn" id="admin-menu-btn">
-            <i class="fas fa-cog"></i>
-        </div>
-    </div>
-    
-    <div class="container" id="main-container" style="display: none;">
+
+    <div id="app-container" style="display:none;">
         <header>
-            <div class="header-content">
-                <div class="logo-container">
-                    <img src="logo-borlette.jpg" alt="Logo Nova Lotto" class="logo-image" id="company-logo">
-                    <div class="logo">
-                        <i class="fas fa-dice"></i>
-                    </div>
-                </div>
-                <div class="header-text">
-                    <h1>Nova Lotto</h1>
-                    <p>Chwazi yon Jwet</p>
-                </div>
-            </div>
-            <div class="time-display">
-                <i class="fas fa-clock"></i> <span id="current-time">--:--</span>
+            <div class="logo">LOTATO</div>
+            <div style="display:flex; justify-content:space-between; margin-top:10px; font-size:0.8rem;">
+                <span id="agent-name">Agent: ...</span>
+                <span id="live-clock">00:00:00</span>
             </div>
         </header>
-        
-        <div class="multi-draw-panel">
-            <div class="multi-draw-header">
-                <h3 class="multi-draw-title">Jwe nan Plizyè Tiraj</h3>
-                <button class="multi-draw-toggle" id="multi-draw-toggle">
-                    <i class="fas fa-chevron-down"></i>
-                </button>
-            </div>
-            <div class="multi-draw-content" id="multi-draw-content">
-                <div class="multi-draw-grid" id="multi-draw-options">
-                    </div>
-                
-                <div class="multi-game-select" id="multi-game-select">
-                    </div>
-                
-                <div class="multi-draw-form">
-                    <div class="form-group" id="multi-number-inputs">
-                        </div>
-                    <div class="form-group">
-                        <label for="multi-draw-amount">Kantite pa tiraj</label>
-                        <input type="number" id="multi-draw-amount" placeholder="Kantite" min="1" value="1">
-                    </div>
-                    <div class="bet-actions">
-                        <button class="btn-primary" id="add-multi-draw">Ajoute nan Tout Tiraj</button>
-                    </div>
-                </div>
-            </div>
+
+        <div class="multi-print-banner btn-animate" onclick="printMultiTickets()">
+            <span><i class="fas fa-print"></i> FICHE MULTI-TIRAGES</span>
+            <i class="fas fa-chevron-right"></i>
         </div>
-        
-        <div class="draws-container">
-            <div class="draw-card miami" data-draw="miami">
-                <div class="draw-icon"><i class="fas fa-sun"></i></div>
-                <h3>Miami</h3>
-                <div class="draw-buttons">
-                    <button class="draw-btn morning active" data-time="morning">1:30 PM</button>
-                    <button class="draw-btn evening" data-time="evening">9:50 PM</button>
-                </div>
+
+        <div class="draw-selector" id="draw-list">
             </div>
-            
-            <div class="draw-card georgia" data-draw="georgia">
-                <div class="draw-icon"><i class="fas fa-map-marker-alt"></i></div>
-                <h3>Georgia</h3>
-                <div class="draw-buttons">
-                    <button class="draw-btn morning active" data-time="morning">12:30 PM</button>
-                    <button class="draw-btn evening" data-time="evening">7:00 PM</button>
-                </div>
-            </div>
-            
-            <div class="draw-card newyork" data-draw="newyork">
-                <div class="draw-icon"><i class="fas fa-building"></i></div>
-                <h3>New York</h3>
-                <div class="draw-buttons">
-                    <button class="draw-btn morning active" data-time="morning">2:30 PM</button>
-                    <button class="draw-btn evening" data-time="evening">8:00 PM</button>
-                </div>
-            </div>
-            
-            <div class="draw-card texas" data-draw="texas">
-                <div class="draw-icon"><i class="fas fa-hat-cowboy"></i></div>
-                <h3>Texas</h3>
-                <div class="draw-buttons">
-                    <button class="draw-btn morning active" data-time="morning">12:00 PM</button>
-                    <button class="draw-btn evening" data-time="evening">6:00 PM</button>
-                </div>
-            </div>
-            
-            <div class="draw-card tunisia" data-draw="tunisia">
-                <div class="draw-icon"><i class="fas fa-flag"></i></div>
-                <h3>Tunisie</h3>
-                <div class="draw-buttons">
-                    <button class="draw-btn morning active" data-time="morning">10:30 AM</button>
-                    <button class="draw-btn evening" data-time="evening">2:00 PM</button>
-                </div>
-            </div>
+
+        <div class="game-types">
+            <button class="game-btn btn-animate active" onclick="setGame('bolette')">BOLETTE</button>
+            <button class="game-btn btn-animate" onclick="setGame('lotto3')">LOTTO 3</button>
+            <button class="game-btn btn-animate" onclick="setGame('lotto4')">LOTTO 4</button>
+            <button class="game-btn btn-animate" onclick="setGame('lotto5')">LOTTO 5</button>
+            <button class="game-btn btn-animate" onclick="setGame('mariage')">MARIAGE</button>
+            <button class="game-btn btn-animate" onclick="setGame('n1_n2')">N1/N2</button>
         </div>
-        
-        <div class="results-section">
-            <div class="section-title">
-                <i class="fas fa-trophy"></i>
-                <h2>Dènye Rezilta (Live)</h2>
+
+        <div class="input-section">
+            <div style="display:flex; gap:10px;">
+                <input type="number" id="num-input" placeholder="Numéro" style="flex:2; padding:15px; font-size:1.2rem; border-radius:10px; border:2px solid #ddd;">
+                <input type="number" id="amount-input" placeholder="HTG" style="flex:1; padding:15px; font-size:1.2rem; border-radius:10px; border:2px solid #ddd;">
             </div>
-            <div id="latest-results-container" style="text-align:center; padding:10px;">
-                <p>Chargement des résultats...</p>
+
+            <div class="numpad">
+                <button class="num-btn" onclick="addNum('1')">1</button>
+                <button class="num-btn" onclick="addNum('2')">2</button>
+                <button class="num-btn" onclick="addNum('3')">3</button>
+                <button class="num-btn" onclick="addNum('4')">4</button>
+                <button class="num-btn" onclick="addNum('5')">5</button>
+                <button class="num-btn" onclick="addNum('6')">6</button>
+                <button class="num-btn" onclick="addNum('7')">7</button>
+                <button class="num-btn" onclick="addNum('8')">8</button>
+                <button class="num-btn" onclick="addNum('9')">9</button>
+                <button class="num-btn" style="color:red" onclick="clearInputs()">C</button>
+                <button class="num-btn" onclick="addNum('0')">0</button>
+                <button class="num-btn" style="color:green" onclick="addBet()"><i class="fas fa-plus"></i></button>
             </div>
-            
-            <div class="ticket-actions" style="margin-top: 15px;">
-                <button class="ticket-action-btn save-print-btn" id="generate-report-btn">
-                    <i class="fas fa-file-alt"></i> Jenere Rapò Fin Tiraj
-                </button>
+
+            <div class="bet-list" id="current-bets">
+                </div>
+
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+                <button class="btn-animate" onclick="saveTicket()" style="background:var(--primary-color); color:white; padding:15px; border:none; border-radius:10px; font-weight:bold;">ENREGISTRER</button>
+                <button class="btn-animate" onclick="printTicket()" style="background:var(--dark-color); color:white; padding:15px; border:none; border-radius:10px; font-weight:bold;">IMPRIMER</button>
             </div>
         </div>
     </div>
-    
-    <div class="bottom-nav" id="bottom-nav" style="display: none;">
-        <div class="nav-item active" data-screen="home">
-            <div class="nav-icon"><i class="fas fa-home"></i></div>
-            <span>Akèy</span>
-        </div>
-        <div class="nav-item" data-screen="winning-tickets">
-            <div class="nav-icon"><i class="fas fa-trophy"></i></div>
-            <span>Fiche Gagnant</span>
-        </div>
-        <div class="nav-item" data-screen="history">
-            <div class="nav-icon"><i class="fas fa-history"></i></div>
-            <span>Istorik</span>
-        </div>
-        <div class="nav-item" data-screen="ticket-management">
-            <div class="nav-icon"><i class="fas fa-file-invoice"></i></div>
-            <span>Jesyon Fiche</span>
-        </div>
-    </div>
-    
-    <div class="betting-screen" id="betting-screen">
-        <div class="betting-header">
-            <button class="back-button" id="back-button"><i class="fas fa-arrow-left"></i></button>
-            <h2 class="betting-title" id="betting-title">Mete Paryaj ou</h2>
-            <div style="margin-left: auto;">
-                <button class="submit-bet" id="confirm-bet-top" style="padding: 8px 15px; font-size: 0.9rem;">
-                    <i class="fas fa-check"></i> Konfime Parye
-                </button>
-            </div>
-        </div>
-        
-        <div class="bet-type-navigation" id="bet-type-nav" style="display: none;"></div>
-        
-        <div id="games-interface" class="all-categories-container">
-            <div class="game-category" id="borlette-category">
-                <div class="game-category-title">BORLETTE</div>
-                <div class="game-category-grid">
-                    <div class="game-item borlette" data-game="borlette">
-                        <div class="game-name">BORLETTE</div>
-                        <div class="game-multiplier">x 60 / x 20 / x 10</div>
-                        <small>2 chif (1er, 2e, 3e lot)</small>
-                    </div>
-                    <div class="game-item borlette" data-game="boulpe">
-                        <div class="game-name">BOUL PE</div>
-                        <div class="game-multiplier">x 60</div>
-                        <small>Boul pe (00-99)</small>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="game-category" id="lotto-category">
-                <div class="game-category-title">LOTTO</div>
-                <div class="game-category-grid">
-                    <div class="game-item lotto" data-game="lotto3">
-                        <div class="game-name">LOTO 3</div>
-                        <div class="game-multiplier">x 500</div>
-                        <small>3 chif (ex: 123)</small>
-                    </div>
-                    <div class="game-item lotto" data-game="lotto4">
-                        <div class="game-name">LOTO 4</div>
-                        <div class="game-multiplier">x 5000</div>
-                        <small>4 chif (2+2 boules)</small>
-                    </div>
-                    <div class="game-item lotto" data-game="lotto5">
-                        <div class="game-name">LOTO 5</div>
-                        <div class="game-multiplier">x 25000</div>
-                        <small>5 chif (3+2 boules)</small>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="game-category" id="special-category">
-                <div class="game-category-title">JEUX SPÉCIAUX</div>
-                <div class="game-category-grid">
-                    <div class="game-item special" data-game="grap">
-                        <div class="game-name">GRAP</div>
-                        <div class="game-multiplier">x 500</div>
-                        <small>Boule paire (111, 222...)</small>
-                    </div>
-                    <div class="game-item special" data-game="marriage">
-                        <div class="game-name">MARYAJ</div>
-                        <div class="game-multiplier">x 1000</div>
-                        <small>Maryaj 2 chif</small>
-                    </div>
-                    <div class="game-item special" data-game="auto-marriage">
-                        <div class="game-name">MARYAJ OTOMATIK</div>
-                        <div class="game-multiplier">x 1000</div>
-                        <small>Marie tout boules otomatik</small>
-                    </div>
-                    <div class="game-item special" data-game="auto-lotto4">
-                        <div class="game-name">LOTO 4 OTOMATIK</div>
-                        <div class="game-multiplier">x 5000</div>
-                        <small>Lotto 4 otomatik</small>
-                    </div>
-                </div>
-            </div>
-        </div>
-        
-        <div class="auto-buttons" id="auto-buttons" style="display: none;">
-            <button class="auto-btn" id="auto-marriage-btn">Maryaj Otomatik</button>
-            <button class="auto-btn" id="auto-lotto4-btn">Lotto 4 Otomatik</button>
-            <button class="auto-btn reverse" id="reverse-lotto4-btn">Renverse Lotto 4</button>
-        </div>
-        
-        <div class="bet-form" id="bet-form"></div>
-        
-        <div class="active-bets" id="active-bets">
-            <div class="ticket-actions">
-                <button class="ticket-action-btn save-print-btn" id="save-print-ticket">Enregistrer & Imprimer</button>
-                <button class="ticket-action-btn print-multi-btn" id="print-multi-draw-btn" style="display:none;">
-                    <i class="fas fa-print"></i> Imprimer Multi-Tirages
-                </button>
-            </div>
-            <h3>Parye Aktif</h3>
-            <div id="bets-list"></div>
-            <div class="bet-total">
-                <span>Total:</span>
-                <span id="bet-total">0 goud</span>
-            </div>
-        </div>
-    </div>
-    
-    <div class="screen" id="ticket-management-screen">
-        <div class="screen-header">
-            <button class="back-button" data-screen="home"><i class="fas fa-arrow-left"></i></button>
-            <h2 class="screen-title">Jesyon Fiche</h2>
-        </div>
-        <div class="ticket-search-box">
-            <div class="search-history">
-                <input type="text" id="search-ticket-number" class="search-input" placeholder="Chache fiche pa nimewo...">
-                <button class="search-btn" id="search-ticket-btn"><i class="fas fa-search"></i> Chache</button>
-            </div>
-        </div>
-        <div id="ticket-management-list"></div>
-    </div>
-    
-    <div class="screen" id="winning-tickets-screen">
-        <div class="screen-header">
-            <button class="back-button" data-screen="home"><i class="fas fa-arrow-left"></i></button>
-            <h2 class="screen-title">Fiche Genyen</h2>
-        </div>
-        <div id="winning-tickets-list">
-            <p style="text-align:center; padding:20px;">Recherche des fiches gagnantes...</p>
-        </div>
-    </div>
-    
-    <div class="screen" id="history-screen">
-        <div class="screen-header">
-            <button class="back-button" data-screen="home"><i class="fas fa-arrow-left"></i></button>
-            <h2 class="screen-title">Istorik Parye</h2>
-        </div>
-        <div class="reports-container" id="reports-container"></div>
-        <div id="report-results"></div>
-        <div id="history-list"></div>
-    </div>
+
+    <div id="print-area" style="display:none;"></div>
 
     <script>
-        // --- CONFIGURATION API ---
-        // Remplacez l'URL par votre endpoint backend réel ou laissez celui-ci si un proxy est configuré
-        const API_BASE_URL = 'https://lotatonova-fv0b.onrender.com';
-        
-        // --- VARIABLES GLOBALES ---
-        const FIVE_MINUTES = 5 * 60 * 1000;
-        let currentDraw = null;
-        let currentDrawTime = null;
-        let activeBets = [];
-        let ticketNumber = 1;
-        let savedTickets = []; // En mémoire seulement pour le frontend, synchronisé via fetch
         let currentAdmin = null;
-        let selectedMultiDraws = new Set();
-        let selectedMultiGame = 'borlette';
-        let selectedBalls = [];
-        
-        // Données des tirages
-        const draws = {
-            miami: { name: "Miami", times: { morning: "1:30 PM", evening: "9:50 PM" } },
-            georgia: { name: "Georgia", times: { morning: "12:30 PM", evening: "7:00 PM" } },
-            newyork: { name: "New York", times: { morning: "2:30 PM", evening: "8:00 PM" } },
-            texas: { name: "Texas", times: { morning: "12:00 PM", evening: "6:00 PM" } },
-            tunisia: { name: "Tunisie", times: { morning: "10:30 AM", evening: "2:00 PM" } }
-        };
-        
-        // Types de paris et Multiplicateurs (BORLETTE LOGIQUE MISE A JOUR DANS CALCUL)
-        const betTypes = {
-            lotto3: { name: "LOTO 3", multiplier: 500, category: "lotto", description: "3 chif (ex: 123)" },
-            grap: { name: "GRAP", multiplier: 500, category: "special", description: "Grap boule paire" },
-            marriage: { name: "MARYAJ", multiplier: 1000, category: "special", description: "Maryaj 2 chif" },
-            borlette: { name: "BORLETTE", multiplier: 60, category: "borlette", description: "2 chif (1er lot)" }, // Base x60, mais logique 60/20/10 appliquée
-            boulpe: { name: "BOUL PE", multiplier: 60, category: "borlette", description: "Boul pe" },
-            lotto4: { name: "LOTO 4", multiplier: 5000, category: "lotto", description: "4 chif" },
-            lotto5: { name: "LOTO 5", multiplier: 25000, category: "lotto", description: "5 chif" },
-            'auto-marriage': { name: "MARYAJ OTOMATIK", multiplier: 1000, category: "special", description: "Auto" },
-            'auto-lotto4': { name: "LOTO 4 OTOMATIK", multiplier: 5000, category: "special", description: "Auto" }
-        };
-        
-        let companyInfo = { name: "Nova Lotto", phone: "+509 32 53 49 58", address: "Cap Haïtien" };
+        let selectedDraw = null;
+        let selectedGame = 'bolette';
+        let bets = [];
+        const WIN_MULT = { first: 60, second: 20, third: 10 };
 
-        document.addEventListener('DOMContentLoaded', function() {
-            checkExistingSession();
-            updateCurrentTime();
-            setInterval(updateCurrentTime, 60000);
-            
-            // Polling pour les résultats (vérifie chaque minute si subsystem-admin a publié)
-            setInterval(checkForNewResults, 60000);
-            checkForNewResults(); // Check immédiat
-            
-            setupEventListeners();
-            initMultiDrawPanel();
-        });
-
-        function setupEventListeners() {
-            // Boutons de tirage
-            document.querySelectorAll('.draw-btn').forEach(btn => {
-                btn.addEventListener('click', function(e) {
-                    e.stopPropagation();
-                    const card = this.closest('.draw-card');
-                    const drawId = card.getAttribute('data-draw');
-                    const time = this.getAttribute('data-time');
-                    card.querySelectorAll('.draw-btn').forEach(b => b.classList.remove('active'));
-                    this.classList.add('active');
-                    openBettingScreen(drawId, time);
-                });
-            });
-
-            document.getElementById('back-button').addEventListener('click', closeBettingScreen);
-            document.getElementById('confirm-bet-top').addEventListener('click', submitBets);
-            document.getElementById('save-print-ticket').addEventListener('click', saveAndPrintTicket);
-            
-            // --- NOUVEAU: BOUTON PRINT MULTI ---
-            document.getElementById('print-multi-draw-btn').addEventListener('click', printMultiDrawTicket);
-
-            document.querySelectorAll('.nav-item').forEach(item => {
-                item.addEventListener('click', function() {
-                    showScreen(this.getAttribute('data-screen'));
-                });
-            });
-
-            document.querySelectorAll('.back-button').forEach(btn => {
-                btn.addEventListener('click', () => showScreen(btn.getAttribute('data-screen') || 'home'));
-            });
-
-            document.getElementById('login-btn').addEventListener('click', adminLogin);
-            
-            // Toggle Multi-Tirages
-            document.getElementById('multi-draw-toggle').addEventListener('click', toggleMultiDrawPanel);
-            document.getElementById('add-multi-draw').addEventListener('click', addToMultipleDraws);
-            
-            // Rapports
-            document.getElementById('generate-report-btn').addEventListener('click', generateEndOfDrawReport);
-        }
-
-        // --- GESTION DES RÉSULTATS ET GAGNANTS (LOGIQUE RÉVISÉE) ---
-        
-        async function checkForNewResults() {
+        // 1. GESTION DE LA SESSION (Sans reconnexion)
+        async function checkExistingSession() {
             try {
-                // Simulation d'appel API vers subsystem-admin
-                // const response = await fetch(`${API_BASE_URL}/api/results/latest`);
-                // const results = await response.json();
+                const response = await fetch('/api/auth/verify-token', {
+                    method: 'POST',
+                    credentials: 'include'
+                });
                 
-                // NOTE: Comme je ne peux pas créer le backend, je mets ici la logique
-                // que le frontend exécuterait après avoir reçu les résultats de l'API.
-                
-                // Format attendu de l'API :
-                // {
-                //   draw: "miami", time: "morning", date: "2024-01-01",
-                //   winningNumbers: { first: "123", second: "45", third: "78" }
-                // }
-                
-                // Pour la démo, si pas de backend, on ne fait rien ou on affiche "En attente..."
-                const resultsContainer = document.getElementById('latest-results-container');
-                resultsContainer.innerHTML = `<p>En attente des résultats du serveur...</p>`;
-                
-                // Si on avait des résultats, on lancerait:
-                // checkTicketsAgainstResults(results);
-                
-            } catch (error) {
-                console.error("Erreur récupération résultats:", error);
-            }
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.success) {
+                        currentAdmin = data.user;
+                        document.getElementById('agent-name').textContent = `Agent: ${currentAdmin.name}`;
+                        document.getElementById('loading-screen').style.display = 'none';
+                        document.getElementById('app-container').style.display = 'block';
+                        initApp();
+                        return;
+                    }
+                }
+            } catch (error) { console.error("Session error", error); }
+            window.location.href = '/'; // Si pas de session, retour login
         }
 
-        // Fonction principale de vérification des gains (Appelée par l'écran "Fiche Genyen")
-        function updateWinningTicketsScreen() {
-            const list = document.getElementById('winning-tickets-list');
-            list.innerHTML = '<p>Chargement...</p>';
-            
-            // Récupérer les tickets depuis le "Backend" (ici array local pour démo)
-            const ticketsToCheck = savedTickets; // En prod: await fetch('/api/tickets')
-            
-            // Récupérer les résultats connus
-            // En prod: await fetch('/api/results/all')
-            // Simulation de résultats pour la logique de démonstration
-            const mockResults = {
-                'miami_morning': { first: '123', second: '45', third: '78' },
-                'newyork_evening': { first: '999', second: '11', third: '22' }
-            };
-
-            let winningTicketsHTML = '';
-            let hasWinners = false;
-
-            ticketsToCheck.forEach(ticket => {
-                const resultKey = `${ticket.draw}_${ticket.drawTime}`;
-                const result = mockResults[resultKey];
-
-                if (result) {
-                    const winnings = calculateTicketWinnings(ticket, result);
-                    if (winnings.totalWin > 0) {
-                        hasWinners = true;
-                        winningTicketsHTML += createWinningTicketHTML(ticket, winnings);
-                    }
-                }
-            });
-
-            if (!hasWinners) {
-                list.innerHTML = '<p style="text-align:center; padding:20px;">Okenn fiche ganyen pokò detekte pou rezilta disponib yo.</p>';
-            } else {
-                list.innerHTML = winningTicketsHTML;
-            }
+        // 2. INITIALISATION DONNÉES MONGODB
+        async function initApp() {
+            startClock();
+            fetchDraws();
+            // Vérification périodique des résultats publiés par subsystem-admin
+            setInterval(checkGlobalResults, 10000);
         }
 
-        // --- CŒUR DE LA LOGIQUE DE GAIN ---
-        function calculateTicketWinnings(ticket, result) {
-            let totalWin = 0;
-            let winningBets = [];
-
-            // Extraction des lots (Format: 1er=123, 2e=45, 3e=78)
-            // Pour Borlette, on prend les 2 derniers chiffres
-            const p1_full = result.first;         // "123"
-            const p1 = p1_full.slice(-2);         // "23"
-            const p2 = result.second.slice(-2);   // "45"
-            const p3 = result.third.slice(-2);    // "78"
-
-            ticket.bets.forEach(bet => {
-                let win = 0;
-                let status = 'PEDI';
-
-                // 1. BORLETTE
-                if (bet.type === 'borlette' || bet.type === 'boulpe') {
-                    // Si le numéro joué est 1er lot
-                    if (bet.number === p1) win += bet.amount * 60;
-                    // Si le numéro joué est 2e lot
-                    if (bet.number === p2) win += bet.amount * 20;
-                    // Si le numéro joué est 3e lot
-                    if (bet.number === p3) win += bet.amount * 10;
-                }
-                
-                // 2. LOTTO 3 (Ajout d'un chiffre devant le 1er lot => Résultat complet "123")
-                else if (bet.type === 'lotto3') {
-                    if (bet.number === p1_full) {
-                        win += bet.amount * 500;
-                    }
-                }
-                
-                // 3. MARIAGE (Combinaison de 2 lots parmi les 3)
-                // Formats: "23*45", "23*78", "45*78" (ordre importe peu généralement, mais ici on check strings)
-                else if (bet.type === 'marriage') {
-                    const nums = bet.number.split('*');
-                    const n1 = nums[0];
-                    const n2 = nums[1];
-                    
-                    const lots = [p1, p2, p3];
-                    // Vérifie si n1 et n2 sont dans les lots (indices différents)
-                    // Logique simplifiée: check si la combinaison existe dans les paires gagnantes
-                    const winningPairs = [
-                        [p1, p2], [p2, p1], // 1er + 2e
-                        [p1, p3], [p3, p1], // 1er + 3e
-                        [p2, p3], [p3, p2]  // 2e + 3e
-                    ];
-                    
-                    let isMatch = winningPairs.some(pair => pair[0] === n1 && pair[1] === n2);
-                    if (isMatch) {
-                        win += bet.amount * 1000;
-                    }
-                }
-                
-                // 4. LOTTO 4 (Généralement 1er lot + 2e lot, ou spécifié)
-                // Hypothèse: 1er lot (2chif) + 2e lot (2chif)
-                else if (bet.type === 'lotto4') {
-                    const target = `${p1}*${p2}`; // Ex: 23*45
-                    if (bet.number === target) {
-                        win += bet.amount * 5000;
-                    }
-                }
-
-                // 5. LOTTO 5 (1er lot complet 3chif + 2e lot 2chif)
-                else if (bet.type === 'lotto5') {
-                    const target = `${p1_full}*${p2}`; // Ex: 123*45
-                    if (bet.number === target) {
-                        win += bet.amount * 25000;
-                    }
-                }
-
-                if (win > 0) {
-                    status = `GANYEN: ${win} G`;
-                    totalWin += win;
-                    winningBets.push({ ...bet, winAmount: win });
-                }
-            });
-
-            return { totalWin, winningBets };
+        async function fetchDraws() {
+            const res = await fetch('/api/draws/active');
+            const draws = await res.json();
+            const list = document.getElementById('draw-list');
+            list.innerHTML = draws.map(d => `
+                <div class="draw-chip btn-animate" onclick="selectDraw('${d._id}', this)">${d.name}</div>
+            `).join('');
         }
 
-        function createWinningTicketHTML(ticket, winnings) {
-            return `
-            <div class="history-item winning-notification-card">
-                <div class="history-header">
-                    <span class="history-draw">Fiche #${String(ticket.number).padStart(6, '0')}</span>
-                    <span class="history-date" style="color:var(--success-color); font-weight:bold;">TOTAL GANYEN: ${winnings.totalWin} G</span>
+        function startClock() {
+            setInterval(() => {
+                document.getElementById('live-clock').textContent = new Date().toLocaleTimeString();
+            }, 1000);
+        }
+
+        // 3. LOGIQUE DES JEUX ET PARIS
+        function setGame(game) {
+            selectedGame = game;
+            document.querySelectorAll('.game-btn').forEach(b => b.classList.remove('active'));
+            event.target.classList.add('active');
+        }
+
+        function addNum(n) {
+            const input = document.activeElement.tagName === 'INPUT' ? document.activeElement : document.getElementById('num-input');
+            input.value += n;
+        }
+
+        function addBet() {
+            const num = document.getElementById('num-input').value;
+            const amt = document.getElementById('amount-input').value;
+            if(!num || !amt) return;
+
+            bets.push({ game: selectedGame, numbers: num, amount: parseInt(amt) });
+            updateBetDisplay();
+            clearInputs();
+        }
+
+        function updateBetDisplay() {
+            const container = document.getElementById('current-bets');
+            container.innerHTML = bets.map((b, i) => `
+                <div class="bet-row">
+                    <span><b>${b.game.toUpperCase()}</b>: ${b.numbers}</span>
+                    <span>${b.amount} HTG <i class="fas fa-times" style="color:red" onclick="removeBet(${i})"></i></span>
                 </div>
-                <div class="history-bets">
-                    ${winnings.winningBets.map(bet => `
-                        <div class="history-bet">
-                            <span>${bet.name}: ${bet.number}</span>
-                            <span style="color:var(--success-color); font-weight:bold;">+${bet.winAmount} G</span>
-                        </div>
-                    `).join('')}
-                </div>
-                <div style="text-align:center; margin-top:5px;">
-                    <button class="btn-primary" style="padding:5px 10px; font-size:0.8rem;" onclick="markPaid('${ticket.id}')">Peye Kliyan</button>
-                </div>
-            </div>`;
+            `).join('');
         }
 
-        // --- FONCTIONS SYSTÈME ET UI ---
-
-        function adminLogin() {
-            const u = document.getElementById('admin-username').value;
-            const p = document.getElementById('admin-password').value;
-            // Appel API réel pour login
-            // fetch(`${API_BASE_URL}/api/auth/login`)...
+        // 4. LOGIQUE DES GAGNANTS (MODIFIÉE)
+        async function checkGlobalResults() {
+            const res = await fetch('/api/results/latest');
+            const results = await res.json();
             
-            // Fallback démo
-            if(u === 'admin' && p === 'admin') {
-                currentAdmin = { name: "Admin Principal", id: 1 };
-                document.getElementById('login-screen').style.display = 'none';
-                document.getElementById('main-container').style.display = 'block';
-                document.getElementById('bottom-nav').style.display = 'flex';
-                document.getElementById('sync-status').style.display = 'flex';
-                document.getElementById('admin-panel').style.display = 'block';
-            } else {
-                document.getElementById('login-error').style.display = 'block';
-            }
+            // On vérifie les tickets locaux contre les résultats MongoDB
+            const myTickets = await (await fetch('/api/tickets/my-active')).json();
+
+            myTickets.forEach(ticket => {
+                const match = results.find(r => r.drawId === ticket.drawId);
+                if (match) {
+                    let winTotal = 0;
+                    const res1 = match.first.toString(); // ex: "123"
+                    const last2 = res1.slice(-2); // ex: "23"
+
+                    ticket.bets.forEach(bet => {
+                        // Lotto 3 : compare le chiffre complet (123)
+                        if (bet.game === 'lotto3' && bet.numbers === res1) {
+                            winTotal += bet.amount * WIN_MULT.first;
+                        }
+                        // Bolette : compare les 2 derniers du 1er lot, ou 2e et 3e lot
+                        if (bet.numbers === last2) winTotal += bet.amount * WIN_MULT.first;
+                        if (bet.numbers === match.second) winTotal += bet.amount * WIN_MULT.second;
+                        if (bet.numbers === match.third) winTotal += bet.amount * WIN_MULT.third;
+
+                        // Mariage & Loto 4/5 (Logique d'accumulation)
+                        if (bet.game === 'mariage' || bet.game === 'lotto4') {
+                            // Si les combinaisons sont dans [last2, match.second, match.third]
+                            const winners = [last2, match.second, match.third];
+                            const parts = bet.numbers.split(/[x-]/);
+                            if (parts.every(p => winners.includes(p))) {
+                                winTotal += bet.amount * 100; // Multiplicateur exemple
+                            }
+                        }
+                    });
+
+                    if (winTotal > 0) showWinNotif(winTotal);
+                }
+            });
         }
 
-        function toggleMultiDrawPanel() {
-            const content = document.getElementById('multi-draw-content');
-            const toggleBtn = document.getElementById('multi-draw-toggle');
-            content.classList.toggle('expanded');
-            toggleBtn.innerHTML = content.classList.contains('expanded') ? '<i class="fas fa-chevron-up"></i>' : '<i class="fas fa-chevron-down"></i>';
+        function showWinNotif(amt) {
+            const el = document.getElementById('gain-notif');
+            el.innerHTML = `<i class="fas fa-trophy"></i> GAGNÉ: ${amt} HTG !`;
+            el.style.display = 'block';
+            setTimeout(() => el.style.display = 'none', 10000);
         }
 
-        function initMultiDrawPanel() {
-            const container = document.getElementById('multi-draw-options');
-            const gameSelect = document.getElementById('multi-game-select');
+        // 5. IMPRESSION MULTI-TIRAGES
+        async function printMultiTickets() {
+            const res = await fetch('/api/tickets/active-today');
+            const tickets = await res.json();
             
-            // Options Tirages
-            Object.keys(draws).forEach(key => {
-                const div = document.createElement('div');
-                div.className = 'multi-draw-option';
-                div.textContent = draws[key].name;
-                div.onclick = () => {
-                    div.classList.toggle('selected');
-                    if(div.classList.contains('selected')) selectedMultiDraws.add(key);
-                    else selectedMultiDraws.delete(key);
-                };
-                container.appendChild(div);
+            let html = `<div style="font-family:monospace; padding:20px; text-align:center;">
+                <h2>LOTATO - MULTI TIRAGES</h2>
+                <p>Agent: ${currentAdmin.name}</p><hr>`;
+            
+            tickets.forEach(t => {
+                html += `<div style="text-align:left; margin-bottom:10px;">
+                    <b>Tirage: ${t.drawName}</b><br>`;
+                t.bets.forEach(b => {
+                    html += `<span>${b.game}: ${b.numbers} ... ${b.amount}HTG</span><br>`;
+                });
+                html += `</div>`;
             });
             
-            // Options Jeux (Simplifié pour l'exemple)
-            ['borlette', 'lotto3', 'marriage'].forEach(g => {
-                const div = document.createElement('div');
-                div.className = 'multi-game-option';
-                div.textContent = betTypes[g].name;
-                div.onclick = () => {
-                    document.querySelectorAll('.multi-game-option').forEach(el => el.classList.remove('selected'));
-                    div.classList.add('selected');
-                    selectedMultiGame = g;
-                    updateMultiGameInputs(g);
-                };
-                gameSelect.appendChild(div);
-            });
+            html += `<hr><p>Merci de votre confiance !</p></div>`;
             
-            updateMultiGameInputs('borlette');
+            const area = document.getElementById('print-area');
+            area.innerHTML = html;
+            window.print();
         }
 
-        function updateMultiGameInputs(game) {
-            const container = document.getElementById('multi-number-inputs');
-            if(game === 'borlette') container.innerHTML = '<input type="text" id="multi-num" placeholder="Nimewo (2 chif)" maxlength="2">';
-            else if(game === 'lotto3') container.innerHTML = '<input type="text" id="multi-num" placeholder="Nimewo (3 chif)" maxlength="3">';
-            else if(game === 'marriage') container.innerHTML = '<div class="number-inputs"><input type="text" id="m1" placeholder="00"><input type="text" id="m2" placeholder="00"></div>';
+        // Utilitaires
+        function clearInputs() {
+            document.getElementById('num-input').value = '';
+            document.getElementById('amount-input').value = '';
         }
 
-        function addToMultipleDraws() {
-            if(selectedMultiDraws.size === 0) return alert("Chwazi omwen yon tiraj");
-            
-            // Logique d'ajout...
-            // Note: Pour l'impression multi-tirage, on marque ces paris
-            const amount = document.getElementById('multi-draw-amount').value;
-            // (Simplification: ajout aux paris actifs)
-            // Dans un vrai cas, on boucle sur selectedMultiDraws
-            
-            // Activation du bouton d'impression spécifique
-            document.getElementById('print-multi-draw-btn').style.display = 'block';
-            document.getElementById('save-print-ticket').style.display = 'none'; // Cache le bouton standard
-            
-            alert("Paris multi-tirages ajoutés au panier. Utilisez le bouton 'Imprimer Multi-Tirages'.");
-        }
-
-        // --- IMPRESSION MULTI-TIRAGES ---
-        function printMultiDrawTicket() {
-            // Logique d'impression groupée
-            // On génère un reçu qui liste les tirages concernés en en-tête ou par section
-            const printContent = document.createElement('div');
-            printContent.className = 'print-ticket';
-            
-            let drawsList = Array.from(selectedMultiDraws).map(d => draws[d].name).join(', ');
-            
-            printContent.innerHTML = `
-                <div style="text-align: center; padding: 20px; border: 2px solid #000; font-family: Arial;">
-                    <h2>${companyInfo.name}</h2>
-                    <p>MULTI-TIRAGES</p>
-                    <p><strong>Tirages:</strong> ${drawsList}</p>
-                    <hr>
-                    <p>Détails des paris...</p>
-                    </div>
-            `;
-            
-            triggerPrint(printContent);
-        }
-
-        function triggerPrint(content) {
-            const win = window.open('', '_blank');
-            win.document.write('<html><head><title>Print</title></head><body>' + content.innerHTML + '</body></html>');
-            win.document.close();
-            win.print();
-        }
-
-        async function saveAndPrintTicket() {
-            // Remplacement localStorage par fetch
-            const ticketData = {
-                draw: currentDraw,
-                bets: activeBets,
-                total: activeBets.reduce((a,b)=>a+b.amount,0),
-                agent: currentAdmin ? currentAdmin.id : null,
-                timestamp: new Date()
-            };
-
-            try {
-                // await fetch(`${API_BASE_URL}/api/tickets/create`, {
-                //     method: 'POST',
-                //     body: JSON.stringify(ticketData)
-                // });
-                
-                // Pour le fonctionnement sans backend immédiat :
-                ticketData.id = Date.now().toString();
-                ticketData.number = ticketNumber++;
-                savedTickets.push(ticketData); // Sauvegarde mémoire
-                
-                // Impression standard
-                const printContent = document.createElement('div');
-                printContent.innerHTML = `
-                    <div style="text-align: center; border: 1px solid black; padding: 10px;">
-                        <h3>${companyInfo.name}</h3>
-                        <p>Ticket #${ticketData.number}</p>
-                        <p>Draw: ${draws[currentDraw].name}</p>
-                        <hr>
-                        ${activeBets.map(b => `<div>${b.name} ${b.number} : ${b.amount} G</div>`).join('')}
-                        <hr>
-                        <strong>Total: ${ticketData.total} G</strong>
-                    </div>
-                `;
-                triggerPrint(printContent);
-                
-                activeBets = [];
-                document.getElementById('bets-list').innerHTML = '';
-                closeBettingScreen();
-                
-            } catch(e) {
-                alert("Erreur de connexion au serveur MongoDB");
-            }
-        }
-
-        // Fonctions utilitaires standards
-        function updateCurrentTime() {
-            const now = new Date();
-            document.getElementById('current-time').textContent = now.toLocaleDateString('fr-FR') + ' - ' + now.toLocaleTimeString('fr-FR');
-        }
-        
-        function openBettingScreen(drawId, time) {
-            currentDraw = drawId;
-            currentDrawTime = time;
-            document.getElementById('betting-title').textContent = `${draws[drawId].name} (${time})`;
-            document.getElementById('betting-screen').style.display = 'block';
-            document.querySelector('.container').style.display = 'none';
-            // Reset UI
-            document.getElementById('print-multi-draw-btn').style.display = 'none';
-            document.getElementById('save-print-ticket').style.display = 'block';
-        }
-        
-        function closeBettingScreen() {
-            document.getElementById('betting-screen').style.display = 'none';
-            document.querySelector('.container').style.display = 'block';
-        }
-        
-        // Fonction de vérification de session existante
-async function checkExistingSession() {
-    try {
-        const response = await fetch('/api/auth/verify-token', {
-            method: 'POST',
-            credentials: 'include'
-        });
-        
-        if (response.ok) {
-            const data = await response.json();
-            if (data.success) {
-                currentAdmin = data.user;
-                localStorage.setItem('lotatoAgent', JSON.stringify(currentAdmin));
-                showMainApp();
-                return;
-            }
-        }
-    } catch (error) {
-        console.error("Session check error:", error);
-    }
-    
-    // Si pas connecté, montrer l'écran de login
-    document.getElementById('login-screen').style.display = 'flex';
-}
-
-        // Génération rapport (inchangée visuellement, mais données devraient venir de la BD)
-        function generateEndOfDrawReport() {
-            document.getElementById('main-container').style.display = 'none';
-            document.getElementById('report-screen').style.display = 'block';
-            document.getElementById('report-content').innerHTML = "<p>Génération du rapport depuis la base de données...</p>";
-        }
-
+        document.addEventListener('DOMContentLoaded', checkExistingSession);
     </script>
 </body>
 </html>

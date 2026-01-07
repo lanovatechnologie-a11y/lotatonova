@@ -2,6 +2,7 @@ const express = require('express');
 const mongoose = require('mongoose');
 const path = require('path');
 const compression = require('compression');
+const cookieParser = require('cookie-parser');
 
 const app = express();
 
@@ -16,6 +17,9 @@ app.use(compression({
         return compression.filter(req, res);
     }
 }));
+
+// Middleware pour les cookies
+app.use(cookieParser());
 
 // Middleware standard
 app.use(express.json());
@@ -77,7 +81,7 @@ app.post('/api/auth/login', async (req, res) => {
             });
         }
 
-        // Vérifier le niveau si nécessaire (pour superviseurs)
+        // Vérifier le niveau si nécessaire
         if ((role === 'supervisor1' || role === 'supervisor2') && user.level !== level) {
             return res.status(401).json({
                 success: false,
@@ -86,7 +90,7 @@ app.post('/api/auth/login', async (req, res) => {
         }
 
         // Générer un token
-        const token = `nova_${Date.now()}_${user._id}_${user.role}`;
+        const token = `nova_${Date.now()}_${user._id}_${user.role}_${user.level}`;
 
         // Déterminer la redirection en fonction du rôle exact
         let redirectUrl;
@@ -109,6 +113,15 @@ app.post('/api/auth/login', async (req, res) => {
             default:
                 redirectUrl = '/';
         }
+
+        // Définir un cookie HttpOnly sécurisé
+        res.cookie('nova_token', token, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            maxAge: 24 * 60 * 60 * 1000, // 1 jour
+            sameSite: 'strict',
+            path: '/'
+        });
 
         res.json({
             success: true,
@@ -135,16 +148,24 @@ app.post('/api/auth/login', async (req, res) => {
 app.post('/api/auth/verify-token', async (req, res) => {
     try {
         const authHeader = req.headers['authorization'];
-        if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        let token = null;
+
+        if (authHeader && authHeader.startsWith('Bearer ')) {
+            token = authHeader.substring(7);
+        }
+
+        // Vérifier aussi le cookie
+        if (!token && req.cookies.nova_token) {
+            token = req.cookies.nova_token;
+        }
+
+        if (!token) {
             return res.status(401).json({ 
                 success: false, 
                 error: 'Token non fourni' 
             });
         }
-
-        const token = authHeader.substring(7);
         
-        // Vérifier la structure du token
         if (!token.startsWith('nova_')) {
             return res.status(401).json({ 
                 success: false, 
@@ -152,7 +173,6 @@ app.post('/api/auth/verify-token', async (req, res) => {
             });
         }
 
-        // Extraire l'ID utilisateur du token
         const parts = token.split('_');
         if (parts.length < 3) {
             return res.status(401).json({ 
@@ -193,7 +213,6 @@ app.post('/api/auth/verify-token', async (req, res) => {
                 redirectUrl = '/';
         }
 
-        // Token valide
         res.json({ 
             success: true, 
             redirectUrl: redirectUrl,
@@ -213,44 +232,55 @@ app.post('/api/auth/verify-token', async (req, res) => {
     }
 });
 
-// === MIDDLWARE DE VÉRIFICATION DE TOKEN ===
+// === MIDDLEWARE DE VÉRIFICATION DE TOKEN ===
 function verifierToken(req, res, next) {
     let token = null;
 
-    // 1. Vérifier l'en-tête Authorization
-    const authHeader = req.headers['authorization'];
-    if (authHeader && authHeader.startsWith('Bearer ')) {
-        token = authHeader.substring(7);
+    // 1. Vérifier le cookie
+    if (req.cookies.nova_token) {
+        token = req.cookies.nova_token;
     }
 
-    // 2. Vérifier le paramètre d'URL
+    // 2. Vérifier l'en-tête Authorization
+    if (!token) {
+        const authHeader = req.headers['authorization'];
+        if (authHeader && authHeader.startsWith('Bearer ')) {
+            token = authHeader.substring(7);
+        }
+    }
+
+    // 3. Vérifier le paramètre d'URL
     if (!token) {
         token = req.query.token;
     }
 
-    // 3. Vérifier le localStorage côté client (pas possible côté serveur)
-    // Le client doit envoyer le token dans l'en-tête ou l'URL
-
     if (!token || !token.startsWith('nova_')) {
-        // Si c'est une requête HTML, rediriger vers la page de connexion
-        if (req.accepts('html')) {
+        // Vérifier si c'est une requête HTML
+        const accept = req.headers.accept || '';
+        if (accept.includes('html') || req.path.endsWith('.html')) {
             return res.redirect('/');
         }
-        // Sinon, retourner une erreur JSON
         return res.status(401).json({ 
             success: false, 
             error: 'Token manquant ou invalide. Veuillez vous reconnecter.' 
         });
     }
 
-    // Stocker le token dans la requête pour une utilisation ultérieure
     req.token = token;
     next();
 }
 
-// === ROUTES API AVEC COMPRESSION ===
+// === ROUTE DE DÉCONNEXION ===
+app.post('/api/auth/logout', (req, res) => {
+    res.clearCookie('nova_token');
+    res.json({ 
+        success: true, 
+        message: 'Déconnexion réussie' 
+    });
+});
 
-// Route pour les statistiques du système
+// === ROUTES API ===
+
 app.get('/api/system/stats', verifierToken, async (req, res) => {
     try {
         const stats = {
@@ -271,20 +301,6 @@ app.get('/api/system/stats', verifierToken, async (req, res) => {
     }
 });
 
-// Route pour les activités récentes
-app.get('/api/activities/recent', verifierToken, async (req, res) => {
-    try {
-        const activities = [];
-        res.json({ success: true, activities });
-    } catch (error) {
-        res.status(500).json({ 
-            success: false, 
-            error: 'Erreur lors du chargement des activités' 
-        });
-    }
-});
-
-// Route pour les agents
 app.get('/api/agents', verifierToken, async (req, res) => {
     try {
         const agents = await User.find({ role: 'agent' });
@@ -297,7 +313,6 @@ app.get('/api/agents', verifierToken, async (req, res) => {
     }
 });
 
-// Route pour créer un agent
 app.post('/api/agents/create', verifierToken, async (req, res) => {
     try {
         const { username, password, role, level } = req.body;
@@ -321,115 +336,35 @@ app.post('/api/agents/create', verifierToken, async (req, res) => {
     }
 });
 
-// Route pour les tickets
-app.get('/api/tickets', verifierToken, async (req, res) => {
-    try {
-        const tickets = [];
-        res.json({ success: true, tickets });
-    } catch (error) {
-        res.status(500).json({ 
-            success: false, 
-            error: 'Erreur lors du chargement des tickets' 
-        });
-    }
-});
+// === ROUTES HTML ===
 
-// Route pour les rapports
-app.get('/api/reports/generate', verifierToken, async (req, res) => {
-    try {
-        const { period } = req.query;
-        const report = {
-            period: period,
-            monthlyPerformance: 85,
-            ticketResolution: 92,
-            activeAgents: await User.countDocuments({ role: 'agent' }),
-            pendingTickets: 5
-        };
-        res.json({ success: true, report });
-    } catch (error) {
-        res.status(500).json({ 
-            success: false, 
-            error: 'Erreur lors de la génération du rapport' 
-        });
-    }
-});
-
-// Route pour les paramètres
-app.post('/api/system/settings', verifierToken, async (req, res) => {
-    try {
-        res.json({ 
-            success: true, 
-            message: 'Paramètres sauvegardés avec succès' 
-        });
-    } catch (error) {
-        res.status(500).json({ 
-            success: false, 
-            error: 'Erreur lors de la sauvegarde des paramètres' 
-        });
-    }
-});
-
-// === ROUTES HTML AVEC COMPRESSION ===
-const fs = require('fs');
-
-// 1. Page principale
+// Page principale
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'));
 });
 
-// 2. Sous-système (subsystem-admin.html)
-app.get('/subsystem-admin.html', verifierToken, (req, res) => {
-    res.sendFile(path.join(__dirname, 'subsystem-admin.html'));
-});
+// Pages protégées avec vérification de token
+const protectedPages = [
+    '/control-level1.html',
+    '/control-level2.html',
+    '/master-dashboard.html',
+    '/subsystem-admin.html',
+    '/lotato.html'
+];
 
-// 3. Autres pages avec contrôle token
-app.get('/control-level1.html', verifierToken, (req, res) => {
-    res.sendFile(path.join(__dirname, 'control-level1.html'));
-});
-
-app.get('/control-level2.html', verifierToken, (req, res) => {
-    res.sendFile(path.join(__dirname, 'control-level2.html'));
-});
-
-app.get('/master-dashboard.html', verifierToken, (req, res) => {
-    res.sendFile(path.join(__dirname, 'master-dashboard.html'));
-});
-
-app.get('/lotato.html', verifierToken, (req, res) => {
-    res.sendFile(path.join(__dirname, 'lotato.html'));
-});
-
-// Page de secours si superviseur-control.html existe
-app.get('/supervisor-control.html', verifierToken, (req, res) => {
-    // Vérifier si le fichier existe
-    const filePath = path.join(__dirname, 'supervisor-control.html');
-    fs.access(filePath, fs.constants.F_OK, (err) => {
-        if (err) {
-            return res.status(404).send('Page non trouvée');
-        }
-        res.sendFile(filePath);
+protectedPages.forEach(page => {
+    app.get(page, verifierToken, (req, res) => {
+        res.sendFile(path.join(__dirname, page));
     });
 });
 
 // === MIDDLEWARE DE GESTION D'ERREURS ===
 app.use((err, req, res, next) => {
     console.error('Erreur serveur:', err);
-    if (req.accepts('html')) {
-        res.status(500).send(`
-            <html>
-                <body>
-                    <h1>Erreur serveur</h1>
-                    <p>Une erreur interne est survenue. Veuillez réessayer.</p>
-                    <a href="/">Retour à la page de connexion</a>
-                </body>
-            </html>
-        `);
-    } else {
-        res.status(500).json({
-            success: false,
-            error: 'Erreur serveur interne'
-        });
-    }
+    res.status(500).json({
+        success: false,
+        error: 'Erreur serveur interne'
+    });
 });
 
 // === DÉMARRAGE DU SERVEUR ===
@@ -437,6 +372,6 @@ const PORT = process.env.PORT || 10000;
 app.listen(PORT, () => {
     console.log(`🚀 Serveur démarré sur le port ${PORT}`);
     console.log(`📁 Compression GZIP activée`);
-    console.log(`⚡ Application optimisée pour la performance`);
-    console.log(`👥 Rôles supportés: agent, supervisor1, supervisor2, subsystem, master`);
+    console.log(`🍪 Cookie-parser activé`);
+    console.log(`🔐 Authentification par cookies HttpOnly`);
 });

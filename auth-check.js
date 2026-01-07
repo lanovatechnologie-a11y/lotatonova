@@ -11,11 +11,14 @@ async function checkAuthStatus() {
     try {
         const response = await fetch('/api/auth/verify-token', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            // Le cookie sera envoyé automatiquement par le navigateur
+            credentials: 'include'
         });
+        
+        if (!response.ok) {
+            // Rediriger vers la page de connexion
+            window.location.href = '/';
+            return;
+        }
         
         const data = await response.json();
         
@@ -32,7 +35,10 @@ async function checkAuthStatus() {
 // Fonction de déconnexion
 async function logout() {
     try {
-        await fetch('/api/auth/logout', { method: 'POST' });
+        await fetch('/api/auth/logout', { 
+            method: 'POST',
+            credentials: 'include'
+        });
     } catch (error) {
         console.error('Erreur déconnexion:', error);
     }

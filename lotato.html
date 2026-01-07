@@ -2289,19 +2289,30 @@
         });
         
         // Vérifier session existante
-        function checkExistingSession() {
-            const savedAdmin = localStorage.getItem('lotatoAgent');
-            if (savedAdmin) {
-                try {
-                    currentAdmin = JSON.parse(savedAdmin);
-                    showMainApp();
-                    showNotification(`Byenveni ${currentAdmin.name}`, "success");
-                } catch (e) {
-                    console.error("Erreur parsing admin:", e);
-                    localStorage.removeItem('lotatoAgent');
-                }
+        // Fonction de vérification de session existante
+async function checkExistingSession() {
+    try {
+        const response = await fetch('/api/auth/verify-token', {
+            method: 'POST',
+            credentials: 'include'
+        });
+        
+        if (response.ok) {
+            const data = await response.json();
+            if (data.success) {
+                currentAdmin = data.user;
+                localStorage.setItem('lotatoAgent', JSON.stringify(currentAdmin));
+                showMainApp();
+                return;
             }
         }
+    } catch (error) {
+        console.error("Session check error:", error);
+    }
+    
+    // Si pas connecté, montrer l'écran de login
+    document.getElementById('login-screen').style.display = 'flex';
+}
         
         // Connexion administrateur
         async function adminLogin() {

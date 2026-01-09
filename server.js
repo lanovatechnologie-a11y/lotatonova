@@ -1,3 +1,4 @@
+
 const express = require('express');
 const mongoose = require('mongoose');
 const path = require('path');
@@ -56,6 +57,114 @@ const userSchema = new mongoose.Schema({
 });
 
 const User = mongoose.model('User', userSchema);
+
+// === NOUVEAU: Schémas pour les données LOTATO ===
+
+// Schéma pour les tirages
+const drawSchema = new mongoose.Schema({
+  drawId: { type: String, required: true, unique: true },
+  name: { type: String, required: true },
+  times: {
+    morning: { type: String, required: true },
+    evening: { type: String, required: true }
+  },
+  enabled: { type: Boolean, default: true }
+});
+
+const Draw = mongoose.model('Draw', drawSchema);
+
+// Schéma pour les types de paris
+const betTypeSchema = new mongoose.Schema({
+  gameId: { type: String, required: true, unique: true },
+  name: { type: String, required: true },
+  multiplier: { type: Number, required: true },
+  multiplier2: { type: Number },
+  multiplier3: { type: Number },
+  icon: { type: String },
+  description: { type: String },
+  category: { type: String, enum: ['borlette', 'lotto', 'special'], default: 'special' }
+});
+
+const BetType = mongoose.model('BetType', betTypeSchema);
+
+// Schéma pour les résultats
+const resultSchema = new mongoose.Schema({
+  drawId: { type: String, required: true },
+  date: { type: Date, required: true },
+  time: { type: String, enum: ['morning', 'evening'], required: true },
+  lot1: { type: String, required: true },
+  lot2: { type: String },
+  lot3: { type: String }
+});
+
+const Result = mongoose.model('Result', resultSchema);
+
+// Schéma pour les fiches (tickets)
+const ticketSchema = new mongoose.Schema({
+  ticketNumber: { type: String, required: true, unique: true },
+  drawId: { type: String, required: true },
+  drawTime: { type: String, required: true },
+  agentId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  agentName: { type: String, required: true },
+  bets: [{
+    type: { type: String, required: true },
+    name: { type: String, required: true },
+    number: { type: String, required: true },
+    amount: { type: Number, required: true },
+    multiplier: { type: Number, required: true },
+    options: {
+      option1: { type: Boolean },
+      option2: { type: Boolean },
+      option3: { type: Boolean }
+    },
+    perOptionAmount: { type: Number },
+    isAuto: { type: Boolean, default: false },
+    isGroup: { type: Boolean, default: false },
+    details: [{
+      number: String,
+      amount: Number
+    }]
+  }],
+  totalAmount: { type: Number, required: true },
+  isMultiDraw: { type: Boolean, default: false },
+  multiDraws: [{ type: String }],
+  createdAt: { type: Date, default: Date.now },
+  synced: { type: Boolean, default: false }
+});
+
+const Ticket = mongoose.model('Ticket', ticketSchema);
+
+// Schéma pour les fiches multi-tirages
+const multiDrawTicketSchema = new mongoose.Schema({
+  ticketNumber: { type: String, required: true, unique: true },
+  draws: [{ type: String, required: true }],
+  agentId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  agentName: { type: String, required: true },
+  bets: [{
+    gameType: { type: String, required: true },
+    name: { type: String, required: true },
+    number: { type: String, required: true },
+    amount: { type: Number, required: true },
+    multiplier: { type: Number, required: true },
+    draws: [{ type: String }]
+  }],
+  totalAmount: { type: Number, required: true },
+  createdAt: { type: Date, default: Date.now }
+});
+
+const MultiDrawTicket = mongoose.model('MultiDrawTicket', multiDrawTicketSchema);
+
+// Schéma pour les informations de l'entreprise
+const companyInfoSchema = new mongoose.Schema({
+  name: { type: String, required: true },
+  phone: { type: String, required: true },
+  address: { type: String, required: true },
+  reportTitle: { type: String, required: true },
+  reportPhone: { type: String, required: true },
+  logo: { type: String }
+});
+
+const CompanyInfo = mongoose.model('CompanyInfo', companyInfoSchema);
 
 // === ROUTE DE CONNEXION ===
 app.post('/api/auth/login', async (req, res) => {
@@ -135,6 +244,362 @@ function vérifierToken(req, res, next) {
   // Ne vérifie pas le token en détail pour garder le système léger
   next();
 }
+
+// === NOUVEAUX ENDPOINTS POUR LOTATO ===
+
+// 1. Endpoint de santé
+app.get('/api/health', (req, res) => {
+  res.json({ 
+    success: true, 
+    status: 'online', 
+    timestamp: new Date().toISOString(),
+    database: db.readyState === 1 ? 'connected' : 'disconnected'
+  });
+});
+
+// 2. Endpoint pour les tirages
+app.get('/api/draws', async (req, res) => {
+  try {
+    const draws = await Draw.find({ enabled: true });
+    res.json({ 
+      success: true, 
+      draws: draws.map(draw => ({
+        drawId: draw.drawId,
+        name: draw.name,
+        times: draw.times,
+        enabled: draw.enabled
+      }))
+    });
+  } catch (error) {
+    res.status(500).json({ 
+      success: false, 
+      error: 'Erreur lors du chargement des tirages' 
+    });
+  }
+});
+
+// 3. Endpoint pour les types de paris
+app.get('/api/bet-types', async (req, res) => {
+  try {
+    const betTypes = await BetType.find({});
+    res.json({ 
+      success: true, 
+      betTypes: betTypes.map(betType => ({
+        gameId: betType.gameId,
+        name: betType.name,
+        multiplier: betType.multiplier,
+        multiplier2: betType.multiplier2,
+        multiplier3: betType.multiplier3,
+        icon: betType.icon,
+        description: betType.description,
+        category: betType.category
+      }))
+    });
+  } catch (error) {
+    res.status(500).json({ 
+      success: false, 
+      error: 'Erreur lors du chargement des types de paris' 
+    });
+  }
+});
+
+// 4. Endpoint pour les résultats
+app.get('/api/results', async (req, res) => {
+  try {
+    const { drawId, date, time } = req.query;
+    let query = {};
+    
+    if (drawId) query.drawId = drawId;
+    if (date) query.date = new Date(date);
+    if (time) query.time = time;
+    
+    const results = await Result.find(query).sort({ date: -1 }).limit(50);
+    
+    res.json({ 
+      success: true, 
+      results: results.map(result => ({
+        drawId: result.drawId,
+        date: result.date,
+        time: result.time,
+        lot1: result.lot1,
+        lot2: result.lot2,
+        lot3: result.lot3
+      }))
+    });
+  } catch (error) {
+    res.status(500).json({ 
+      success: false, 
+      error: 'Erreur lors du chargement des résultats' 
+    });
+  }
+});
+
+// 5. Endpoint pour les derniers résultats
+app.get('/api/results/latest', async (req, res) => {
+  try {
+    const latestResults = await Result.aggregate([
+      {
+        $sort: { date: -1 }
+      },
+      {
+        $group: {
+          _id: { drawId: "$drawId", time: "$time" },
+          date: { $first: "$date" },
+          lot1: { $first: "$lot1" },
+          lot2: { $first: "$lot2" },
+          lot3: { $first: "$lot3" }
+        }
+      }
+    ]);
+    
+    // Organiser les résultats par tirage
+    const organizedResults = {};
+    latestResults.forEach(result => {
+      const drawId = result._id.drawId;
+      if (!organizedResults[drawId]) {
+        organizedResults[drawId] = {};
+      }
+      
+      if (result._id.time === 'morning') {
+        organizedResults[drawId].morning = {
+          date: result.date,
+          lot1: result.lot1,
+          lot2: result.lot2,
+          lot3: result.lot3
+        };
+      } else if (result._id.time === 'evening') {
+        organizedResults[drawId].evening = {
+          date: result.date,
+          lot1: result.lot1,
+          lot2: result.lot2,
+          lot3: result.lot3
+        };
+      }
+    });
+    
+    res.json({ 
+      success: true, 
+      results: organizedResults
+    });
+  } catch (error) {
+    res.status(500).json({ 
+      success: false, 
+      error: 'Erreur lors du chargement des derniers résultats' 
+    });
+  }
+});
+
+// 6. Endpoint pour créer une fiche
+app.post('/api/tickets', vérifierToken, async (req, res) => {
+  try {
+    const { drawId, drawTime, bets, totalAmount, isMultiDraw, multiDraws } = req.body;
+    
+    // Générer un numéro de fiche unique
+    const today = new Date();
+    const dateString = today.toISOString().split('T')[0].replace(/-/g, '');
+    const count = await Ticket.countDocuments({ createdAt: { $gte: today.setHours(0,0,0,0) } });
+    const ticketNumber = `T${dateString}${String(count + 1).padStart(4, '0')}`;
+    
+    // Récupérer l'agent depuis le token (simplifié)
+    const token = req.query.token;
+    const tokenParts = token.split('_');
+    const agentId = tokenParts[2];
+    const user = await User.findById(agentId);
+    
+    const ticket = new Ticket({
+      ticketNumber,
+      drawId,
+      drawTime,
+      agentId: user._id,
+      agentName: user.username,
+      bets,
+      totalAmount,
+      isMultiDraw: isMultiDraw || false,
+      multiDraws: multiDraws || [],
+      createdAt: new Date(),
+      synced: true
+    });
+    
+    await ticket.save();
+    
+    res.json({
+      success: true,
+      message: 'Fiche créée avec succès',
+      ticket: {
+        id: ticket._id,
+        ticketNumber: ticket.ticketNumber,
+        drawId: ticket.drawId,
+        drawTime: ticket.drawTime,
+        totalAmount: ticket.totalAmount,
+        createdAt: ticket.createdAt
+      }
+    });
+  } catch (error) {
+    console.error('Erreur création fiche:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Erreur lors de la création de la fiche'
+    });
+  }
+});
+
+// 7. Endpoint pour les fiches d'un agent
+app.get('/api/tickets/my-tickets', vérifierToken, async (req, res) => {
+  try {
+    const token = req.query.token;
+    const tokenParts = token.split('_');
+    const agentId = tokenParts[2];
+    
+    const tickets = await Ticket.find({ agentId }).sort({ createdAt: -1 }).limit(50);
+    
+    res.json({
+      success: true,
+      tickets: tickets.map(ticket => ({
+        id: ticket._id,
+        ticketNumber: ticket.ticketNumber,
+        drawId: ticket.drawId,
+        drawTime: ticket.drawTime,
+        totalAmount: ticket.totalAmount,
+        createdAt: ticket.createdAt,
+        synced: ticket.synced
+      }))
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: 'Erreur lors du chargement des fiches'
+    });
+  }
+});
+
+// 8. Endpoint pour vérifier les fiches gagnantes
+app.post('/api/tickets/check-winners', vérifierToken, async (req, res) => {
+  try {
+    const { drawId, drawTime, date } = req.body;
+    
+    // Récupérer le résultat du tirage
+    const resultDate = new Date(date);
+    const result = await Result.findOne({
+      drawId,
+      time: drawTime,
+      date: {
+        $gte: resultDate.setHours(0,0,0,0),
+        $lt: resultDate.setHours(23,59,59,999)
+      }
+    });
+    
+    if (!result) {
+      return res.json({
+        success: false,
+        error: 'Aucun résultat trouvé pour ce tirage'
+      });
+    }
+    
+    // Récupérer les fiches pour ce tirage
+    const tickets = await Ticket.find({
+      drawId,
+      drawTime,
+      createdAt: {
+        $gte: resultDate.setHours(0,0,0,0),
+        $lt: resultDate.setHours(23,59,59,999)
+      }
+    });
+    
+    // Simuler la vérification des gagnants
+    // Dans une vraie implémentation, vous auriez une logique complexe
+    const winningTickets = tickets.map(ticket => {
+      const winningBets = [];
+      let totalWinnings = 0;
+      
+      // Logique simplifiée de vérification
+      ticket.bets.forEach(bet => {
+        if (bet.type === 'borlette' || bet.type === 'boulpe') {
+          if (bet.number === result.lot1) {
+            const winAmount = bet.amount * bet.multiplier;
+            winningBets.push({
+              name: bet.name,
+              number: bet.number,
+              winAmount,
+              winType: '1er lot',
+              matchedNumber: result.lot1
+            });
+            totalWinnings += winAmount;
+          }
+        }
+        // Ajouter d'autres logiques de vérification pour les autres types de paris
+      });
+      
+      if (winningBets.length > 0) {
+        return {
+          ticketNumber: ticket.ticketNumber,
+          drawId: ticket.drawId,
+          drawTime: ticket.drawTime,
+          date: ticket.createdAt,
+          winningBets,
+          totalWinnings
+        };
+      }
+      return null;
+    }).filter(ticket => ticket !== null);
+    
+    res.json({
+      success: true,
+      result: {
+        drawId: result.drawId,
+        date: result.date,
+        time: result.time,
+        lot1: result.lot1,
+        lot2: result.lot2,
+        lot3: result.lot3
+      },
+      winningTickets,
+      totalWinningTickets: winningTickets.length,
+      totalWinnings: winningTickets.reduce((sum, ticket) => sum + ticket.totalWinnings, 0)
+    });
+  } catch (error) {
+    console.error('Erreur vérification gagnants:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Erreur lors de la vérification des gagnants'
+    });
+  }
+});
+
+// 9. Endpoint pour les informations de l'entreprise
+app.get('/api/company-info', async (req, res) => {
+  try {
+    let companyInfo = await CompanyInfo.findOne({});
+    
+    if (!companyInfo) {
+      // Créer des informations par défaut
+      companyInfo = new CompanyInfo({
+        name: "Nova Lotto",
+        phone: "+509 32 53 49 58",
+        address: "Cap Haïtien",
+        reportTitle: "Nova Lotto",
+        reportPhone: "40104585"
+      });
+      await companyInfo.save();
+    }
+    
+    res.json({
+      success: true,
+      companyInfo: {
+        name: companyInfo.name,
+        phone: companyInfo.phone,
+        address: companyInfo.address,
+        reportTitle: companyInfo.reportTitle,
+        reportPhone: companyInfo.reportPhone,
+        logo: companyInfo.logo
+      }
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: 'Erreur lors du chargement des informations de l\'entreprise'
+    });
+  }
+});
 
 // === ROUTES API AVEC COMPRESSION ===
 
@@ -287,4 +752,5 @@ app.listen(PORT, () => {
   console.log(`🚀 Serveur démarré sur le port ${PORT}`);
   console.log(`📁 Compression GZIP activée`);
   console.log(`⚡ Application optimisée pour la performance`);
+  console.log(`🎰 LOTATO backend prêt à fonctionner`);
 });

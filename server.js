@@ -24,15 +24,29 @@ app.use(express.static(__dirname));
 // MongoDB Atlas Connection
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb+srv://your_username:your_password@cluster0.mongodb.net/lotato?retryWrites=true&w=majority';
 
+// Configuration de connexion améliorée
 mongoose.connect(MONGODB_URI, {
     useNewUrlParser: true,
     useUnifiedTopology: true,
+    serverSelectionTimeoutMS: 5000, // Timeout après 5 secondes
+    socketTimeoutMS: 45000, // Fermer les sockets après 45s d'inactivité
+}).catch(err => {
+    console.error('❌ MongoDB initial connection error:', err.message);
 });
 
 const db = mongoose.connection;
-db.on('error', console.error.bind(console, '❌ MongoDB connection error:'));
+db.on('error', (error) => {
+    console.error('❌ MongoDB connection error:', error.message);
+    // Ne pas arrêter le serveur si MongoDB échoue
+});
+
 db.once('open', () => {
     console.log('✅ MongoDB Atlas connected successfully');
+});
+
+// Démarrer le serveur même si MongoDB n'est pas connecté
+db.on('disconnected', () => {
+    console.log('⚠️ MongoDB disconnected');
 });
 
 // JWT Secret
@@ -1408,7 +1422,7 @@ app.post('/api/users', requireAuth, async (req, res) => {
         // Créer l'utilisateur
         const user = new User({
             username,
-            password, // Note: Dans un environnement de production, il faudrait hasher le mot de passe
+            password, // MOT DE PASSE EN CLAIR (comme dans votre version originale)
             name,
             role: role || 'agent',
             commissionRate: commissionRate || 10,
@@ -1504,9 +1518,35 @@ app.use((req, res) => {
     res.status(404).json({ success: false, error: 'Endpoint non trouvé' });
 });
 
+// Gestion globale des erreurs
+app.use((err, req, res, next) => {
+    console.error('Global error handler:', err);
+    res.status(500).json({ 
+        success: false, 
+        error: 'Erreur serveur interne',
+        message: process.env.NODE_ENV === 'development' ? err.message : 'Une erreur est survenue'
+    });
+});
+
 // === DÉMARRAGE ===
 const PORT = process.env.PORT || 10000;
-app.listen(PORT, () => {
+const server = app.listen(PORT, '0.0.0.0', () => {
     console.log(`🚀 Serveur LOTATO démarré sur le port ${PORT}`);
     console.log(`🔗 MongoDB: ${mongoose.connection.readyState === 1 ? '✅ Connecté' : '❌ Non connecté'}`);
+    
+    // Vérifier l'état de MongoDB
+    if (mongoose.connection.readyState !== 1) {
+        console.log('⚠️ Attention: MongoDB n\'est pas connecté. Certaines fonctionnalités seront limitées.');
+        console.log('⚠️ Vérifiez votre URI MongoDB dans les variables d\'environnement.');
+    }
+});
+
+// Gérer la fermeture propre
+process.on('SIGTERM', () => {
+    console.log('🛑 SIGTERM reçu. Fermeture propre du serveur...');
+    server.close(() => {
+        console.log('✅ Serveur fermé');
+        mongoose.connection.close();
+        process.exit(0);
+    });
 });

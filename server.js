@@ -4,7 +4,6 @@ const path = require('path');
 const compression = require('compression');
 const cookieParser = require('cookie-parser');
 const cors = require('cors');
-const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 
 const app = express();
@@ -336,7 +335,7 @@ app.post('/api/auth/login', async (req, res) => {
             });
         }
 
-        // Comparer le mot de passe (non hashé dans ce cas pour compatibilité)
+        // Comparer le mot de passe (non hashé pour compatibilité)
         if (user.password !== password) {
             return res.status(401).json({
                 success: false,

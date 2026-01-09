@@ -1,24 +1,16 @@
 {
-  "name": "lotato-system",
+  "name": "nova-lotto-backend",
   "version": "1.0.0",
-  "description": "Système de gestion de loterie LOTATO",
+  "description": "Système de gestion multi-niveaux Nova Lotto",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js",
-    "dev": "nodemon server.js",
-    "init-db": "node init-database.js"
+    "start": "node server.js"
   },
   "dependencies": {
     "express": "^4.18.2",
-    "mongoose": "^7.5.0",
-    "compression": "^1.7.4",
-    "cookie-parser": "^1.4.6",
-    "cors": "^2.8.5"
+    "mongoose": "^8.0.0",
+    "cors": "^2.8.5",
+    "compression": "^1.7.4"
   },
-  "engines": {
-    "node": ">=16.0.0"
-  },
-  "keywords": ["lotato", "lottery", "borlette", "haiti"],
-  "author": "LOTATO Team",
   "license": "MIT"
 }

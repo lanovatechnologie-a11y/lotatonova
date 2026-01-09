@@ -4,21 +4,13 @@ const path = require('path');
 const compression = require('compression');
 const cookieParser = require('cookie-parser');
 const cors = require('cors');
+const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 
 const app = express();
 
-// Middleware de compression GZIP
-app.use(compression({
-    level: 6, // Niveau de compression (1-9, 6 = bon équilibre)
-    threshold: 0, // Compresser même les petites réponses
-    filter: (req, res) => {
-        // Ne pas compresser si l'en-tête x-no-compression est présent
-        if (req.headers['x-no-compression']) return false;
-        return compression.filter(req, res);
-    }
-}));
-
+// Middleware
+app.use(compression());
 app.use(cookieParser());
 app.use(cors({
     origin: ['http://localhost:3000', 'https://lotato-frontend.onrender.com'],
@@ -27,21 +19,8 @@ app.use(cors({
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Fichiers statiques avec cache optimisé pour PWA
-app.use(express.static(__dirname, {
-    setHeaders: (res, filePath) => {
-        // Cache plus long pour les assets statiques
-        if (filePath.endsWith('.js') || filePath.endsWith('.css') || filePath.endsWith('.png') || filePath.endsWith('.jpg')) {
-            res.setHeader('Cache-Control', 'public, max-age=86400'); // 1 jour
-        }
-        // Pas de cache pour les fichiers HTML
-        if (filePath.endsWith('.html')) {
-            res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
-            res.setHeader('Pragma', 'no-cache');
-            res.setHeader('Expires', '0');
-        }
-    }
-}));
+// Fichiers statiques
+app.use(express.static(__dirname));
 
 // MongoDB Atlas Connection
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb+srv://your_username:your_password@cluster0.mongodb.net/lotato?retryWrites=true&w=majority';
@@ -76,7 +55,32 @@ const userSchema = new mongoose.Schema({
     commissionRate: { type: Number, default: 10 }, // Taux de commission en %
     isActive: { type: Boolean, default: true },
     lastLogin: { type: Date },
+    subsystemId: { type: mongoose.Schema.Types.ObjectId, ref: 'Subsystem' },
+    assignedSubsystems: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Subsystem' }],
     createdAt: { type: Date, default: Date.now }
+});
+
+// Schéma sous-système
+const subsystemSchema = new mongoose.Schema({
+    name: { type: String, required: true },
+    code: { type: String, required: true, unique: true }, // Ex: 'pap', 'cap', 'delmas'
+    domain: { type: String, required: true }, // Sous-domaine
+    managerId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+    maxUsers: { type: Number, default: 50 },
+    isActive: { type: Boolean, default: true },
+    config: {
+        openingTime: { type: String, default: '08:00' },
+        closingTime: { type: String, default: '22:00' },
+        allowedGames: { type: [String], default: ['borlette', 'boulpe', 'lotto3', 'lotto4'] },
+        multipliers: {
+            borlette: { type: Number, default: 60 },
+            boulpe: { type: Number, default: 60 },
+            lotto3: { type: Number, default: 500 },
+            lotto4: { type: Number, default: 5000 }
+        }
+    },
+    createdAt: { type: Date, default: Date.now },
+    updatedAt: { type: Date, default: Date.now }
 });
 
 // Schéma tirage (draw)
@@ -124,6 +128,7 @@ const ticketSchema = new mongoose.Schema({
     agentName: { type: String, required: true },
     drawId: { type: String, required: true },
     drawTime: { type: String, required: true },
+    subsystemId: { type: mongoose.Schema.Types.ObjectId, ref: 'Subsystem' },
     bets: [{
         type: { type: String, required: true },
         name: { type: String, required: true },
@@ -158,6 +163,7 @@ const winningTicketSchema = new mongoose.Schema({
     drawId: { type: String, required: true },
     drawTime: { type: String, required: true },
     resultId: { type: mongoose.Schema.Types.ObjectId, ref: 'Result', required: true },
+    subsystemId: { type: mongoose.Schema.Types.ObjectId, ref: 'Subsystem' },
     winningBets: [{
         betIndex: { type: Number, required: true },
         winAmount: { type: Number, required: true },
@@ -190,6 +196,7 @@ const companySchema = new mongoose.Schema({
 // Schéma journal d'activité
 const activityLogSchema = new mongoose.Schema({
     userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+    subsystemId: { type: mongoose.Schema.Types.ObjectId, ref: 'Subsystem' },
     action: { type: String, required: true },
     details: { type: Object },
     ipAddress: { type: String },
@@ -199,6 +206,7 @@ const activityLogSchema = new mongoose.Schema({
 
 // Modèles
 const User = mongoose.model('User', userSchema);
+const Subsystem = mongoose.model('Subsystem', subsystemSchema);
 const Draw = mongoose.model('Draw', drawSchema);
 const Result = mongoose.model('Result', resultSchema);
 const BetType = mongoose.model('BetType', betTypeSchema);
@@ -210,7 +218,10 @@ const ActivityLog = mongoose.model('ActivityLog', activityLogSchema);
 // === MIDDLEWARE D'AUTHENTIFICATION ===
 async function requireAuth(req, res, next) {
     try {
-        const token = req.cookies.nova_token || req.headers.authorization?.split(' ')[1];
+        // Récupérer le token des cookies ou de l'URL
+        const token = req.cookies.nova_token || 
+                     req.headers.authorization?.split(' ')[1] ||
+                     req.query.token;
         
         if (!token) {
             return res.status(401).json({ 
@@ -246,6 +257,42 @@ async function requireAuth(req, res, next) {
     }
 }
 
+// Middleware pour vérifier les permissions de sous-système
+async function requireSubsystemAccess(req, res, next) {
+    try {
+        const user = req.user;
+        const subsystemId = req.params.id || req.body.subsystemId || req.query.subsystemId;
+        
+        // Le master a accès à tout
+        if (user.role === 'master') {
+            return next();
+        }
+        
+        // L'admin de sous-système a accès à son propre sous-système
+        if (user.role === 'subsystem') {
+            if (user.subsystemId && user.subsystemId.toString() === subsystemId) {
+                return next();
+            }
+        }
+        
+        // Vérifier si l'utilisateur a accès via assignedSubsystems
+        if (user.assignedSubsystems && user.assignedSubsystems.some(id => id.toString() === subsystemId)) {
+            return next();
+        }
+        
+        return res.status(403).json({ 
+            success: false, 
+            error: 'Accès interdit à ce sous-système' 
+        });
+    } catch (error) {
+        console.error('Subsystem access error:', error);
+        res.status(500).json({ 
+            success: false, 
+            error: 'Erreur vérification des permissions' 
+        });
+    }
+}
+
 // Middleware de log d'activité
 async function logActivity(req, res, next) {
     const originalSend = res.send;
@@ -253,6 +300,7 @@ async function logActivity(req, res, next) {
         if (req.user) {
             const log = new ActivityLog({
                 userId: req.user._id,
+                subsystemId: req.user.subsystemId,
                 action: `${req.method} ${req.path}`,
                 details: {
                     method: req.method,
@@ -302,7 +350,8 @@ app.post('/api/auth/login', async (req, res) => {
                 userId: user._id,
                 username: user.username,
                 role: user.role,
-                name: user.name
+                name: user.name,
+                subsystemId: user.subsystemId
             }, 
             JWT_SECRET, 
             { expiresIn: '24h' }
@@ -324,7 +373,8 @@ app.post('/api/auth/login', async (req, res) => {
                 username: user.username,
                 name: user.name,
                 role: user.role,
-                commissionRate: user.commissionRate
+                commissionRate: user.commissionRate,
+                subsystemId: user.subsystemId
             },
             token: token
         });
@@ -341,7 +391,9 @@ app.post('/api/auth/login', async (req, res) => {
 // Verify token
 app.post('/api/auth/verify-token', async (req, res) => {
     try {
-        const token = req.cookies.nova_token || req.headers.authorization?.split(' ')[1];
+        const token = req.cookies.nova_token || 
+                     req.headers.authorization?.split(' ')[1] ||
+                     req.query.token;
 
         if (!token) {
             return res.status(401).json({ 
@@ -368,7 +420,8 @@ app.post('/api/auth/verify-token', async (req, res) => {
                 username: user.username, 
                 name: user.name,
                 role: user.role, 
-                commissionRate: user.commissionRate
+                commissionRate: user.commissionRate,
+                subsystemId: user.subsystemId
             } 
         });
 
@@ -388,6 +441,259 @@ app.post('/api/auth/logout', (req, res) => {
         success: true, 
         message: 'Déconnexion réussie' 
     });
+});
+
+// === ROUTES SOUS-SYSTÈMES ===
+
+// Récupérer tous les sous-systèmes (master seulement)
+app.get('/api/subsystems', requireAuth, async (req, res) => {
+    try {
+        if (req.user.role !== 'master') {
+            return res.status(403).json({ 
+                success: false, 
+                error: 'Accès réservé au master' 
+            });
+        }
+        
+        const subsystems = await Subsystem.find({})
+            .populate('managerId', 'name username')
+            .sort({ createdAt: -1 });
+        
+        res.json({ success: true, subsystems });
+    } catch (error) {
+        console.error('Error fetching subsystems:', error);
+        res.status(500).json({ success: false, error: 'Erreur serveur' });
+    }
+});
+
+// Récupérer les sous-systèmes d'un utilisateur
+app.get('/api/subsystems/my-subsystems', requireAuth, async (req, res) => {
+    try {
+        let subsystems = [];
+        
+        if (req.user.role === 'master') {
+            // Le master voit tous les sous-systèmes
+            subsystems = await Subsystem.find({ isActive: true })
+                .populate('managerId', 'name username');
+        } else if (req.user.role === 'subsystem') {
+            // L'admin de sous-système voit son propre sous-système
+            subsystems = await Subsystem.find({ 
+                $or: [
+                    { managerId: req.user._id },
+                    { _id: req.user.subsystemId }
+                ],
+                isActive: true 
+            }).populate('managerId', 'name username');
+        } else if (req.user.assignedSubsystems && req.user.assignedSubsystems.length > 0) {
+            // Les autres voient leurs sous-systèmes assignés
+            subsystems = await Subsystem.find({ 
+                _id: { $in: req.user.assignedSubsystems },
+                isActive: true 
+            }).populate('managerId', 'name username');
+        }
+        
+        res.json({ success: true, subsystems });
+    } catch (error) {
+        console.error('Error fetching user subsystems:', error);
+        res.status(500).json({ success: false, error: 'Erreur serveur' });
+    }
+});
+
+// Récupérer un sous-système par ID
+app.get('/api/subsystems/:id', requireAuth, requireSubsystemAccess, async (req, res) => {
+    try {
+        const subsystem = await Subsystem.findById(req.params.id)
+            .populate('managerId', 'name username email');
+        
+        if (!subsystem) {
+            return res.status(404).json({ 
+                success: false, 
+                error: 'Sous-système non trouvé' 
+            });
+        }
+        
+        res.json({ success: true, subsystem });
+    } catch (error) {
+        console.error('Error fetching subsystem:', error);
+        res.status(500).json({ success: false, error: 'Erreur serveur' });
+    }
+});
+
+// Créer un sous-système (master seulement)
+app.post('/api/subsystems', requireAuth, async (req, res) => {
+    try {
+        if (req.user.role !== 'master') {
+            return res.status(403).json({ 
+                success: false, 
+                error: 'Accès réservé au master' 
+            });
+        }
+        
+        const { name, code, domain, managerId, maxUsers, config } = req.body;
+        
+        // Vérifier si le manager existe
+        const manager = await User.findById(managerId);
+        if (!manager) {
+            return res.status(404).json({ 
+                success: false, 
+                error: 'Manager non trouvé' 
+            });
+        }
+        
+        // Créer le sous-système
+        const subsystem = new Subsystem({
+            name,
+            code,
+            domain,
+            managerId,
+            maxUsers: maxUsers || 50,
+            config: config || {
+                openingTime: '08:00',
+                closingTime: '22:00',
+                allowedGames: ['borlette', 'boulpe', 'lotto3', 'lotto4'],
+                multipliers: {
+                    borlette: 60,
+                    boulpe: 60,
+                    lotto3: 500,
+                    lotto4: 5000
+                }
+            }
+        });
+        
+        await subsystem.save();
+        
+        // Mettre à jour le rôle du manager
+        manager.role = 'subsystem';
+        manager.subsystemId = subsystem._id;
+        await manager.save();
+        
+        res.json({ 
+            success: true, 
+            subsystem,
+            message: 'Sous-système créé avec succès'
+        });
+        
+    } catch (error) {
+        console.error('Error creating subsystem:', error);
+        if (error.code === 11000) {
+            return res.status(400).json({ 
+                success: false, 
+                error: 'Code ou domaine déjà utilisé' 
+            });
+        }
+        res.status(500).json({ success: false, error: 'Erreur serveur' });
+    }
+});
+
+// Mettre à jour un sous-système
+app.put('/api/subsystems/:id', requireAuth, requireSubsystemAccess, async (req, res) => {
+    try {
+        const { name, config, maxUsers, isActive } = req.body;
+        
+        const subsystem = await Subsystem.findById(req.params.id);
+        if (!subsystem) {
+            return res.status(404).json({ 
+                success: false, 
+                error: 'Sous-système non trouvé' 
+            });
+        }
+        
+        // Mettre à jour les champs
+        if (name) subsystem.name = name;
+        if (config) subsystem.config = { ...subsystem.config, ...config };
+        if (maxUsers !== undefined) subsystem.maxUsers = maxUsers;
+        if (isActive !== undefined) subsystem.isActive = isActive;
+        
+        subsystem.updatedAt = new Date();
+        await subsystem.save();
+        
+        res.json({ 
+            success: true, 
+            subsystem,
+            message: 'Sous-système mis à jour avec succès'
+        });
+        
+    } catch (error) {
+        console.error('Error updating subsystem:', error);
+        res.status(500).json({ success: false, error: 'Erreur serveur' });
+    }
+});
+
+// Récupérer les utilisateurs d'un sous-système
+app.get('/api/subsystems/:id/users', requireAuth, requireSubsystemAccess, async (req, res) => {
+    try {
+        const users = await User.find({ 
+            $or: [
+                { subsystemId: req.params.id },
+                { assignedSubsystems: req.params.id }
+            ],
+            isActive: true
+        }).select('-password');
+        
+        res.json({ success: true, users });
+    } catch (error) {
+        console.error('Error fetching subsystem users:', error);
+        res.status(500).json({ success: false, error: 'Erreur serveur' });
+    }
+});
+
+// Ajouter un utilisateur à un sous-système
+app.post('/api/subsystems/:id/users', requireAuth, requireSubsystemAccess, async (req, res) => {
+    try {
+        const { userId, role } = req.body;
+        
+        const user = await User.findById(userId);
+        if (!user) {
+            return res.status(404).json({ 
+                success: false, 
+                error: 'Utilisateur non trouvé' 
+            });
+        }
+        
+        // Vérifier la limite d'utilisateurs
+        const subsystem = await Subsystem.findById(req.params.id);
+        const userCount = await User.countDocuments({ 
+            $or: [
+                { subsystemId: req.params.id },
+                { assignedSubsystems: req.params.id }
+            ]
+        });
+        
+        if (userCount >= subsystem.maxUsers) {
+            return res.status(400).json({ 
+                success: false, 
+                error: `Limite d'utilisateurs atteinte (${subsystem.maxUsers})` 
+            });
+        }
+        
+        // Ajouter l'utilisateur au sous-système
+        if (role === 'manager') {
+            user.subsystemId = subsystem._id;
+            user.role = 'subsystem';
+        } else {
+            // Ajouter aux sous-systèmes assignés
+            if (!user.assignedSubsystems.includes(subsystem._id)) {
+                user.assignedSubsystems.push(subsystem._id);
+            }
+        }
+        
+        await user.save();
+        
+        res.json({ 
+            success: true, 
+            message: 'Utilisateur ajouté au sous-système',
+            user: {
+                id: user._id,
+                name: user.name,
+                username: user.username,
+                role: user.role
+            }
+        });
+        
+    } catch (error) {
+        console.error('Error adding user to subsystem:', error);
+        res.status(500).json({ success: false, error: 'Erreur serveur' });
+    }
 });
 
 // === ROUTES DONNÉES LOTATO ===
@@ -516,6 +822,7 @@ app.post('/api/tickets', requireAuth, async (req, res) => {
             agentName: req.user.name,
             drawId,
             drawTime,
+            subsystemId: req.user.subsystemId,
             bets,
             totalAmount,
             commissionAmount,
@@ -531,6 +838,7 @@ app.post('/api/tickets', requireAuth, async (req, res) => {
         // Log l'activité
         await ActivityLog.create({
             userId: req.user._id,
+            subsystemId: req.user.subsystemId,
             action: 'CREATE_TICKET',
             details: {
                 ticketNumber,
@@ -582,6 +890,36 @@ app.get('/api/tickets/my-tickets', requireAuth, async (req, res) => {
         res.json({ success: true, tickets });
     } catch (error) {
         console.error('Error fetching tickets:', error);
+        res.status(500).json({ success: false, error: 'Erreur serveur' });
+    }
+});
+
+// Récupérer les fiches d'un sous-système
+app.get('/api/subsystems/:id/tickets', requireAuth, requireSubsystemAccess, async (req, res) => {
+    try {
+        const { startDate, endDate, status } = req.query;
+        
+        let query = { subsystemId: req.params.id };
+        
+        if (status) {
+            query.status = status;
+        }
+        
+        if (startDate && endDate) {
+            query.createdAt = {
+                $gte: new Date(startDate),
+                $lte: new Date(endDate)
+            };
+        }
+        
+        const tickets = await Ticket.find(query)
+            .populate('agentId', 'name username')
+            .sort({ createdAt: -1 })
+            .limit(200);
+        
+        res.json({ success: true, tickets });
+    } catch (error) {
+        console.error('Error fetching subsystem tickets:', error);
         res.status(500).json({ success: false, error: 'Erreur serveur' });
     }
 });
@@ -649,6 +987,7 @@ app.post('/api/tickets/check-winners', requireAuth, async (req, res) => {
                     drawId: ticket.drawId,
                     drawTime: ticket.drawTime,
                     resultId: result._id,
+                    subsystemId: ticket.subsystemId,
                     winningBets,
                     totalWinnings
                 });
@@ -671,6 +1010,88 @@ app.post('/api/tickets/check-winners', requireAuth, async (req, res) => {
         
     } catch (error) {
         console.error('Error checking winners:', error);
+        res.status(500).json({ success: false, error: 'Erreur serveur' });
+    }
+});
+
+// Récupérer les statistiques d'un sous-système
+app.get('/api/subsystems/:id/stats', requireAuth, requireSubsystemAccess, async (req, res) => {
+    try {
+        const today = new Date();
+        const startOfToday = new Date(today.setHours(0, 0, 0, 0));
+        const endOfToday = new Date(today.setHours(23, 59, 59, 999));
+        
+        const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+        const endOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0, 23, 59, 59, 999);
+        
+        // Tickets du jour
+        const todayTickets = await Ticket.countDocuments({
+            subsystemId: req.params.id,
+            createdAt: { $gte: startOfToday, $lte: endOfToday }
+        });
+        
+        // Ventes du jour
+        const todaySales = await Ticket.aggregate([
+            { $match: { 
+                subsystemId: mongoose.Types.ObjectId(req.params.id),
+                createdAt: { $gte: startOfToday, $lte: endOfToday },
+                status: { $in: ['pending', 'synced'] }
+            }},
+            { $group: { _id: null, total: { $sum: '$totalAmount' } } }
+        ]);
+        
+        // Ventes du mois
+        const monthSales = await Ticket.aggregate([
+            { $match: { 
+                subsystemId: mongoose.Types.ObjectId(req.params.id),
+                createdAt: { $gte: startOfMonth, $lte: endOfMonth },
+                status: { $in: ['pending', 'synced'] }
+            }},
+            { $group: { _id: null, total: { $sum: '$totalAmount' } } }
+        ]);
+        
+        // Tickets du mois
+        const monthTickets = await Ticket.countDocuments({
+            subsystemId: req.params.id,
+            createdAt: { $gte: startOfMonth, $lte: endOfMonth }
+        });
+        
+        // Utilisateurs actifs
+        const activeUsers = await User.countDocuments({
+            $or: [
+                { subsystemId: req.params.id },
+                { assignedSubsystems: req.params.id }
+            ],
+            isActive: true
+        });
+        
+        // Gagnants du mois
+        const monthWinners = await WinningTicket.aggregate([
+            { $match: { 
+                subsystemId: mongoose.Types.ObjectId(req.params.id),
+                createdAt: { $gte: startOfMonth, $lte: endOfMonth }
+            }},
+            { $group: { _id: null, total: { $sum: '$totalWinnings' } } }
+        ]);
+        
+        res.json({
+            success: true,
+            stats: {
+                today: {
+                    tickets: todayTickets,
+                    sales: todaySales[0]?.total || 0
+                },
+                month: {
+                    tickets: monthTickets,
+                    sales: monthSales[0]?.total || 0,
+                    winners: monthWinners[0]?.total || 0
+                },
+                users: activeUsers
+            }
+        });
+        
+    } catch (error) {
+        console.error('Error fetching subsystem stats:', error);
         res.status(500).json({ success: false, error: 'Erreur serveur' });
     }
 });
@@ -913,108 +1334,138 @@ app.get('/api/company-info', async (req, res) => {
     }
 });
 
-// === ROUTES PWA ===
-
-// Route spéciale pour l'installation PWA
-app.get('/install', (req, res) => {
-    res.send(`
-        <!DOCTYPE html>
-        <html lang="fr">
-        <head>
-            <meta charset="UTF-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <title>Installer Lotato System</title>
-            <style>
-                body {
-                    font-family: Arial, sans-serif;
-                    display: flex;
-                    justify-content: center;
-                    align-items: center;
-                    min-height: 100vh;
-                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                    margin: 0;
-                }
-                .container {
-                    background: white;
-                    padding: 2rem;
-                    border-radius: 10px;
-                    box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-                    text-align: center;
-                    max-width: 400px;
-                }
-                h1 {
-                    color: #333;
-                    margin-bottom: 1rem;
-                }
-                p {
-                    color: #666;
-                    margin-bottom: 2rem;
-                }
-                .btn {
-                    background: #667eea;
-                    color: white;
-                    border: none;
-                    padding: 12px 24px;
-                    border-radius: 5px;
-                    font-size: 16px;
-                    cursor: pointer;
-                    text-decoration: none;
-                    display: inline-block;
-                    transition: background 0.3s;
-                }
-                .btn:hover {
-                    background: #5a67d8;
-                }
-                .instructions {
-                    margin-top: 2rem;
-                    text-align: left;
-                    background: #f7f7f7;
-                    padding: 1rem;
-                    border-radius: 5px;
-                    font-size: 14px;
-                }
-                ol {
-                    padding-left: 1.5rem;
-                }
-                li {
-                    margin-bottom: 0.5rem;
-                }
-            </style>
-        </head>
-        <body>
-            <div class="container">
-                <h1>📱 Installer Lotato System</h1>
-                <p>Installez cette application sur votre appareil pour un accès rapide et hors ligne.</p>
-                
-                <a href="/" class="btn">Ouvrir l'application</a>
-                
-                <div class="instructions">
-                    <strong>Pour installer :</strong>
-                    <ol>
-                        <li>Ouvrez l'application</li>
-                        <li>Sur mobile : appuyez sur "⋮" (menu) → "Installer l'application"</li>
-                        <li>Sur iOS : appuyez sur "Partager" → "Sur l'écran d'accueil"</li>
-                        <li>Suivez les instructions pour terminer l'installation</li>
-                    </ol>
-                </div>
-            </div>
-        </body>
-        </html>
-    `);
+// Mettre à jour les informations de l'entreprise
+app.put('/api/company-info', requireAuth, async (req, res) => {
+    try {
+        if (req.user.role !== 'master' && req.user.role !== 'subsystem') {
+            return res.status(403).json({ 
+                success: false, 
+                error: 'Accès non autorisé' 
+            });
+        }
+        
+        const { name, phone, address, logoUrl, reportTitle, reportPhone, commissionRates } = req.body;
+        
+        let companyInfo = await Company.findOne().sort({ updatedAt: -1 });
+        
+        if (!companyInfo) {
+            companyInfo = new Company({
+                name,
+                phone,
+                address,
+                logoUrl,
+                reportTitle,
+                reportPhone,
+                commissionRates
+            });
+        } else {
+            if (name) companyInfo.name = name;
+            if (phone) companyInfo.phone = phone;
+            if (address) companyInfo.address = address;
+            if (logoUrl) companyInfo.logoUrl = logoUrl;
+            if (reportTitle) companyInfo.reportTitle = reportTitle;
+            if (reportPhone) companyInfo.reportPhone = reportPhone;
+            if (commissionRates) companyInfo.commissionRates = commissionRates;
+            
+            companyInfo.updatedAt = new Date();
+        }
+        
+        await companyInfo.save();
+        
+        res.json({ 
+            success: true, 
+            companyInfo,
+            message: 'Informations mises à jour avec succès'
+        });
+        
+    } catch (error) {
+        console.error('Error updating company info:', error);
+        res.status(500).json({ success: false, error: 'Erreur serveur' });
+    }
 });
 
-// Route pour vérifier l'installabilité PWA
-app.get('/manifest.json', (req, res) => {
-    res.setHeader('Content-Type', 'application/json');
-    res.setHeader('Cache-Control', 'public, max-age=86400');
-    res.sendFile(path.join(__dirname, 'manifest.json'));
+// Gérer les utilisateurs
+app.post('/api/users', requireAuth, async (req, res) => {
+    try {
+        // Seuls master et subsystem peuvent créer des utilisateurs
+        if (req.user.role !== 'master' && req.user.role !== 'subsystem') {
+            return res.status(403).json({ 
+                success: false, 
+                error: 'Accès non autorisé' 
+            });
+        }
+        
+        const { username, password, name, role, commissionRate, subsystemId } = req.body;
+        
+        // Vérifier si l'utilisateur existe déjà
+        const existingUser = await User.findOne({ username });
+        if (existingUser) {
+            return res.status(400).json({ 
+                success: false, 
+                error: 'Cet identifiant est déjà utilisé' 
+            });
+        }
+        
+        // Créer l'utilisateur
+        const user = new User({
+            username,
+            password, // Note: Dans un environnement de production, il faudrait hasher le mot de passe
+            name,
+            role: role || 'agent',
+            commissionRate: commissionRate || 10,
+            subsystemId: subsystemId || req.user.subsystemId,
+            isActive: true
+        });
+        
+        await user.save();
+        
+        res.json({ 
+            success: true, 
+            user: {
+                id: user._id,
+                username: user.username,
+                name: user.name,
+                role: user.role,
+                commissionRate: user.commissionRate
+            },
+            message: 'Utilisateur créé avec succès'
+        });
+        
+    } catch (error) {
+        console.error('Error creating user:', error);
+        res.status(500).json({ success: false, error: 'Erreur serveur' });
+    }
 });
 
-// Route pour le service worker
-app.get('/sw.js', (req, res) => {
-    res.setHeader('Content-Type', 'application/javascript');
-    res.setHeader('Cache-Control', 'public, max-age=3600');
-    res.sendFile(path.join(__dirname, 'sw.js'));
+// Récupérer tous les utilisateurs (pour l'admin)
+app.get('/api/users', requireAuth, async (req, res) => {
+    try {
+        if (req.user.role !== 'master' && req.user.role !== 'subsystem') {
+            return res.status(403).json({ 
+                success: false, 
+                error: 'Accès non autorisé' 
+            });
+        }
+        
+        let query = {};
+        
+        // Si c'est un admin de sous-système, ne voir que les utilisateurs de son sous-système
+        if (req.user.role === 'subsystem') {
+            query = {
+                $or: [
+                    { subsystemId: req.user.subsystemId },
+                    { assignedSubsystems: req.user.subsystemId }
+                ]
+            };
+        }
+        
+        const users = await User.find(query).select('-password');
+        
+        res.json({ success: true, users });
+    } catch (error) {
+        console.error('Error fetching users:', error);
+        res.status(500).json({ success: false, error: 'Erreur serveur' });
+    }
 });
 
 // Endpoint de santé
@@ -1023,10 +1474,7 @@ app.get('/api/health', (req, res) => {
         success: true, 
         status: 'online', 
         timestamp: new Date().toISOString(),
-        mongoStatus: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected',
-        pwa: true,
-        installable: true,
-        compression: true
+        mongoStatus: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected'
     });
 });
 
@@ -1034,9 +1482,6 @@ app.get('/api/health', (req, res) => {
 
 // Page login
 app.get('/', (req, res) => {
-    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
-    res.setHeader('Pragma', 'no-cache');
-    res.setHeader('Expires', '0');
     res.sendFile(path.join(__dirname, 'index.html'));
 });
 
@@ -1051,54 +1496,13 @@ const pagesProtegees = [
 
 pagesProtegees.forEach(page => {
     app.get(page.url, requireAuth, (req, res) => {
-        res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
-        res.setHeader('Pragma', 'no-cache');
-        res.setHeader('Expires', '0');
         res.sendFile(path.join(__dirname, page.file));
     });
 });
 
 // Gestion des erreurs 404
 app.use((req, res) => {
-    res.status(404).send(`
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <title>Page non trouvée - Lotato</title>
-            <style>
-                body {
-                    font-family: Arial, sans-serif;
-                    text-align: center;
-                    padding: 50px;
-                    background: #f5f5f5;
-                }
-                .container {
-                    background: white;
-                    padding: 40px;
-                    border-radius: 10px;
-                    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-                    display: inline-block;
-                }
-                h1 {
-                    color: #e74c3c;
-                    font-size: 48px;
-                }
-                a {
-                    color: #3498db;
-                    text-decoration: none;
-                }
-            </style>
-        </head>
-        <body>
-            <div class="container">
-                <h1>404</h1>
-                <h2>Page non trouvée</h2>
-                <p>La page que vous recherchez n'existe pas.</p>
-                <p><a href="/">Retour à l'accueil</a></p>
-            </div>
-        </body>
-        </html>
-    `);
+    res.status(404).json({ success: false, error: 'Endpoint non trouvé' });
 });
 
 // === DÉMARRAGE ===
@@ -1106,7 +1510,4 @@ const PORT = process.env.PORT || 10000;
 app.listen(PORT, () => {
     console.log(`🚀 Serveur LOTATO démarré sur le port ${PORT}`);
     console.log(`🔗 MongoDB: ${mongoose.connection.readyState === 1 ? '✅ Connecté' : '❌ Non connecté'}`);
-    console.log(`📱 PWA Installable: ✅ Oui (accédez à /install pour instructions)`);
-    console.log(`💾 Compression: ✅ Activée`);
-    console.log(`🌐 URL d'installation: http://localhost:${PORT}/install`);
 });

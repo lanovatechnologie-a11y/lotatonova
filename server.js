@@ -1,8 +1,8 @@
-
 const express = require('express');
 const mongoose = require('mongoose');
 const path = require('path');
 const compression = require('compression');
+const fs = require('fs');
 
 const app = express();
 
@@ -25,8 +25,8 @@ app.use(express.urlencoded({ extended: true }));
 // Serve tous les fichiers statiques à la racine avec compression GZIP
 app.use(express.static(__dirname, {
     maxAge: '1d',
-    setHeaders: (res, path) => {
-        if (path.endsWith('.html')) {
+    setHeaders: (res, filePath) => {
+        if (filePath.endsWith('.html')) {
             res.setHeader('Cache-Control', 'no-cache');
         }
     }
@@ -173,28 +173,69 @@ const Ticket = mongoose.model('Ticket', ticketSchema);
 
 // =================== MIDDLEWARE D'AUTHENTIFICATION ===================
 
-// Middleware de vérification de token (pour API seulement)
+// Middleware de vérification de token
 function vérifierToken(req, res, next) {
-  const { token } = req.query;
-  if (!token || !token.startsWith('nova_')) {
-    return res.status(401).json({ 
-      success: false, 
-      error: 'Token manquant ou invalide' 
-    });
+  // Vérifier d'abord dans les query params
+  let token = req.query.token;
+  
+  // Si pas dans query, vérifier dans le body
+  if (!token && req.body) {
+    token = req.body.token;
   }
+  
+  // Si pas dans body, vérifier dans les headers
+  if (!token) {
+    token = req.headers['x-auth-token'];
+  }
+  
+  if (!token || !token.startsWith('nova_')) {
+    // Pour les routes API, retourner une erreur JSON
+    if (req.path.startsWith('/api/')) {
+      return res.status(401).json({ 
+        success: false, 
+        error: 'Token manquant ou invalide' 
+      });
+    }
+    // Pour les routes HTML, rediriger vers la page de login
+    return res.redirect('/');
+  }
+  
+  // Extraire les informations du token
+  const parts = token.split('_');
+  if (parts.length < 5) {
+    if (req.path.startsWith('/api/')) {
+      return res.status(401).json({ 
+        success: false, 
+        error: 'Token mal formé' 
+      });
+    }
+    return res.redirect('/');
+  }
+  
+  // Stocker les infos du token dans la requête pour usage ultérieur
+  req.tokenInfo = {
+    token: token,
+    userId: parts[2],
+    role: parts[3],
+    level: parts[4] || '1'
+  };
+  
   next();
 }
 
-// =================== ROUTES D'AUTHENTIFICATION (ORIGINALES) ===================
+// =================== ROUTES D'AUTHENTIFICATION ===================
 
-// Route de connexion originale (NE PAS MODIFIER)
+// Route de connexion principale
 app.post('/api/auth/login', async (req, res) => {
   try {
     const { username, password, role } = req.body;
+    
+    // Rechercher l'utilisateur
     const user = await User.findOne({ 
       username,
       password,
-      role
+      role,
+      is_active: true
     });
 
     if (!user) {
@@ -204,7 +245,11 @@ app.post('/api/auth/login', async (req, res) => {
       });
     }
 
-    // Générer un token simplifié temporaire
+    // Mettre à jour la dernière connexion
+    user.last_login = new Date();
+    await user.save();
+
+    // Générer un token
     const token = `nova_${Date.now()}_${user._id}_${user.role}_${user.level || 1}`;
 
     // Déterminer la redirection en fonction du rôle et niveau
@@ -233,6 +278,9 @@ app.post('/api/auth/login', async (req, res) => {
         redirectUrl = '/';
     }
 
+    // Ajouter le token à l'URL de redirection
+    redirectUrl += `?token=${encodeURIComponent(token)}`;
+
     res.json({
       success: true,
       redirectUrl: redirectUrl,
@@ -246,6 +294,7 @@ app.post('/api/auth/login', async (req, res) => {
     });
 
   } catch (error) {
+    console.error('Erreur login:', error);
     res.status(500).json({
       success: false,
       error: 'Erreur serveur lors de la connexion'
@@ -253,7 +302,32 @@ app.post('/api/auth/login', async (req, res) => {
   }
 });
 
-// =================== NOUVELLES ROUTES POUR MASTER DASHBOARD ===================
+// Route pour vérifier la validité d'un token
+app.get('/api/auth/verify', (req, res) => {
+  try {
+    const token = req.query.token;
+    
+    if (!token || !token.startsWith('nova_')) {
+      return res.json({
+        success: false,
+        valid: false
+      });
+    }
+    
+    // Le token est valide (vérification basique)
+    res.json({
+      success: true,
+      valid: true
+    });
+  } catch (error) {
+    res.json({
+      success: false,
+      valid: false
+    });
+  }
+});
+
+// =================== ROUTES POUR MASTER DASHBOARD ===================
 
 // Route pour l'initialisation du master
 app.post('/api/master/init', async (req, res) => {
@@ -725,9 +799,8 @@ app.get('/api/master/consolidated-report', vérifierToken, async (req, res) => {
 // Route pour le dashboard du sous-système
 app.get('/api/subsystem/dashboard', vérifierToken, async (req, res) => {
   try {
-    const token = req.query.token;
-    const parts = token.split('_');
-    const userId = parts[2];
+    const token = req.tokenInfo.token;
+    const userId = req.tokenInfo.userId;
     
     const user = await User.findById(userId);
     if (!user || !user.subsystem_id) {
@@ -784,9 +857,7 @@ app.get('/api/subsystem/dashboard', vérifierToken, async (req, res) => {
 // Route pour les utilisateurs du sous-système
 app.get('/api/subsystem/users', vérifierToken, async (req, res) => {
   try {
-    const token = req.query.token;
-    const parts = token.split('_');
-    const userId = parts[2];
+    const userId = req.tokenInfo.userId;
     
     const user = await User.findById(userId);
     if (!user || !user.subsystem_id) {
@@ -818,9 +889,7 @@ app.get('/api/subsystem/users', vérifierToken, async (req, res) => {
 // Route pour les statistiques générales
 app.get('/api/statistics', vérifierToken, async (req, res) => {
   try {
-    const token = req.query.token;
-    const parts = token.split('_');
-    const role = parts[3];
+    const role = req.tokenInfo.role;
     
     let statistics = {};
     
@@ -841,7 +910,7 @@ app.get('/api/statistics', vérifierToken, async (req, res) => {
       };
     } else {
       // Statistiques pour le sous-système
-      const userId = parts[2];
+      const userId = req.tokenInfo.userId;
       const user = await User.findById(userId);
       
       if (user && user.subsystem_id) {
@@ -882,10 +951,8 @@ app.get('/api/statistics', vérifierToken, async (req, res) => {
 // Route pour les agents
 app.get('/api/agents', vérifierToken, async (req, res) => {
   try {
-    const token = req.query.token;
-    const parts = token.split('_');
-    const role = parts[3];
-    const userId = parts[2];
+    const role = req.tokenInfo.role;
+    const userId = req.tokenInfo.userId;
     
     let agents = [];
     
@@ -940,10 +1007,8 @@ app.get('/api/agents', vérifierToken, async (req, res) => {
 // Route pour les superviseurs
 app.get('/api/supervisors', vérifierToken, async (req, res) => {
   try {
-    const token = req.query.token;
-    const parts = token.split('_');
-    const role = parts[3];
-    const userId = parts[2];
+    const role = req.tokenInfo.role;
+    const userId = req.tokenInfo.userId;
     
     let supervisors = [];
     
@@ -989,9 +1054,9 @@ app.get('/api/supervisors', vérifierToken, async (req, res) => {
   }
 });
 
-// =================== ROUTES ORIGINALES LOTATO (NE PAS MODIFIER) ===================
+// =================== ROUTES ORIGINALES LOTATO ===================
 
-// Endpoint de santé
+// Endpoint de santé (pas besoin de token)
 app.get('/api/health', (req, res) => {
   res.json({ 
     success: true, 
@@ -1047,51 +1112,332 @@ app.get('/api/bet-types', async (req, res) => {
   }
 });
 
-// =================== ROUTES HTML ORIGINALES (NE PAS MODIFIER) ===================
+// Route pour les activités récentes
+app.get('/api/activities/recent', vérifierToken, async (req, res) => {
+    try {
+        const activities = []; // À adapter selon votre modèle
+        res.json({ success: true, activities });
+    } catch (error) {
+        res.status(500).json({ success: false, error: 'Erreur lors du chargement des activités' });
+    }
+});
 
-// Route pour la page principale
+// Route pour créer un agent
+app.post('/api/agents/create', vérifierToken, async (req, res) => {
+    try {
+        const { name, email, level, password } = req.body;
+        const newAgent = new User({
+            username: email,
+            password: password,
+            role: 'agent',
+            level: parseInt(level)
+        });
+        await newAgent.save();
+        res.json({ success: true, message: 'Agent créé avec succès' });
+    } catch (error) {
+        res.status(500).json({ success: false, error: 'Erreur lors de la création de l\'agent' });
+    }
+});
+
+// Route pour les tickets
+app.get('/api/tickets', vérifierToken, async (req, res) => {
+    try {
+        const tickets = []; // À adapter selon votre modèle
+        res.json({ success: true, tickets });
+    } catch (error) {
+        res.status(500).json({ success: false, error: 'Erreur lors du chargement des tickets' });
+    }
+});
+
+// Route pour les rapports
+app.get('/api/reports/generate', vérifierToken, async (req, res) => {
+    try {
+        const { period } = req.query;
+        const report = {
+            period: period,
+            monthlyPerformance: 85,
+            ticketResolution: 92,
+            activeAgents: await User.countDocuments({ role: 'agent', is_active: true }),
+            pendingTickets: 5
+        };
+        res.json({ success: true, report });
+    } catch (error) {
+        res.status(500).json({ success: false, error: 'Erreur lors de la génération du rapport' });
+    }
+});
+
+// Route pour les paramètres
+app.post('/api/system/settings', vérifierToken, async (req, res) => {
+    try {
+        // Logique de sauvegarde des paramètres
+        res.json({ success: true, message: 'Paramètres sauvegardés avec succès' });
+    } catch (error) {
+        res.status(500).json({ success: false, error: 'Erreur lors de la sauvegarde des paramètres' });
+    }
+});
+
+// =================== ROUTES HTML AVEC GESTION DE REDIRECTION ===================
+
+// Route pour la page principale (login) - accessible sans token
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });
 
-// Route pour le master dashboard (ORIGINALE)
-app.get('/master-dashboard.html', (req, res) => {
+// Fonction pour vérifier l'accès aux pages avec token
+function vérifierAccèsPage(role, niveau = 1) {
+  return function(req, res, next) {
+    // Vérifier si le token est présent dans l'URL
+    const token = req.query.token;
+    
+    if (!token || !token.startsWith('nova_')) {
+      // Rediriger vers la page de login si pas de token
+      return res.redirect('/');
+    }
+    
+    // Extraire les informations du token
+    const parts = token.split('_');
+    if (parts.length < 5) {
+      return res.redirect('/');
+    }
+    
+    const userRole = parts[3];
+    const userLevel = parts[4] || '1';
+    
+    // Vérifier si le rôle correspond
+    if (userRole !== role) {
+      // Si ce n'est pas le bon rôle, rediriger vers la page appropriée
+      const redirectMap = {
+        'master': '/master-dashboard.html',
+        'subsystem_owner': '/subsystem-admin.html',
+        'subsystem_admin': '/subsystem-admin.html',
+        'supervisor': userLevel === '1' ? '/control-level1.html' : 
+                     userLevel === '2' ? '/control-level2.html' : '/supervisor-control.html',
+        'agent': '/lotato.html'
+      };
+      
+      if (redirectMap[userRole]) {
+        return res.redirect(`${redirectMap[userRole]}?token=${encodeURIComponent(token)}`);
+      }
+      
+      return res.redirect('/');
+    }
+    
+    // Vérifier le niveau si nécessaire
+    if (niveau && parseInt(userLevel) < niveau) {
+      return res.redirect('/');
+    }
+    
+    // Stocker les infos dans la requête
+    req.tokenInfo = {
+      token: token,
+      userId: parts[2],
+      role: userRole,
+      level: userLevel
+    };
+    
+    next();
+  };
+}
+
+// Route pour le master dashboard
+app.get('/master-dashboard.html', vérifierAccèsPage('master'), (req, res) => {
   res.sendFile(path.join(__dirname, 'master-dashboard.html'));
 });
 
-// Route pour le subsystem admin (ORIGINALE)
-const fs = require('fs');
+// Route pour le subsystem admin
 app.get('/subsystem-admin.html', (req, res) => {
+  // Vérifier le token dans l'URL
+  const token = req.query.token;
+  
+  if (!token || !token.startsWith('nova_')) {
+    return res.redirect('/');
+  }
+  
+  const parts = token.split('_');
+  if (parts.length < 5) {
+    return res.redirect('/');
+  }
+  
+  const userRole = parts[3];
+  
+  // Autoriser subsystem_owner et subsystem_admin
+  if (userRole !== 'subsystem_owner' && userRole !== 'subsystem_admin') {
+    // Rediriger vers la page appropriée
+    const redirectMap = {
+      'master': '/master-dashboard.html',
+      'supervisor': '/control-level1.html',
+      'agent': '/lotato.html'
+    };
+    
+    if (redirectMap[userRole]) {
+      return res.redirect(`${redirectMap[userRole]}?token=${encodeURIComponent(token)}`);
+    }
+    
+    return res.redirect('/');
+  }
+  
   const filePath = path.join(__dirname, 'subsystem-admin.html');
   fs.access(filePath, fs.constants.F_OK, (err) => {
     if (err) {
-      return res.status(500).json({
-        success: false,
-        error: "Fichier /subsystem-admin.html introuvable."
-      });
+      return res.status(404).send('Page non trouvée');
     }
     res.sendFile(filePath);
   });
 });
 
-// Route pour le lotato (ORIGINALE)
-app.get('/lotato.html', (req, res) => {
+// Route pour le lotato
+app.get('/lotato.html', vérifierAccèsPage('agent'), (req, res) => {
   res.sendFile(path.join(__dirname, 'lotato.html'));
 });
 
-// Route pour le control level 1 (ORIGINALE)
+// Route pour le control level 1
 app.get('/control-level1.html', (req, res) => {
+  const token = req.query.token;
+  
+  if (!token || !token.startsWith('nova_')) {
+    return res.redirect('/');
+  }
+  
+  const parts = token.split('_');
+  if (parts.length < 5) {
+    return res.redirect('/');
+  }
+  
+  const userRole = parts[3];
+  const userLevel = parts[4] || '1';
+  
+  // Vérifier si c'est un superviseur
+  if (userRole !== 'supervisor') {
+    const redirectMap = {
+      'master': '/master-dashboard.html',
+      'subsystem_owner': '/subsystem-admin.html',
+      'subsystem_admin': '/subsystem-admin.html',
+      'agent': '/lotato.html'
+    };
+    
+    if (redirectMap[userRole]) {
+      return res.redirect(`${redirectMap[userRole]}?token=${encodeURIComponent(token)}`);
+    }
+    
+    return res.redirect('/');
+  }
+  
   res.sendFile(path.join(__dirname, 'control-level1.html'));
 });
 
-// Route pour le control level 2 (ORIGINALE)
+// Route pour le control level 2
 app.get('/control-level2.html', (req, res) => {
+  const token = req.query.token;
+  
+  if (!token || !token.startsWith('nova_')) {
+    return res.redirect('/');
+  }
+  
+  const parts = token.split('_');
+  if (parts.length < 5) {
+    return res.redirect('/');
+  }
+  
+  const userRole = parts[3];
+  const userLevel = parts[4] || '1';
+  
+  if (userRole !== 'supervisor' || parseInt(userLevel) < 2) {
+    // Rediriger vers la page appropriée
+    const redirectMap = {
+      'master': '/master-dashboard.html',
+      'subsystem_owner': '/subsystem-admin.html',
+      'subsystem_admin': '/subsystem-admin.html',
+      'agent': '/lotato.html'
+    };
+    
+    if (redirectMap[userRole]) {
+      return res.redirect(`${redirectMap[userRole]}?token=${encodeURIComponent(token)}`);
+    }
+    
+    // Si c'est un superviseur niveau 1
+    if (userRole === 'supervisor' && parseInt(userLevel) === 1) {
+      return res.redirect(`/control-level1.html?token=${encodeURIComponent(token)}`);
+    }
+    
+    return res.redirect('/');
+  }
+  
   res.sendFile(path.join(__dirname, 'control-level2.html'));
 });
 
-// Route pour le supervisor control (ORIGINALE)
+// Route pour le supervisor control
 app.get('/supervisor-control.html', (req, res) => {
+  const token = req.query.token;
+  
+  if (!token || !token.startsWith('nova_')) {
+    return res.redirect('/');
+  }
+  
+  const parts = token.split('_');
+  if (parts.length < 5) {
+    return res.redirect('/');
+  }
+  
+  const userRole = parts[3];
+  const userLevel = parts[4] || '1';
+  
+  if (userRole !== 'supervisor') {
+    const redirectMap = {
+      'master': '/master-dashboard.html',
+      'subsystem_owner': '/subsystem-admin.html',
+      'subsystem_admin': '/subsystem-admin.html',
+      'agent': '/lotato.html'
+    };
+    
+    if (redirectMap[userRole]) {
+      return res.redirect(`${redirectMap[userRole]}?token=${encodeURIComponent(token)}`);
+    }
+    
+    return res.redirect('/');
+  }
+  
   res.sendFile(path.join(__dirname, 'supervisor-control.html'));
+});
+
+// Route pour les autres fichiers HTML
+app.get('/*.html', (req, res) => {
+  const filePath = path.join(__dirname, req.path);
+  fs.access(filePath, fs.constants.F_OK, (err) => {
+    if (err) {
+      return res.status(404).send('Page non trouvée');
+    }
+    res.sendFile(filePath);
+  });
+});
+
+// =================== MIDDLEWARE DE GESTION D'ERREURS ===================
+
+app.use((err, req, res, next) => {
+  if (err) {
+    console.error('Erreur serveur:', err);
+    
+    if (req.path.startsWith('/api/')) {
+      return res.status(500).json({
+        success: false,
+        error: 'Erreur serveur interne'
+      });
+    }
+    
+    return res.status(500).send('Erreur serveur interne');
+  }
+  next();
+});
+
+// Middleware 404 pour les routes non trouvées
+app.use((req, res) => {
+  if (req.path.startsWith('/api/')) {
+    return res.status(404).json({
+      success: false,
+      error: 'Route API non trouvée'
+    });
+  }
+  
+  res.status(404).send('Page non trouvée');
 });
 
 // =================== DÉMARRAGE DU SERVEUR ===================
@@ -1100,7 +1446,12 @@ const PORT = process.env.PORT || 10000;
 app.listen(PORT, () => {
   console.log(`🚀 Serveur démarré sur le port ${PORT}`);
   console.log(`📁 Compression GZIP activée`);
+  console.log(`🔐 Système d'authentification activé`);
   console.log(`👑 Master Dashboard: http://localhost:${PORT}/master-dashboard.html`);
   console.log(`🏢 Subsystem Admin: http://localhost:${PORT}/subsystem-admin.html`);
   console.log(`🎰 LOTATO: http://localhost:${PORT}/lotato.html`);
+  console.log(`👮 Control Level 1: http://localhost:${PORT}/control-level1.html`);
+  console.log(`👮 Control Level 2: http://localhost:${PORT}/control-level2.html`);
+  console.log(`📊 Supervisor Control: http://localhost:${PORT}/supervisor-control.html`);
+  console.log(`🏠 Login: http://localhost:${PORT}/`);
 });

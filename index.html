@@ -296,20 +296,19 @@
             const urlParams = new URLSearchParams(window.location.search);
             const tokenFromUrl = urlParams.get('token');
             const storedToken = localStorage.getItem('nova_token');
-            const storedRole = localStorage.getItem('nova_user_role');
             
             // Priorité: token dans l'URL > token stocké
             const token = tokenFromUrl || storedToken;
             
-            if (token && storedRole) {
-                console.log("Token et rôle trouvés, tentative de connexion automatique...");
-                autoLoginWithToken(token, storedRole);
+            if (token) {
+                console.log("Token trouvé, tentative de connexion automatique...");
+                autoLoginWithToken(token);
                 return true;
             }
             return false;
         }
         
-        async function autoLoginWithToken(token, role) {
+        async function autoLoginWithToken(token) {
             try {
                 const response = await fetch('/api/auth/verify-token', {
                     method: 'POST',
@@ -324,43 +323,19 @@
                 if (data.success) {
                     // Stocker le token
                     localStorage.setItem('nova_token', token);
-                    localStorage.setItem('nova_user_role', role);
                     
-                    // Rediriger vers la page appropriée selon le rôle
-                    let redirectUrl = '';
-                    switch(role) {
-                        case 'master':
-                            redirectUrl = '/master-dashboard.html';
-                            break;
-                        case 'subsystem':
-                            redirectUrl = '/subsystem-dashboard.html';
-                            break;
-                        case 'supervisor1':
-                        case 'supervisor2':
-                            redirectUrl = '/supervisor-dashboard.html';
-                            break;
-                        case 'agent':
-                            redirectUrl = '/agent-dashboard.html';
-                            break;
-                        default:
-                            redirectUrl = '/index.html';
-                    }
-                    
+                    // Rediriger vers la page appropriée
                     setTimeout(() => {
-                        window.location.href = redirectUrl;
+                        window.location.href = data.redirectUrl;
                     }, 500);
                 } else {
                     // Token invalide, nettoyer
                     localStorage.removeItem('nova_token');
-                    localStorage.removeItem('nova_user_role');
-                    localStorage.removeItem('nova_user_data');
                     console.log("Token invalide, nettoyage effectué");
                 }
             } catch (error) {
                 console.error('Erreur vérification token:', error);
                 localStorage.removeItem('nova_token');
-                localStorage.removeItem('nova_user_role');
-                localStorage.removeItem('nova_user_data');
             }
         }
         
@@ -420,28 +395,9 @@
                     localStorage.setItem('nova_user_role', role);
                     localStorage.setItem('nova_user_data', JSON.stringify(data.user));
                     
-                    // Rediriger vers la page appropriée selon le rôle
-                    let redirectUrl = '';
-                    switch(role) {
-                        case 'master':
-                            redirectUrl = '/master-dashboard.html';
-                            break;
-                        case 'subsystem':
-                            redirectUrl = '/subsystem-dashboard.html';
-                            break;
-                        case 'supervisor1':
-                        case 'supervisor2':
-                            redirectUrl = '/supervisor-dashboard.html';
-                            break;
-                        case 'agent':
-                            redirectUrl = '/agent-dashboard.html';
-                            break;
-                        default:
-                            redirectUrl = '/index.html';
-                    }
-                    
+                    // Rediriger sans passer le token dans l'URL
                     setTimeout(() => {
-                        window.location.href = redirectUrl;
+                        window.location.href = data.redirectUrl;
                     }, 1000);
                 } else {
                     showStatusMessage(data.error || 'Identifiants incorrects', 'error');
@@ -470,16 +426,6 @@
             if (!checkExistingToken()) {
                 // Sinon, focus sur le premier champ
                 document.getElementById('agent-username').focus();
-                
-                // Vérifier si un onglet spécifique est demandé dans l'URL
-                const urlParams = new URLSearchParams(window.location.search);
-                const tab = urlParams.get('tab');
-                if (tab) {
-                    const tabBtn = document.querySelector(`.tab-btn[data-tab="${tab}"]`);
-                    if (tabBtn) {
-                        tabBtn.click();
-                    }
-                }
             }
         });
     </script>

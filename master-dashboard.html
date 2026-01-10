@@ -810,16 +810,7 @@
         }
     </style>
 </head>
-    <script src="/auth-check.js"></script>
 <body>
-    <script>
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('/service-worker.js')
-      .then(reg => console.log('Service Worker enregistré', reg))
-      .catch(err => console.log('Échec d’enregistrement', err));
-  }
-</script>
-
     <!-- Sidebar -->
     <div class="sidebar">
         <div class="logo-container">
@@ -1689,12 +1680,15 @@
         // Configuration
         const API_BASE_URL = 'https://lotatonova-fv0b.onrender.com'; 
         // Configuration API Backend
-const APP_CONFIG = {
-    health: `${API_BASE_URL}/api/health`,
-    login: `${API_BASE_URL}/api/auth/login`
-};
-        let masterToken = localStorage.getItem('novaLottoMasterToken');
-        let currentUser = JSON.parse(localStorage.getItem('novaLottoMasterUser') || '{}');
+        const APP_CONFIG = {
+            health: `${API_BASE_URL}/api/health`,
+            login: `${API_BASE_URL}/api/auth/login`
+        };
+        
+        // Récupérer les données d'authentification depuis le localStorage partagé
+        let masterToken = localStorage.getItem('nova_token');
+        let currentUser = JSON.parse(localStorage.getItem('nova_user_data') || '{}');
+        
         let currentPage = 1;
         let totalPages = 1;
         let currentSubsystems = [];
@@ -1706,9 +1700,12 @@ const APP_CONFIG = {
         // Initialisation
         document.addEventListener('DOMContentLoaded', function() {
             console.log('🎯 Master Dashboard initialisé');
+            console.log('Token récupéré:', masterToken ? 'Oui' : 'Non');
+            console.log('Utilisateur:', currentUser);
             
-            // Vérifier l'authentification
-            if (!masterToken || !currentUser.id) {
+            // Vérifier l'authentification ET le rôle
+            if (!masterToken || !currentUser.id || currentUser.role !== 'master') {
+                console.log('Non autorisé: redirection vers login');
                 redirectToLogin();
                 return;
             }
@@ -1730,9 +1727,9 @@ const APP_CONFIG = {
         // Mettre à jour les infos utilisateur
         function updateUserInfo() {
             document.getElementById('user-avatar').textContent = 
-                currentUser.full_name?.charAt(0) || currentUser.username?.charAt(0) || 'M';
+                currentUser.name?.charAt(0) || currentUser.username?.charAt(0) || 'M';
             document.getElementById('user-name').textContent = 
-                currentUser.full_name || 'Master Admin';
+                currentUser.name || currentUser.username || 'Master Admin';
             document.getElementById('user-email').textContent = 
                 currentUser.email || currentUser.username + '@novalotto.com';
         }
@@ -1740,111 +1737,8 @@ const APP_CONFIG = {
         // Redirection vers la page de login
         function redirectToLogin() {
             console.log('Redirection vers la page de login...');
-            // Créer une page de login simple pour le master
-            const loginHTML = `
-                <div style="display: flex; justify-content: center; align-items: center; min-height: 100vh; background: linear-gradient(135deg, #2c3e50, #1a2530);">
-                    <div style="background: white; padding: 40px; border-radius: 10px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); width: 100%; max-width: 400px;">
-                        <h1 style="text-align: center; color: #2c3e50; margin-bottom: 30px;">
-                            <i class="fas fa-crown"></i> Nova Lotto Master
-                        </h1>
-                        
-                        <div id="login-error" style="display: none; background-color: #f8d7da; color: #721c24; padding: 10px; border-radius: 5px; margin-bottom: 15px; text-align: center;">
-                            Identifiants incorrects
-                        </div>
-                        
-                        <div style="margin-bottom: 20px;">
-                            <label style="display: block; margin-bottom: 5px; font-weight: bold; color: #2c3e50;">Identifiant Master</label>
-                            <input type="text" id="master-username" style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 5px; font-size: 16px;" placeholder="master">
-                        </div>
-                        
-                        <div style="margin-bottom: 25px;">
-                            <label style="display: block; margin-bottom: 5px; font-weight: bold; color: #2c3e50;">Mot de passe Master</label>
-                            <input type="password" id="master-password" style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 5px; font-size: 16px;" placeholder="••••••••">
-                        </div>
-                        
-                        <button id="master-login-btn" style="width: 100%; padding: 15px; background-color: #f39c12; color: white; border: none; border-radius: 5px; font-size: 16px; font-weight: bold; cursor: pointer;">
-                            <i class="fas fa-sign-in-alt"></i> Connexion Master
-                        </button>
-                        
-                        <div style="margin-top: 20px; text-align: center; color: #6c757d; font-size: 14px;">
-                            <p>Première connexion ? Utilisez les identifiants d'initialisation</p>
-                        </div>
-                    </div>
-                </div>
-                
-                <script>
-                    document.getElementById('master-login-btn').addEventListener('click', async function() {
-                        const username = document.getElementById('master-username').value;
-                        const password = document.getElementById('master-password').value;
-                        
-                        if (!username || !password) {
-                            showLoginError('Identifiant et mot de passe requis');
-                            return;
-                        }
-                        
-                        try {
-                            // Pour l'initialisation
-                            if (username === 'master' && password === 'master123') {
-                                // Premier démarrage - initialiser le système
-                                const response = await fetch(API_BASE_URL + '/api/master/init', {
-                                    method: 'POST',
-                                    headers: { 'Content-Type': 'application/json' },
-                                    body: JSON.stringify({
-                                        masterUsername: username,
-                                        masterPassword: password,
-                                        companyName: 'Nova Lotto Master',
-                                        masterEmail: 'master@novalotto.com'
-                                    })
-                                });
-                                
-                                const data = await response.json();
-                                
-                                if (data.success) {
-                                    localStorage.setItem('novaLottoMasterToken', data.token);
-                                    localStorage.setItem('novaLottoMasterUser', JSON.stringify(data.user));
-                                    location.reload();
-                                } else {
-                                    showLoginError(data.error || 'Erreur d\'initialisation');
-                                }
-                            } else {
-                                // Connexion normale
-                                const response = await fetch(API_BASE_URL + '/api/master/login', {
-                                    method: 'POST',
-                                    headers: { 'Content-Type': 'application/json' },
-                                    body: JSON.stringify({ username, password })
-                                });
-                                
-                                const data = await response.json();
-                                
-                                if (data.success) {
-                                    localStorage.setItem('novaLottoMasterToken', data.token);
-                                    localStorage.setItem('novaLottoMasterUser', JSON.stringify(data.user));
-                                    location.reload();
-                                } else {
-                                    showLoginError(data.error || 'Identifiants incorrects');
-                                }
-                            }
-                        } catch (error) {
-                            console.error('Erreur connexion:', error);
-                            showLoginError('Erreur de connexion au serveur');
-                        }
-                    });
-                    
-                    document.getElementById('master-password').addEventListener('keypress', function(e) {
-                        if (e.key === 'Enter') {
-                            document.getElementById('master-login-btn').click();
-                        }
-                    });
-                    
-                    function showLoginError(message) {
-                        const errorDiv = document.getElementById('login-error');
-                        errorDiv.textContent = message;
-                        errorDiv.style.display = 'block';
-                    }
-                <\/script>
-            `;
-            
-            document.body.innerHTML = loginHTML;
+            // Rediriger vers la page de login principale avec l'onglet master
+            window.location.href = '/index.html?tab=master';
         }
         
         // Configurer les événements
@@ -1965,7 +1859,7 @@ const APP_CONFIG = {
                 // Récupérer les statistiques globales
                 const response = await fetch(`${API_BASE_URL}/api/master/subsystems?limit=100`, {
                     headers: {
-                        'Authorization': `Bearer ${masterToken}`
+                        'x-auth-token': masterToken
                     }
                 });
                 
@@ -2092,7 +1986,7 @@ const APP_CONFIG = {
             try {
                 const response = await fetch(`${API_BASE_URL}/api/master/subsystems?page=1&limit=5&status=active`, {
                     headers: {
-                        'Authorization': `Bearer ${masterToken}`
+                        'x-auth-token': masterToken
                     }
                 });
                 
@@ -2209,7 +2103,7 @@ const APP_CONFIG = {
                 
                 const response = await fetch(url, {
                     headers: {
-                        'Authorization': `Bearer ${masterToken}`
+                        'x-auth-token': masterToken
                     }
                 });
                 
@@ -2426,7 +2320,7 @@ const APP_CONFIG = {
                 const response = await fetch(`${API_BASE_URL}/api/master/subsystems`, {
                     method: 'POST',
                     headers: {
-                        'Authorization': `Bearer ${masterToken}`,
+                        'x-auth-token': masterToken,
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify(formData)
@@ -2486,7 +2380,7 @@ const APP_CONFIG = {
             try {
                 const response = await fetch(`${API_BASE_URL}/api/master/subsystems/${subsystemId}`, {
                     headers: {
-                        'Authorization': `Bearer ${masterToken}`
+                        'x-auth-token': masterToken
                     }
                 });
                 
@@ -2662,7 +2556,7 @@ const APP_CONFIG = {
                 const response = await fetch(`${API_BASE_URL}/api/master/subsystems/${subsystemId}/deactivate`, {
                     method: 'PUT',
                     headers: {
-                        'Authorization': `Bearer ${masterToken}`,
+                        'x-auth-token': masterToken,
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({ is_active: false })
@@ -2695,7 +2589,7 @@ const APP_CONFIG = {
                 const response = await fetch(`${API_BASE_URL}/api/master/subsystems/${subsystemId}/activate`, {
                     method: 'PUT',
                     headers: {
-                        'Authorization': `Bearer ${masterToken}`,
+                        'x-auth-token': masterToken,
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({ is_active: true })
@@ -2793,9 +2687,9 @@ const APP_CONFIG = {
             empty.style.display = 'none';
             
             try {
-                const response = await fetch(`${API_BASE_URL}${APP_CONFIG.agents}?detailed=true`, {
+                const response = await fetch(`${API_BASE_URL}/api/agents?detailed=true`, {
                     headers: {
-                        'Authorization': `Bearer ${masterToken}`
+                        'x-auth-token': masterToken
                     }
                 });
                 
@@ -2905,9 +2799,9 @@ const APP_CONFIG = {
             table.style.display = 'none';
             
             try {
-                const response = await fetch(`${API_BASE_URL}${APP_CONFIG.users}?role=supervisor&detailed=true`, {
+                const response = await fetch(`${API_BASE_URL}/api/supervisors?role=supervisor&detailed=true`, {
                     headers: {
-                        'Authorization': `Bearer ${masterToken}`
+                        'x-auth-token': masterToken
                     }
                 });
                 
@@ -2975,7 +2869,7 @@ const APP_CONFIG = {
             try {
                 const response = await fetch(`${API_BASE_URL}/api/master/subsystems/stats`, {
                     headers: {
-                        'Authorization': `Bearer ${masterToken}`
+                        'x-auth-token': masterToken
                     }
                 });
                 
@@ -3105,9 +2999,9 @@ const APP_CONFIG = {
         // Charger les statistiques globales
         async function loadGlobalStats() {
             try {
-                const response = await fetch(`${API_BASE_URL}${APP_CONFIG.statistics}`, {
+                const response = await fetch(`${API_BASE_URL}/api/statistics`, {
                     headers: {
-                        'Authorization': `Bearer ${masterToken}`
+                        'x-auth-token': masterToken
                     }
                 });
                 
@@ -3286,7 +3180,7 @@ const APP_CONFIG = {
                     `group_by=day`,
                     {
                         headers: {
-                            'Authorization': `Bearer ${masterToken}`
+                            'x-auth-token': masterToken
                         }
                     }
                 );
@@ -3507,8 +3401,9 @@ const APP_CONFIG = {
         // Déconnexion
         function logout() {
             if (confirm('Êtes-vous sûr de vouloir vous déconnecter ?')) {
-                localStorage.removeItem('novaLottoMasterToken');
-                localStorage.removeItem('novaLottoMasterUser');
+                localStorage.removeItem('nova_token');
+                localStorage.removeItem('nova_user_role');
+                localStorage.removeItem('nova_user_data');
                 redirectToLogin();
             }
         }

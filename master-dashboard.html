@@ -1688,6 +1688,7 @@
         // Récupérer les données d'authentification depuis le localStorage partagé
         let masterToken = localStorage.getItem('nova_token');
         let currentUser = JSON.parse(localStorage.getItem('nova_user_data') || '{}');
+        let userRole = localStorage.getItem('nova_user_role');
         
         let currentPage = 1;
         let totalPages = 1;
@@ -1702,9 +1703,10 @@
             console.log('🎯 Master Dashboard initialisé');
             console.log('Token récupéré:', masterToken ? 'Oui' : 'Non');
             console.log('Utilisateur:', currentUser);
+            console.log('Rôle:', userRole);
             
             // Vérifier l'authentification ET le rôle
-            if (!masterToken || !currentUser.id || currentUser.role !== 'master') {
+            if (!masterToken || !currentUser.id || userRole !== 'master') {
                 console.log('Non autorisé: redirection vers login');
                 redirectToLogin();
                 return;

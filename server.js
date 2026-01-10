@@ -62,6 +62,35 @@ const userSchema = new mongoose.Schema({
 
 const User = mongoose.model('User', userSchema);
 
+// =================== SCHÉMAS POUR LES SOUS-SYSTÈMES ===================
+
+// Schéma pour les sous-systèmes
+const subsystemSchema = new mongoose.Schema({
+  name: { type: String, required: true },
+  subdomain: { type: String, required: true, unique: true },
+  contact_email: { type: String, required: true },
+  contact_phone: { type: String },
+  max_users: { type: Number, default: 10 },
+  subscription_type: { 
+    type: String, 
+    enum: ['basic', 'standard', 'premium', 'enterprise'], 
+    default: 'standard' 
+  },
+  subscription_months: { type: Number, default: 1 },
+  subscription_expires: { type: Date },
+  admin_user: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  is_active: { type: Boolean, default: true },
+  created_at: { type: Date, default: Date.now },
+  stats: {
+    active_users: { type: Number, default: 0 },
+    today_sales: { type: Number, default: 0 },
+    today_tickets: { type: Number, default: 0 },
+    usage_percentage: { type: Number, default: 0 }
+  }
+});
+
+const Subsystem = mongoose.model('Subsystem', subsystemSchema);
+
 // =================== ROUTE DE CONNEXION SIMPLE (comme dans le fichier minimal) ===================
 
 app.post('/api/auth/login', async (req, res) => {
@@ -384,6 +413,478 @@ app.post('/api/system/settings', vérifierToken, async (req, res) => {
     }
 });
 
+// =================== ROUTES POUR LES SOUS-SYSTÈMES ===================
+
+// Créer un sous-système
+app.post('/api/master/subsystems', vérifierToken, async (req, res) => {
+  try {
+    // Vérifier que l'utilisateur est un master
+    if (!req.tokenInfo || req.tokenInfo.role !== 'master') {
+      return res.status(403).json({
+        success: false,
+        error: 'Accès refusé. Rôle master requis.'
+      });
+    }
+
+    const {
+      name,
+      subdomain,
+      contact_email,
+      contact_phone,
+      max_users,
+      subscription_type,
+      subscription_months,
+      send_credentials
+    } = req.body;
+
+    // Validation
+    if (!name || !subdomain || !contact_email) {
+      return res.status(400).json({
+        success: false,
+        error: 'Le nom, le sous-domaine et l\'email de contact sont obligatoires'
+      });
+    }
+
+    // Vérifier que le sous-domaine est unique
+    const existingSubsystem = await Subsystem.findOne({ subdomain: subdomain });
+    if (existingSubsystem) {
+      return res.status(400).json({
+        success: false,
+        error: 'Ce sous-domaine est déjà utilisé'
+      });
+    }
+
+    // Vérifier si l'utilisateur admin existe déjà
+    let adminUser = await User.findOne({ username: contact_email });
+    
+    if (!adminUser) {
+      // Générer un mot de passe aléatoire pour l'admin
+      const generatedPassword = Math.random().toString(36).slice(-8);
+
+      // Créer l'utilisateur admin pour le sous-système
+      adminUser = new User({
+        username: contact_email,
+        password: generatedPassword,
+        name: name,
+        role: 'subsystem',
+        level: 1
+      });
+
+      await adminUser.save();
+    } else {
+      // Si l'utilisateur existe déjà, vérifier qu'il a le bon rôle
+      if (adminUser.role !== 'subsystem') {
+        return res.status(400).json({
+          success: false,
+          error: 'Cet email est déjà utilisé avec un rôle différent'
+        });
+      }
+    }
+
+    // Calculer la date d'expiration
+    const subscription_expires = new Date();
+    subscription_expires.setMonth(subscription_expires.getMonth() + (subscription_months || 1));
+
+    // Créer le sous-système
+    const subsystem = new Subsystem({
+      name,
+      subdomain: subdomain.toLowerCase(),
+      contact_email,
+      contact_phone,
+      max_users: max_users || 10,
+      subscription_type: subscription_type || 'standard',
+      subscription_months: subscription_months || 1,
+      subscription_expires,
+      admin_user: adminUser._id,
+      is_active: true
+    });
+
+    await subsystem.save();
+
+    // Construire l'URL d'accès
+    const domain = process.env.DOMAIN || req.headers.host?.replace('master.', '') || 'novalotto.com';
+    const access_url = `https://${subdomain}.${domain}`;
+
+    // Répondre avec les identifiants
+    res.json({
+      success: true,
+      subsystem: {
+        id: subsystem._id,
+        ...subsystem.toObject()
+      },
+      admin_credentials: {
+        username: contact_email,
+        password: adminUser.password, // Utiliser le mot de passe existant ou généré
+        email: contact_email
+      },
+      access_url: access_url
+    });
+
+  } catch (error) {
+    console.error('Erreur création sous-système:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Erreur serveur lors de la création du sous-système'
+    });
+  }
+});
+
+// Lister tous les sous-systèmes
+app.get('/api/master/subsystems', vérifierToken, async (req, res) => {
+  try {
+    // Vérifier que l'utilisateur est un master
+    if (!req.tokenInfo || req.tokenInfo.role !== 'master') {
+      return res.status(403).json({
+        success: false,
+        error: 'Accès refusé. Rôle master requis.'
+      });
+    }
+
+    // Récupérer les paramètres de requête
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const search = req.query.search;
+    const status = req.query.status;
+
+    // Construire la requête
+    let query = {};
+
+    // Filtre par recherche
+    if (search) {
+      query.$or = [
+        { name: { $regex: search, $options: 'i' } },
+        { subdomain: { $regex: search, $options: 'i' } },
+        { contact_email: { $regex: search, $options: 'i' } }
+      ];
+    }
+
+    // Filtre par statut
+    if (status && status !== 'all') {
+      if (status === 'active') {
+        query.is_active = true;
+      } else if (status === 'inactive') {
+        query.is_active = false;
+      } else if (status === 'expired') {
+        query.subscription_expires = { $lt: new Date() };
+      }
+    }
+
+    // Compter le total
+    const total = await Subsystem.countDocuments(query);
+
+    // Calculer la pagination
+    const totalPages = Math.ceil(total / limit);
+    const skip = (page - 1) * limit;
+
+    // Exécuter la requête
+    const subsystems = await Subsystem.find(query)
+      .skip(skip)
+      .limit(limit)
+      .sort({ created_at: -1 });
+
+    // Formater la réponse
+    const formattedSubsystems = subsystems.map(subsystem => {
+      // Calculer le pourcentage d'utilisation (simulation)
+      const usage_percentage = Math.floor((Math.random() * 100) + 1);
+
+      return {
+        id: subsystem._id,
+        name: subsystem.name,
+        subdomain: subsystem.subdomain,
+        contact_email: subsystem.contact_email,
+        contact_phone: subsystem.contact_phone,
+        max_users: subsystem.max_users,
+        subscription_type: subsystem.subscription_type,
+        subscription_expires: subsystem.subscription_expires,
+        is_active: subsystem.is_active,
+        created_at: subsystem.created_at,
+        stats: {
+          active_users: Math.floor(Math.random() * subsystem.max_users),
+          today_sales: Math.floor(Math.random() * 10000) + 1000,
+          today_tickets: Math.floor(Math.random() * 100) + 10,
+          usage_percentage: usage_percentage
+        }
+      };
+    });
+
+    res.json({
+      success: true,
+      subsystems: formattedSubsystems,
+      pagination: {
+        page: page,
+        limit: limit,
+        total: total,
+        total_pages: totalPages
+      }
+    });
+
+  } catch (error) {
+    console.error('Erreur listage sous-systèmes:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Erreur serveur lors du listage des sous-systèmes'
+    });
+  }
+});
+
+// Récupérer un sous-système par ID
+app.get('/api/master/subsystems/:id', vérifierToken, async (req, res) => {
+  try {
+    // Vérifier que l'utilisateur est un master
+    if (!req.tokenInfo || req.tokenInfo.role !== 'master') {
+      return res.status(403).json({
+        success: false,
+        error: 'Accès refusé. Rôle master requis.'
+      });
+    }
+
+    const subsystemId = req.params.id;
+
+    const subsystem = await Subsystem.findById(subsystemId);
+
+    if (!subsystem) {
+      return res.status(404).json({
+        success: false,
+        error: 'Sous-système non trouvé'
+      });
+    }
+
+    // Simuler des utilisateurs
+    const users = [
+      { role: 'owner', count: 1 },
+      { role: 'admin', count: Math.floor(Math.random() * 3) + 1 },
+      { role: 'supervisor', count: Math.floor(Math.random() * 5) + 1 },
+      { role: 'agent', count: Math.floor(Math.random() * subsystem.max_users) + 5 }
+    ];
+
+    res.json({
+      success: true,
+      subsystem: {
+        id: subsystem._id,
+        name: subsystem.name,
+        subdomain: subsystem.subdomain,
+        contact_email: subsystem.contact_email,
+        contact_phone: subsystem.contact_phone,
+        max_users: subsystem.max_users,
+        subscription_type: subsystem.subscription_type,
+        subscription_expires: subsystem.subscription_expires,
+        is_active: subsystem.is_active,
+        created_at: subsystem.created_at,
+        stats: {
+          active_users: Math.floor(Math.random() * subsystem.max_users),
+          today_sales: Math.floor(Math.random() * 10000) + 1000,
+          today_tickets: Math.floor(Math.random() * 100) + 10,
+          usage_percentage: Math.floor((Math.random() * 100) + 1)
+        },
+        users: users
+      }
+    });
+
+  } catch (error) {
+    console.error('Erreur détails sous-système:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Erreur serveur lors de la récupération du sous-système'
+    });
+  }
+});
+
+// Désactiver un sous-système
+app.put('/api/master/subsystems/:id/deactivate', vérifierToken, async (req, res) => {
+  try {
+    // Vérifier que l'utilisateur est un master
+    if (!req.tokenInfo || req.tokenInfo.role !== 'master') {
+      return res.status(403).json({
+        success: false,
+        error: 'Accès refusé. Rôle master requis.'
+      });
+    }
+
+    const subsystemId = req.params.id;
+
+    const subsystem = await Subsystem.findById(subsystemId);
+
+    if (!subsystem) {
+      return res.status(404).json({
+        success: false,
+        error: 'Sous-système non trouvé'
+      });
+    }
+
+    subsystem.is_active = false;
+    await subsystem.save();
+
+    res.json({
+      success: true,
+      message: 'Sous-système désactivé avec succès'
+    });
+
+  } catch (error) {
+    console.error('Erreur désactivation sous-système:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Erreur serveur lors de la désactivation du sous-système'
+    });
+  }
+});
+
+// Activer un sous-système
+app.put('/api/master/subsystems/:id/activate', vérifierToken, async (req, res) => {
+  try {
+    // Vérifier que l'utilisateur est un master
+    if (!req.tokenInfo || req.tokenInfo.role !== 'master') {
+      return res.status(403).json({
+        success: false,
+        error: 'Accès refusé. Rôle master requis.'
+      });
+    }
+
+    const subsystemId = req.params.id;
+
+    const subsystem = await Subsystem.findById(subsystemId);
+
+    if (!subsystem) {
+      return res.status(404).json({
+        success: false,
+        error: 'Sous-système non trouvé'
+      });
+    }
+
+    subsystem.is_active = true;
+    await subsystem.save();
+
+    res.json({
+      success: true,
+      message: 'Sous-système activé avec succès'
+    });
+
+  } catch (error) {
+    console.error('Erreur activation sous-système:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Erreur serveur lors de l\'activation du sous-système'
+    });
+  }
+});
+
+// Statistiques des sous-systèmes
+app.get('/api/master/subsystems/stats', vérifierToken, async (req, res) => {
+  try {
+    // Vérifier que l'utilisateur est un master
+    if (!req.tokenInfo || req.tokenInfo.role !== 'master') {
+      return res.status(403).json({
+        success: false,
+        error: 'Accès refusé. Rôle master requis.'
+      });
+    }
+
+    const subsystems = await Subsystem.find();
+
+    const subsystemsWithStats = subsystems.map(subsystem => {
+      const total_sales = Math.floor(Math.random() * 1000000) + 100000;
+      const total_payout = Math.floor(total_sales * 0.7);
+      const profit = total_sales - total_payout;
+      const active_agents = Math.floor(Math.random() * 20) + 1;
+
+      return {
+        id: subsystem._id,
+        name: subsystem.name,
+        subdomain: subsystem.subdomain,
+        total_sales: total_sales,
+        total_payout: total_payout,
+        profit: profit,
+        active_agents: active_agents
+      };
+    });
+
+    res.json({
+      success: true,
+      subsystems: subsystemsWithStats
+    });
+
+  } catch (error) {
+    console.error('Erreur statistiques sous-systèmes:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Erreur serveur lors de la récupération des statistiques'
+    });
+  }
+});
+
+// Rapport consolidé
+app.get('/api/master/consolidated-report', vérifierToken, async (req, res) => {
+  try {
+    // Vérifier que l'utilisateur est un master
+    if (!req.tokenInfo || req.tokenInfo.role !== 'master') {
+      return res.status(403).json({
+        success: false,
+        error: 'Accès refusé. Rôle master requis.'
+      });
+    }
+
+    const { start_date, end_date, group_by } = req.query;
+
+    // Simuler un rapport
+    const report = {
+      period: {
+        start_date: start_date || new Date().toISOString().split('T')[0],
+        end_date: end_date || new Date().toISOString().split('T')[0]
+      },
+      summary: {
+        total_tickets: 1234,
+        total_sales: 5000000,
+        total_payout: 3500000,
+        total_profit: 1500000
+      },
+      subsystems_detail: [
+        {
+          subsystem_id: '1',
+          subsystem_name: 'Borlette Cap-Haïtien',
+          tickets_count: 500,
+          total_sales: 2000000,
+          total_payout: 1400000,
+          profit: 600000
+        },
+        {
+          subsystem_id: '2',
+          subsystem_name: 'Lotto Port-au-Prince',
+          tickets_count: 400,
+          total_sales: 1500000,
+          total_payout: 1050000,
+          profit: 450000
+        },
+        {
+          subsystem_id: '3',
+          subsystem_name: 'Grap Gonaïves',
+          tickets_count: 334,
+          total_sales: 1500000,
+          total_payout: 1050000,
+          profit: 450000
+        }
+      ],
+      daily_breakdown: [
+        {
+          date: new Date().toISOString().split('T')[0],
+          ticket_count: 100,
+          total_amount: 500000
+        }
+      ]
+    };
+
+    res.json({
+      success: true,
+      report: report
+    });
+
+  } catch (error) {
+    console.error('Erreur génération rapport:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Erreur serveur lors de la génération du rapport'
+    });
+  }
+});
+
 // =================== ROUTES HTML SIMPLES (comme dans le fichier minimal) ===================
 
 // 1. Page principale (login)
@@ -549,5 +1050,22 @@ app.listen(PORT, () => {
   console.log(`📊 Supervisor Control: http://localhost:${PORT}/supervisor-control.html`);
   console.log(`🏠 Login: http://localhost:${PORT}/`);
   console.log('');
-  console.log('✅ Serveur prêt avec la logique simple qui fonctionnait!');
+  console.log('✅ Serveur prêt avec toutes les routes !');
+  console.log('');
+  console.log('📋 Routes API disponibles:');
+  console.log('  POST /api/auth/login');
+  console.log('  GET  /api/health');
+  console.log('  POST /api/master/subsystems');
+  console.log('  GET  /api/master/subsystems');
+  console.log('  GET  /api/master/subsystems/:id');
+  console.log('  PUT  /api/master/subsystems/:id/deactivate');
+  console.log('  PUT  /api/master/subsystems/:id/activate');
+  console.log('  GET  /api/master/subsystems/stats');
+  console.log('  GET  /api/master/consolidated-report');
+  console.log('  GET  /api/statistics');
+  console.log('  GET  /api/agents');
+  console.log('  GET  /api/supervisors');
+  console.log('  POST /api/agents/create');
+  console.log('  POST /api/init/master');
+  console.log('  POST /api/init/subsystem');
 });

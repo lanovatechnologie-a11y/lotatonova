@@ -5161,9 +5161,782 @@
         document.getElementById('grap-amount').value = '1';
     }
     
-    // Les autres fonctions restent inchangées
-    // (toggleMultiDrawPanel, initMultiDrawPanel, updateMultiGameForm, etc.)
-</script>
+    // Fermer l'écran de pari
+    function closeBettingScreen() {
+        console.log("Fermer écran pari");
+        const bettingScreen = document.getElementById('betting-screen');
+        bettingScreen.classList.remove('slide-in');
+        bettingScreen.classList.add('slide-out');
+        
+        setTimeout(() => {
+            bettingScreen.style.display = 'none';
+            document.querySelector('.container').style.display = 'block';
+        }, 300);
+    }
+    
+    // Soumettre les paris
+    function submitBets() {
+        console.log("Soumettre les paris");
+        if (activeBets.length === 0) {
+            showNotification("Pa gen okenn parye pou konfime", "warning");
+            return;
+        }
+        
+        saveBetsToHistory();
+        checkConnectionBeforeSavePrint();
+    }
+    
+    // Vérifier la connexion avant sauvegarde/impression
+    function checkConnectionBeforeSavePrint() {
+        console.log("Vérification connexion avant sauvegarde/impression");
+        // Pour le moment, on sauvegarde directement
+        saveTicket();
+    }
+    
+    // Vérifier la connexion avant impression
+    function checkConnectionBeforePrint() {
+        console.log("Vérification connexion avant impression");
+        printTicket();
+    }
+    
+    // Annuler l'impression
+    function cancelPrint() {
+        console.log("Impression annulée");
+        document.getElementById('connection-check').style.display = 'none';
+        document.querySelector('.container').style.display = 'block';
+    }
+    
+    // Réessayer la connexion
+    function retryConnectionCheck() {
+        console.log("Réessayer connexion");
+        // Implémenter la logique de réessai ici
+        showNotification("Ap tcheke koneksyon ankò...", "info");
+    }
+    
+    // Imprimer le ticket
+    function printTicket() {
+        console.log("Impression du ticket");
+        const printContent = document.getElementById('tickets-screen').innerHTML;
+        const originalContent = document.body.innerHTML;
+        
+        document.body.innerHTML = printContent;
+        window.print();
+        document.body.innerHTML = originalContent;
+        
+        // Réinitialiser les événements
+        document.addEventListener('DOMContentLoaded', function() {
+            // Réinitialiser les écouteurs d'événements
+        });
+    }
+    
+    // Basculer le panneau multi-tirages
+    function toggleMultiDrawPanel() {
+        console.log("Basculer panneau multi-tirages");
+        const content = document.getElementById('multi-draw-content');
+        const toggleIcon = document.getElementById('multi-draw-toggle').querySelector('i');
+        
+        content.classList.toggle('expanded');
+        
+        if (content.classList.contains('expanded')) {
+            toggleIcon.className = 'fas fa-chevron-up';
+        } else {
+            toggleIcon.className = 'fas fa-chevron-down';
+        }
+    }
+    
+    // Initialiser le panneau multi-tirages
+    function initMultiDrawPanel() {
+        console.log("Initialiser panneau multi-tirages");
+        
+        // Ajouter les options de tirage
+        const optionsContainer = document.getElementById('multi-draw-options');
+        optionsContainer.innerHTML = '';
+        
+        Object.keys(draws).forEach(drawId => {
+            const draw = draws[drawId];
+            const option = document.createElement('div');
+            option.className = 'multi-draw-option';
+            option.textContent = draw.name;
+            option.setAttribute('data-draw', drawId);
+            
+            option.addEventListener('click', function() {
+                this.classList.toggle('selected');
+                const drawId = this.getAttribute('data-draw');
+                
+                if (this.classList.contains('selected')) {
+                    selectedMultiDraws.add(drawId);
+                } else {
+                    selectedMultiDraws.delete(drawId);
+                }
+                
+                console.log("Tirages sélectionnés:", Array.from(selectedMultiDraws));
+            });
+            
+            optionsContainer.appendChild(option);
+        });
+        
+        // Ajouter les jeux
+        const gameSelect = document.getElementById('multi-game-select');
+        gameSelect.innerHTML = '';
+        
+        const games = [
+            { id: 'borlette', name: 'BORLETTE' },
+            { id: 'lotto3', name: 'LOTO 3' },
+            { id: 'lotto4', name: 'LOTO 4' },
+            { id: 'lotto5', name: 'LOTO 5' }
+        ];
+        
+        games.forEach(game => {
+            const option = document.createElement('div');
+            option.className = 'multi-game-option';
+            if (game.id === 'borlette') {
+                option.classList.add('selected');
+            }
+            option.textContent = game.name;
+            option.setAttribute('data-game', game.id);
+            
+            option.addEventListener('click', function() {
+                document.querySelectorAll('.multi-game-option').forEach(opt => {
+                    opt.classList.remove('selected');
+                });
+                this.classList.add('selected');
+                selectedMultiGame = game.id;
+                updateMultiGameForm();
+            });
+            
+            gameSelect.appendChild(option);
+        });
+        
+        // Mettre à jour le formulaire
+        updateMultiGameForm();
+    }
+    
+    // Mettre à jour le formulaire multi-jeu
+    function updateMultiGameForm() {
+        console.log("Mettre à jour formulaire multi-jeu:", selectedMultiGame);
+        const numberInputs = document.getElementById('multi-number-inputs');
+        
+        let html = '';
+        
+        switch(selectedMultiGame) {
+            case 'borlette':
+                html = `
+                    <label for="multi-number">2 Chif yo</label>
+                    <input type="text" id="multi-number" placeholder="00" maxlength="2" pattern="[0-9]{2}">
+                `;
+                break;
+            case 'lotto3':
+                html = `
+                    <label for="multi-number">3 Chif yo</label>
+                    <input type="text" id="multi-number" placeholder="000" maxlength="3" pattern="[0-9]{3}">
+                `;
+                break;
+            case 'lotto4':
+                html = `
+                    <label>4 Chif yo</label>
+                    <div class="number-inputs">
+                        <input type="text" id="multi-number1" placeholder="00" maxlength="2" pattern="[0-9]{2}">
+                        <input type="text" id="multi-number2" placeholder="00" maxlength="2" pattern="[0-9]{2}">
+                    </div>
+                `;
+                break;
+            case 'lotto5':
+                html = `
+                    <label>5 Chif yo</label>
+                    <div class="number-inputs">
+                        <input type="text" id="multi-number1" placeholder="000" maxlength="3" pattern="[0-9]{3}">
+                        <input type="text" id="multi-number2" placeholder="00" maxlength="2" pattern="[0-9]{2}">
+                    </div>
+                `;
+                break;
+        }
+        
+        numberInputs.innerHTML = html;
+    }
+    
+    // Ajouter à la fiche multi-tirages
+    function addToMultiDrawTicket() {
+        console.log("Ajouter à fiche multi-tirages");
+        
+        if (selectedMultiDraws.size === 0) {
+            showNotification("Tanpri chwazi omwen yon tiraj", "warning");
+            return;
+        }
+        
+        let number, amount;
+        amount = parseInt(document.getElementById('multi-draw-amount').value);
+        
+        switch(selectedMultiGame) {
+            case 'borlette':
+                number = document.getElementById('multi-number').value;
+                if (!/^\d{2}$/.test(number)) {
+                    showNotification("Borlette dwe gen 2 chif", "warning");
+                    return;
+                }
+                break;
+            case 'lotto3':
+                number = document.getElementById('multi-number').value;
+                if (!/^\d{3}$/.test(number)) {
+                    showNotification("Lotto 3 dwe gen 3 chif", "warning");
+                    return;
+                }
+                break;
+            case 'lotto4':
+                const num1 = document.getElementById('multi-number1').value;
+                const num2 = document.getElementById('multi-number2').value;
+                number = num1 + num2;
+                if (!/^\d{2}$/.test(num1) || !/^\d{2}$/.test(num2)) {
+                    showNotification("Lotto 4: chak boule dwe gen 2 chif", "warning");
+                    return;
+                }
+                break;
+            case 'lotto5':
+                const num5_1 = document.getElementById('multi-number1').value;
+                const num5_2 = document.getElementById('multi-number2').value;
+                number = num5_1 + num5_2;
+                if (!/^\d{3}$/.test(num5_1) || !/^\d{2}$/.test(num5_2)) {
+                    showNotification("Lotto 5: premye 3 chif, dezyèm 2 chif", "warning");
+                    return;
+                }
+                break;
+        }
+        
+        if (isNaN(amount) || amount <= 0) {
+            showNotification("Tanpri antre yon kantite valab", "warning");
+            return;
+        }
+        
+        // Ajouter le pari pour chaque tiraj sélectionné
+        selectedMultiDraws.forEach(drawId => {
+            currentMultiDrawTicket.bets.push({
+                type: selectedMultiGame,
+                name: betTypes[selectedMultiGame].name,
+                number: number,
+                amount: amount,
+                multiplier: betTypes[selectedMultiGame].multiplier,
+                draw: drawId,
+                drawTime: 'morning' // Par défaut
+            });
+            
+            currentMultiDrawTicket.draws.add(drawId);
+        });
+        
+        // Mettre à jour le total
+        currentMultiDrawTicket.totalAmount += amount * selectedMultiDraws.size;
+        
+        // Mettre à jour l'affichage
+        updateCurrentMultiDrawTicketInfo();
+        
+        showNotification(`${selectedMultiDraws.size} parye ajoute nan fiche multi-tirages!`, "success");
+        
+        // Afficher le panneau d'information
+        document.getElementById('current-multi-ticket-info').style.display = 'block';
+    }
+    
+    // Mettre à jour l'info de la fiche multi-tirages actuelle
+    function updateCurrentMultiDrawTicketInfo() {
+        console.log("Mettre à jour info fiche multi-tirages");
+        const summary = document.getElementById('multi-ticket-summary');
+        
+        if (currentMultiDrawTicket.bets.length === 0) {
+            summary.innerHTML = '<p>Pa gen okenn parye nan fiche a.</p>';
+            return;
+        }
+        
+        let html = `<p><strong>${currentMultiDrawTicket.bets.length}</strong> parye</p>`;
+        html += `<p><strong>${currentMultiDrawTicket.draws.size}</strong> tiraj diferan</p>`;
+        html += `<p><strong>Total: ${currentMultiDrawTicket.totalAmount} goud</strong></p>`;
+        
+        summary.innerHTML = html;
+    }
+    
+    // Voir la fiche multi-tirages actuelle
+    function viewCurrentMultiDrawTicket() {
+        console.log("Voir fiche multi-tirages actuelle");
+        if (currentMultiDrawTicket.bets.length === 0) {
+            showNotification("Pa gen okenn parye nan fiche multi-tirages", "warning");
+            return;
+        }
+        
+        // Afficher un aperçu
+        let message = `Fiche Multi-Tirages:\n`;
+        message += `Total: ${currentMultiDrawTicket.totalAmount} goud\n`;
+        message += `Parye: ${currentMultiDrawTicket.bets.length}\n`;
+        message += `Tirages: ${Array.from(currentMultiDrawTicket.draws).map(d => draws[d].name).join(', ')}`;
+        
+        alert(message);
+    }
+    
+    // Sauvegarder et imprimer la fiche multi-tirages
+    function saveAndPrintMultiDrawTicket() {
+        console.log("Sauvegarder et imprimer fiche multi-tirages");
+        
+        if (currentMultiDrawTicket.bets.length === 0) {
+            showNotification("Pa gen okenn parye nan fiche multi-tirages", "warning");
+            return;
+        }
+        
+        // Créer un ticket complet
+        const ticket = {
+            id: currentMultiDrawTicket.id,
+            number: ticketNumber,
+            date: new Date().toISOString(),
+            isMultiDraw: true,
+            bets: [...currentMultiDrawTicket.bets],
+            total: currentMultiDrawTicket.totalAmount,
+            draws: Array.from(currentMultiDrawTicket.draws),
+            agentName: currentAdmin ? currentAdmin.name : 'Agent'
+        };
+        
+        // Sauvegarder
+        savedTickets.push(ticket);
+        localStorage.setItem('novaLottoTickets', JSON.stringify(savedTickets));
+        localStorage.setItem('novaLottoTicketNumber', (ticketNumber + 1).toString());
+        
+        // Ajouter aux fiches multi-tirages
+        multiDrawTickets.push(ticket);
+        
+        // Réinitialiser la fiche actuelle
+        currentMultiDrawTicket = {
+            id: Date.now().toString(),
+            bets: [],
+            totalAmount: 0,
+            draws: new Set(),
+            createdAt: new Date().toISOString()
+        };
+        
+        // Mettre à jour l'affichage
+        updateCurrentMultiDrawTicketInfo();
+        document.getElementById('current-multi-ticket-info').style.display = 'none';
+        
+        showNotification("Fiche multi-tirages sove avèk siksè!", "success");
+        ticketNumber++;
+    }
+    
+    // Ouvrir l'écran des fiches multi-tirages
+    function openMultiTicketsScreen() {
+        console.log("Ouvrir écran fiches multi-tirages");
+        document.querySelector('.container').style.display = 'none';
+        document.getElementById('multi-tickets-screen').style.display = 'block';
+        
+        displayMultiTickets();
+    }
+    
+    // Afficher les fiches multi-tirages
+    function displayMultiTickets() {
+        console.log("Afficher fiches multi-tirages");
+        const container = document.getElementById('multi-tickets-list');
+        
+        if (multiDrawTickets.length === 0) {
+            container.innerHTML = `
+                <div style="text-align: center; padding: 20px; color: #7f8c8d;">
+                    <i class="fas fa-info-circle" style="font-size: 2rem; margin-bottom: 10px;"></i>
+                    <p>Pa gen okenn fiche multi-tirages.</p>
+                </div>
+            `;
+            return;
+        }
+        
+        container.innerHTML = '';
+        
+        multiDrawTickets.forEach(ticket => {
+            const ticketDiv = document.createElement('div');
+            ticketDiv.className = 'multi-ticket-item';
+            
+            const drawsList = ticket.draws.map(d => draws[d]?.name || d).join(', ');
+            
+            ticketDiv.innerHTML = `
+                <div style="margin-bottom: 10px;">
+                    <strong>Fiche #${String(ticket.number).padStart(6, '0')}</strong>
+                    <div style="font-size: 0.9rem; color: #7f8c8d;">
+                        ${new Date(ticket.date).toLocaleString()}
+                    </div>
+                </div>
+                <div style="margin-bottom: 5px;">
+                    <strong>Tirages:</strong> ${drawsList}
+                </div>
+                <div style="margin-bottom: 5px;">
+                    <strong>Parye:</strong> ${ticket.bets.length}
+                </div>
+                <div class="bet-total">
+                    <span>Total:</span>
+                    <span>${ticket.total} goud</span>
+                </div>
+            `;
+            
+            container.appendChild(ticketDiv);
+        });
+    }
+    
+    // Afficher un écran
+    function showScreen(screen) {
+        console.log("Afficher écran:", screen);
+        
+        // Cacher tous les écrans
+        document.querySelectorAll('.screen').forEach(s => {
+            s.style.display = 'none';
+        });
+        
+        document.getElementById('betting-screen').style.display = 'none';
+        document.getElementById('report-screen').style.display = 'none';
+        document.getElementById('results-check-screen').style.display = 'none';
+        document.getElementById('multi-tickets-screen').style.display = 'none';
+        
+        // Afficher l'écran demandé
+        if (screen === 'home') {
+            document.querySelector('.container').style.display = 'block';
+        } else {
+            document.querySelector('.container').style.display = 'none';
+            document.getElementById(`${screen}-screen`).style.display = 'block';
+        }
+        
+        // Mettre à jour la navigation
+        document.querySelectorAll('.nav-item').forEach(item => {
+            item.classList.remove('active');
+            if (item.getAttribute('data-screen') === screen) {
+                item.classList.add('active');
+            }
+        });
+    }
+    
+    // Rechercher un ticket
+    function searchTicket() {
+        console.log("Rechercher ticket");
+        const searchTerm = document.getElementById('search-ticket-number').value.trim();
+        
+        if (!searchTerm) {
+            showNotification("Tanpri antre yon nimewo fiche", "warning");
+            return;
+        }
+        
+        // Rechercher dans les tickets sauvegardés
+        const results = savedTickets.filter(ticket => 
+            ticket.number.toString().includes(searchTerm) ||
+            ticket.id.includes(searchTerm)
+        );
+        
+        displayTicketSearchResults(results);
+    }
+    
+    // Afficher les résultats de recherche de tickets
+    function displayTicketSearchResults(results) {
+        console.log("Afficher résultats recherche tickets:", results.length);
+        const container = document.getElementById('ticket-management-list');
+        
+        if (results.length === 0) {
+            container.innerHTML = `
+                <div style="text-align: center; padding: 20px; color: #7f8c8d;">
+                    <i class="fas fa-search" style="font-size: 2rem; margin-bottom: 10px;"></i>
+                    <p>Pa gen fiche ki koresponn ak rechèch la.</p>
+                </div>
+            `;
+            return;
+        }
+        
+        container.innerHTML = '';
+        
+        results.forEach(ticket => {
+            const ticketDiv = document.createElement('div');
+            ticketDiv.className = 'ticket-management';
+            
+            ticketDiv.innerHTML = `
+                <div class="ticket-management-header">
+                    <div>
+                        <strong>Fiche #${String(ticket.number).padStart(6, '0')}</strong>
+                        <div style="font-size: 0.9rem; color: #7f8c8d;">
+                            ${new Date(ticket.date).toLocaleString()}
+                        </div>
+                    </div>
+                    <div class="ticket-actions-buttons">
+                        <button class="edit-btn" onclick="viewTicketDetails('${ticket.id}')">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="ticket-details" id="details-${ticket.id}" style="display: none;">
+                    <!-- Les détails seront chargés ici -->
+                </div>
+            `;
+            
+            container.appendChild(ticketDiv);
+        });
+    }
+    
+    // Voir les détails d'un ticket
+    window.viewTicketDetails = function(ticketId) {
+        console.log("Voir détails ticket:", ticketId);
+        const detailsDiv = document.getElementById(`details-${ticketId}`);
+        const ticket = savedTickets.find(t => t.id === ticketId);
+        
+        if (!ticket) return;
+        
+        if (detailsDiv.style.display === 'none') {
+            let betsHTML = '';
+            ticket.bets.forEach(bet => {
+                betsHTML += `
+                    <div class="bet-summary">
+                        <div class="bet-type">${bet.name}</div>
+                        <div class="bet-numbers">${bet.number}</div>
+                        <div class="bet-amount-summary">${bet.amount} G</div>
+                    </div>
+                `;
+            });
+            
+            detailsDiv.innerHTML = `
+                <div style="margin-bottom: 10px;">
+                    <strong>Tiraj:</strong> ${draws[ticket.draw]?.name || ticket.draw} (${ticket.drawTime === 'morning' ? 'Maten' : 'Swè'})
+                </div>
+                <div style="margin-bottom: 10px;">
+                    <strong>Parye:</strong>
+                    <div style="margin-top: 5px;">
+                        ${betsHTML}
+                    </div>
+                </div>
+                <div class="bet-total">
+                    <span>Total:</span>
+                    <span>${ticket.total} G</span>
+                </div>
+            `;
+            
+            detailsDiv.style.display = 'block';
+        } else {
+            detailsDiv.style.display = 'none';
+        }
+    };
+    
+    // Afficher tous les tickets
+    function showAllTickets() {
+        console.log("Afficher tous les tickets");
+        displayTicketSearchResults(savedTickets);
+    }
+    
+    // Afficher les tickets en attente
+    function showPendingTickets() {
+        console.log("Afficher tickets en attente");
+        displayTicketSearchResults(pendingSyncTickets);
+    }
+    
+    // Rechercher dans l'historique
+    function searchHistory() {
+        console.log("Rechercher historique");
+        const searchTerm = document.getElementById('search-history').value.trim();
+        
+        if (!searchTerm) {
+            showNotification("Tanpri antre yon tèm rechèch", "warning");
+            return;
+        }
+        
+        // Charger l'historique
+        const history = JSON.parse(localStorage.getItem('novaLottoHistory')) || [];
+        
+        // Filtrer les résultats
+        const results = history.filter(record => 
+            record.draw.includes(searchTerm) ||
+            record.date.includes(searchTerm) ||
+            record.bets.some(bet => 
+                bet.name.includes(searchTerm) ||
+                bet.number.includes(searchTerm)
+            )
+        );
+        
+        displayHistoryResults(results);
+    }
+    
+    // Afficher les résultats de l'historique
+    function displayHistoryResults(results) {
+        console.log("Afficher résultats historique:", results.length);
+        const container = document.getElementById('history-list');
+        
+        if (results.length === 0) {
+            container.innerHTML = `
+                <div style="text-align: center; padding: 20px; color: #7f8c8d;">
+                    <i class="fas fa-search" style="font-size: 2rem; margin-bottom: 10px;"></i>
+                    <p>Pa gen rezilta ki koresponn ak rechèch la.</p>
+                </div>
+            `;
+            return;
+        }
+        
+        container.innerHTML = '';
+        
+        results.forEach(record => {
+            const historyDiv = document.createElement('div');
+            historyDiv.className = 'history-item';
+            
+            let betsHTML = '';
+            record.bets.forEach(bet => {
+                betsHTML += `
+                    <div class="history-bet">
+                        <span>${bet.name}: ${bet.number}</span>
+                        <span>${bet.amount} G</span>
+                    </div>
+                `;
+            });
+            
+            historyDiv.innerHTML = `
+                <div class="history-header">
+                    <div class="history-draw">${draws[record.draw]?.name || record.draw} (${record.drawTime === 'morning' ? 'Maten' : 'Swè'})</div>
+                    <div class="history-date">${record.date}</div>
+                </div>
+                <div class="history-bets">
+                    ${betsHTML}
+                </div>
+                <div class="history-total">
+                    <span>Total:</span>
+                    <span>${record.total} G</span>
+                </div>
+            `;
+            
+            container.appendChild(historyDiv);
+        });
+    }
+    
+    // Rechercher des fiches gagnantes
+    function searchWinningTickets() {
+        console.log("Rechercher fiches gagnantes");
+        const searchTerm = document.getElementById('search-winning-tickets').value.trim();
+        
+        if (!searchTerm) {
+            showNotification("Tanpri antre yon tèm rechèch", "warning");
+            return;
+        }
+        
+        // Filtrer les fiches gagnantes
+        const results = winningTickets.filter(ticket => 
+            ticket.number.toString().includes(searchTerm) ||
+            ticket.draw.includes(searchTerm) ||
+            ticket.winningBets.some(bet => 
+                bet.name.includes(searchTerm) ||
+                bet.number.includes(searchTerm)
+            )
+        );
+        
+        displayWinningTicketResults(results);
+    }
+    
+    // Afficher les résultats des fiches gagnantes
+    function displayWinningTicketResults(results) {
+        console.log("Afficher résultats fiches gagnantes:", results.length);
+        const container = document.getElementById('winning-tickets-list');
+        
+        if (results.length === 0) {
+            container.innerHTML = `
+                <div style="text-align: center; padding: 20px; color: #7f8c8d;">
+                    <i class="fas fa-search" style="font-size: 2rem; margin-bottom: 10px;"></i>
+                    <p>Pa gen fiche genyen ki koresponn ak rechèch la.</p>
+                </div>
+            `;
+            return;
+        }
+        
+        container.innerHTML = '';
+        
+        results.forEach(ticket => {
+            const ticketDiv = document.createElement('div');
+            ticketDiv.className = 'winning-ticket';
+            
+            let betsHTML = '';
+            ticket.winningBets.forEach(bet => {
+                betsHTML += `
+                    <div class="bet-item">
+                        <div class="bet-details">
+                            <strong>${bet.name}</strong><br>
+                            ${bet.number} (${bet.winType})
+                        </div>
+                        <div class="bet-amount">
+                            <span class="winning-amount">+${bet.winAmount} G</span>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            ticketDiv.innerHTML = `
+                <div style="margin-bottom: 10px;">
+                    <strong>Fiche #${String(ticket.number).padStart(6, '0')}</strong>
+                    <div style="font-size: 0.9rem; color: #7f8c8d;">
+                        ${draws[ticket.draw].name} (${ticket.drawTime === 'morning' ? 'Maten' : 'Swè'})
+                    </div>
+                </div>
+                <div style="margin-bottom: 10px;">
+                    <strong>Rezilta:</strong> ${ticket.result.lot1} | ${ticket.result.lot2} | ${ticket.result.lot3}
+                </div>
+                ${betsHTML}
+                <div class="bet-total">
+                    <span>Total Gains:</span>
+                    <span class="winning-amount">${ticket.totalWinnings} G</span>
+                </div>
+            `;
+            
+            container.appendChild(ticketDiv);
+        });
+    }
+    
+    // Mettre à jour le badge des fiches en attente
+    function updatePendingBadge() {
+        console.log("Mettre à jour badge fiches en attente");
+        const pendingCount = pendingSyncTickets.length;
+        
+        // Mettre à jour l'indicateur de synchronisation
+        const syncStatus = document.getElementById('sync-status');
+        const syncText = document.getElementById('sync-text');
+        
+        if (pendingCount > 0) {
+            syncStatus.className = 'sync-status sync-pending';
+            syncText.textContent = `${pendingCount} fiche pou sync`;
+        } else if (isOnline) {
+            syncStatus.className = 'sync-status sync-connected';
+            syncText.textContent = 'Konekte';
+        } else {
+            syncStatus.className = 'sync-status sync-disconnected';
+            syncText.textContent = 'Pa Konekte';
+        }
+    }
+    
+    // Charger le logo
+    function loadLogo() {
+        console.log("Charger logo");
+        // Vérifier si le logo existe
+        const logo = new Image();
+        logo.onload = function() {
+            console.log("Logo chargé avec succès");
+        };
+        logo.onerror = function() {
+            console.log("Logo non trouvé, utilisation du logo par défaut");
+            // Utiliser un logo par défaut si nécessaire
+        };
+        logo.src = companyLogo;
+    }
+    
+    // Mettre à jour la notification du total pour paris normaux
+    function updateNormalBetTotalNotification() {
+        const total = activeBets.reduce((sum, bet) => sum + bet.amount, 0);
+        
+        if (total === 0) {
+            // Supprimer la notification si elle existe
+            const existingNotification = document.querySelector('.total-notification');
+            if (existingNotification) {
+                existingNotification.remove();
+            }
+            return;
+        }
+        
+        // Créer ou mettre à jour la notification
+        let notification = document.querySelector('.total-notification');
+        if (!notification) {
+            notification = document.createElement('div');
+            notification.className = 'total-notification';
+            document.getElementById('total-notification-container').appendChild(notification);
+        }
+        
+        notification.innerHTML = `
+            <i class="fas fa-coins"></i>
+            <span>Total Aktuèl:</span>
+            <span class="total-amount">${total} goud</span>
+        `;
+    }
+    
+    // Les fonctions manquantes sont maintenant définies
+    </script>
     <script>
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.register('/service-worker.js')

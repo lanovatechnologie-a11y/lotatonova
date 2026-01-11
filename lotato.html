@@ -6,7 +6,7 @@
     <title>LOTATO</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="manifest" href="/manifest.json">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
 
     <style>
         :root {
@@ -2982,7 +2982,7 @@
             // Initialiser le panneau multi-tirages
             initMultiDrawPanel();
             
-            // Gestion des fiches
+            // Gestion des fiches - Écouteurs d'événements ajoutés
             document.getElementById('search-ticket-btn').addEventListener('click', function() {
                 console.log("Rechercher fiche");
                 searchTicket();
@@ -6311,10 +6311,10 @@
                     </div>
                     ${canEdit ? `
                         <div style="display: flex; gap: 10px; margin-top: 10px;">
-                            <button class="edit-btn" onclick="loadTicketForEditFromHistory('${ticket.id}')">
+                            <button class="edit-btn" onclick="loadTicketForEdit('${ticket.id}')">
                                 <i class="fas fa-edit"></i> Modifye
                             </button>
-                            <button class="delete-btn" onclick="deleteTicketFromHistory('${ticket.id}')">
+                            <button class="delete-btn" onclick="deleteTicket('${ticket.id}')">
                                 <i class="fas fa-trash"></i> Efase
                             </button>
                         </div>
@@ -6325,11 +6325,271 @@
             });
         }
         
-        // Fonctions restantes (inchangées mais nécessaires)
+        // MODIFICATION IMPORTANTE: Mettre à jour l'écran de gestion des fiches
         function updateTicketManagementScreen() {
-            // Implémentation de base
+            console.log("Mise à jour écran gestion fiches");
             const ticketList = document.getElementById('ticket-management-list');
-            ticketList.innerHTML = '<p>Fonksyon Jesyon Fiche ap prepare...</p>';
+            
+            if (savedTickets.length === 0 && pendingSyncTickets.length === 0) {
+                ticketList.innerHTML = `
+                    <div style="text-align: center; padding: 40px; color: #7f8c8d;">
+                        <i class="fas fa-file-invoice" style="font-size: 3rem; margin-bottom: 15px;"></i>
+                        <p>Pa gen fiche ki sove.</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            let html = '';
+            
+            // Combiner toutes les fiches
+            const allTickets = [...savedTickets, ...pendingSyncTickets];
+            
+            // Trier par date (plus récent d'abord)
+            const sortedTickets = [...allTickets].sort((a, b) => new Date(b.date) - new Date(a.date));
+            
+            sortedTickets.forEach(ticket => {
+                const ticketDate = new Date(ticket.date);
+                const now = new Date();
+                const timeDiff = now - ticketDate;
+                const canEdit = timeDiff <= FIVE_MINUTES;
+                
+                // Grouper les paris pour l'affichage
+                const groupedBets = groupBetsByType(ticket.bets);
+                let betsHTML = '';
+                
+                for (const [type, bets] of Object.entries(groupedBets)) {
+                    const betCount = bets.length;
+                    const totalAmount = bets.reduce((sum, bet) => sum + bet.amount, 0);
+                    betsHTML += `<div style="margin-bottom: 5px;"><strong>${type}:</strong> ${betCount} parye (${totalAmount} G)</div>`;
+                }
+                
+                html += `
+                    <div class="ticket-management">
+                        <div class="ticket-management-header">
+                            <div>
+                                <strong>Fiche #${String(ticket.number).padStart(6, '0')}</strong>
+                                ${ticket.draw ? `<div style="font-size: 0.9rem; color: #7f8c8d;">${draws[ticket.draw]?.name || 'Tiraj'} (${ticket.drawTime === 'morning' ? 'Maten' : 'Swè'})</div>` : ''}
+                            </div>
+                            <div style="text-align: right;">
+                                <div>${ticketDate.toLocaleString()}</div>
+                                ${ticket.total ? `<div style="font-weight: bold;">${ticket.total} G</div>` : ''}
+                            </div>
+                        </div>
+                        <div class="ticket-details">
+                            ${betsHTML}
+                            ${ticket.agentName ? `<div><strong>Ajan:</strong> ${ticket.agentName}</div>` : ''}
+                        </div>
+                        ${canEdit ? `
+                            <div style="display: flex; gap: 10px; margin-top: 10px;">
+                                <button class="edit-btn" onclick="loadTicketForEdit('${ticket.id}')">
+                                    <i class="fas fa-edit"></i> Modifye
+                                </button>
+                                <button class="delete-btn" onclick="deleteTicket('${ticket.id}')">
+                                    <i class="fas fa-trash"></i> Efase
+                                </button>
+                            </div>
+                        ` : `
+                            <div style="margin-top: 10px; color: #7f8c8d; font-size: 0.9rem;">
+                                <i class="fas fa-info-circle"></i> Fiche sa pa ka modifye ankò (5 minit deja pase)
+                            </div>
+                        `}
+                    </div>
+                `;
+            });
+            
+            ticketList.innerHTML = html;
+        }
+        
+        // NOUVEAU: Charger un ticket pour modification
+        window.loadTicketForEdit = function(ticketId) {
+            console.log("Charger ticket pour modification:", ticketId);
+            
+            // Trouver le ticket
+            const allTickets = [...savedTickets, ...pendingSyncTickets];
+            const ticketIndex = allTickets.findIndex(t => t.id === ticketId);
+            
+            if (ticketIndex === -1) {
+                showNotification("Fiche pa jwenn", "error");
+                return;
+            }
+            
+            const ticket = allTickets[ticketIndex];
+            
+            // Vérifier si on peut encore modifier (5 minutes)
+            const ticketDate = new Date(ticket.date);
+            const now = new Date();
+            const timeDiff = now - ticketDate;
+            
+            if (timeDiff > FIVE_MINUTES) {
+                showNotification("Fiche sa pa ka modifye ankò. 5 minit deja pase.", "warning");
+                return;
+            }
+            
+            // Demander confirmation
+            if (!confirm(`Èske ou vreman vle modifye fiche #${String(ticket.number).padStart(6, '0')}? Fiche sa pral efase epi parye yo pral mete nan panier aktif.`)) {
+                return;
+            }
+            
+            // Mettre les paris dans les paris actifs
+            activeBets = [...ticket.bets];
+            
+            // Mettre à jour le tiraj actuel
+            currentDraw = ticket.draw;
+            currentDrawTime = ticket.drawTime;
+            
+            // Supprimer le ticket des listes
+            const savedIndex = savedTickets.findIndex(t => t.id === ticketId);
+            if (savedIndex !== -1) {
+                savedTickets.splice(savedIndex, 1);
+            }
+            
+            const pendingIndex = pendingSyncTickets.findIndex(t => t.id === ticketId);
+            if (pendingIndex !== -1) {
+                pendingSyncTickets.splice(pendingIndex, 1);
+            }
+            
+            // Mettre à jour l'affichage
+            updateBetsList();
+            updateTicketManagementScreen();
+            
+            // Ouvrir l'écran de pari
+            openBettingScreen(ticket.draw, ticket.drawTime);
+            
+            showNotification(`Fiche #${String(ticket.number).padStart(6, '0')} chaje pou modification`, "success");
+        };
+        
+        // NOUVEAU: Supprimer un ticket
+        window.deleteTicket = function(ticketId) {
+            console.log("Supprimer ticket:", ticketId);
+            
+            // Trouver le ticket
+            const allTickets = [...savedTickets, ...pendingSyncTickets];
+            const ticket = allTickets.find(t => t.id === ticketId);
+            
+            if (!ticket) {
+                showNotification("Fiche pa jwenn", "error");
+                return;
+            }
+            
+            // Vérifier si on peut encore supprimer (5 minutes)
+            const ticketDate = new Date(ticket.date);
+            const now = new Date();
+            const timeDiff = now - ticketDate;
+            
+            if (timeDiff > FIVE_MINUTES) {
+                showNotification("Fiche sa pa ka efase ankò. 5 minit deja pase.", "warning");
+                return;
+            }
+            
+            // Demander confirmation
+            if (!confirm(`Èske ou vreman vle efase fiche #${String(ticket.number).padStart(6, '0')}? Aksyon sa a pa ka anile.`)) {
+                return;
+            }
+            
+            // Supprimer le ticket des listes
+            const savedIndex = savedTickets.findIndex(t => t.id === ticketId);
+            if (savedIndex !== -1) {
+                savedTickets.splice(savedIndex, 1);
+            }
+            
+            const pendingIndex = pendingSyncTickets.findIndex(t => t.id === ticketId);
+            if (pendingIndex !== -1) {
+                pendingSyncTickets.splice(pendingIndex, 1);
+            }
+            
+            // Mettre à jour l'affichage
+            updateTicketManagementScreen();
+            
+            showNotification(`Fiche #${String(ticket.number).padStart(6, '0')} efase avèk siksè`, "success");
+        };
+        
+        // NOUVEAU: Rechercher un ticket
+        function searchTicket() {
+            const searchTerm = document.getElementById('search-ticket-number').value.toLowerCase();
+            const ticketItems = document.querySelectorAll('#ticket-management-list .ticket-management');
+            
+            if (!searchTerm) {
+                // Si la recherche est vide, tout afficher
+                ticketItems.forEach(item => {
+                    item.style.display = 'block';
+                });
+                return;
+            }
+            
+            ticketItems.forEach(item => {
+                const text = item.textContent.toLowerCase();
+                if (text.includes(searchTerm)) {
+                    item.style.display = 'block';
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+        }
+        
+        // NOUVEAU: Afficher toutes les fiches
+        function showAllTickets() {
+            document.getElementById('search-ticket-number').value = '';
+            updateTicketManagementScreen();
+        }
+        
+        // NOUVEAU: Afficher les fiches en attente
+        function showPendingTickets() {
+            document.getElementById('search-ticket-number').value = '';
+            const ticketList = document.getElementById('ticket-management-list');
+            
+            if (pendingSyncTickets.length === 0) {
+                ticketList.innerHTML = `
+                    <div style="text-align: center; padding: 40px; color: #7f8c8d;">
+                        <i class="fas fa-hourglass-half" style="font-size: 3rem; margin-bottom: 15px;"></i>
+                        <p>Pa gen fiche ki pokò ale nan santral.</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            let html = '<h3>Fiche Pokò ale nan santral</h3>';
+            
+            // Trier par date (plus récent d'abord)
+            const sortedTickets = [...pendingSyncTickets].sort((a, b) => new Date(b.date) - new Date(a.date));
+            
+            sortedTickets.forEach(ticket => {
+                const ticketDate = new Date(ticket.date);
+                const now = new Date();
+                const timeDiff = now - ticketDate;
+                const canEdit = timeDiff <= FIVE_MINUTES;
+                
+                html += `
+                    <div class="ticket-management">
+                        <div class="ticket-management-header">
+                            <div>
+                                <strong>Fiche #${String(ticket.number).padStart(6, '0')}</strong>
+                                ${ticket.draw ? `<div style="font-size: 0.9rem; color: #7f8c8d;">${draws[ticket.draw]?.name || 'Tiraj'} (${ticket.drawTime === 'morning' ? 'Maten' : 'Swè'})</div>` : ''}
+                            </div>
+                            <div style="text-align: right;">
+                                <div>${ticketDate.toLocaleString()}</div>
+                                <div style="font-weight: bold;">${ticket.total} G</div>
+                            </div>
+                        </div>
+                        <div class="ticket-details">
+                            <div><strong>${ticket.bets.length} parye</strong></div>
+                            ${ticket.agentName ? `<div><strong>Ajan:</strong> ${ticket.agentName}</div>` : ''}
+                        </div>
+                        ${canEdit ? `
+                            <div style="display: flex; gap: 10px; margin-top: 10px;">
+                                <button class="edit-btn" onclick="loadTicketForEdit('${ticket.id}')">
+                                    <i class="fas fa-edit"></i> Modifye
+                                </button>
+                                <button class="delete-btn" onclick="deleteTicket('${ticket.id}')">
+                                    <i class="fas fa-trash"></i> Efase
+                                </button>
+                            </div>
+                        ` : ''}
+                    </div>
+                `;
+            });
+            
+            ticketList.innerHTML = html;
         }
         
         function generateEndOfDrawReport() {
@@ -6409,50 +6669,91 @@
             `;
         }
         
-        // Fonctions pour la gestion des tickets (à implémenter)
+        // Fonctions pour la gestion des tickets dans l'historique
         window.loadTicketForEditFromHistory = function(ticketId) {
-            console.log("Charger ticket pour édition:", ticketId);
-            showNotification("Fonksyon modifye ap prepare...", "info");
+            console.log("Charger ticket pour édition depuis historique:", ticketId);
+            
+            // Trouver le ticket dans savedTickets
+            const ticketIndex = savedTickets.findIndex(t => t.id === ticketId);
+            
+            if (ticketIndex === -1) {
+                showNotification("Fiche pa jwenn", "error");
+                return;
+            }
+            
+            const ticket = savedTickets[ticketIndex];
+            
+            // Vérifier si on peut encore modifier (5 minutes)
+            const ticketDate = new Date(ticket.date);
+            const now = new Date();
+            const timeDiff = now - ticketDate;
+            
+            if (timeDiff > FIVE_MINUTES) {
+                showNotification("Fiche sa pa ka modifye ankò. 5 minit deja pase.", "warning");
+                return;
+            }
+            
+            // Demander confirmation
+            if (!confirm(`Èske ou vreman vle modifye fiche #${String(ticket.number).padStart(6, '0')}? Fiche sa pral efase epi parye yo pral mete nan panier aktif.`)) {
+                return;
+            }
+            
+            // Mettre les paris dans les paris actifs
+            activeBets = [...ticket.bets];
+            
+            // Mettre à jour le tiraj actuel
+            currentDraw = ticket.draw;
+            currentDrawTime = ticket.drawTime;
+            
+            // Supprimer le ticket
+            savedTickets.splice(ticketIndex, 1);
+            
+            // Mettre à jour l'affichage
+            updateBetsList();
+            updateHistoryScreen();
+            
+            // Ouvrir l'écran de pari
+            openBettingScreen(ticket.draw, ticket.drawTime);
+            
+            showNotification(`Fiche #${String(ticket.number).padStart(6, '0')} chaje pou modification`, "success");
         };
         
         window.deleteTicketFromHistory = function(ticketId) {
-            console.log("Supprimer ticket:", ticketId);
-            if (confirm("Èske ou sèten ou vle efase fiche sa?")) {
-                savedTickets = savedTickets.filter(ticket => ticket.id !== ticketId);
-                showNotification("Fiche efase avèk siksè", "success");
+            console.log("Supprimer ticket depuis historique:", ticketId);
+            
+            // Trouver le ticket
+            const ticketIndex = savedTickets.findIndex(t => t.id === ticketId);
+            
+            if (ticketIndex === -1) {
+                showNotification("Fiche pa jwenn", "error");
+                return;
             }
+            
+            const ticket = savedTickets[ticketIndex];
+            
+            // Vérifier si on peut encore supprimer (5 minutes)
+            const ticketDate = new Date(ticket.date);
+            const now = new Date();
+            const timeDiff = now - ticketDate;
+            
+            if (timeDiff > FIVE_MINUTES) {
+                showNotification("Fiche sa pa ka efase ankò. 5 minit deja pase.", "warning");
+                return;
+            }
+            
+            // Demander confirmation
+            if (!confirm(`Èske ou vreman vle efase fiche #${String(ticket.number).padStart(6, '0')}? Aksyon sa a pa ka anile.`)) {
+                return;
+            }
+            
+            // Supprimer le ticket
+            savedTickets.splice(ticketIndex, 1);
+            
+            // Mettre à jour l'affichage
+            updateHistoryScreen();
+            
+            showNotification(`Fiche #${String(ticket.number).padStart(6, '0')} efase avèk siksè`, "success");
         };
-        
-        function searchTicket() {
-            const searchTerm = document.getElementById('search-ticket-number').value;
-            showNotification("Fonksyon rechèch ap prepare...", "info");
-        }
-        
-        function showAllTickets() {
-            updateTicketManagementScreen();
-        }
-        
-        function showPendingTickets() {
-            const ticketList = document.getElementById('ticket-management-list');
-            ticketList.innerHTML = `
-                <h3>Fiche Pokò Synchronize (${pendingSyncTickets.length})</h3>
-                ${pendingSyncTickets.length === 0 ? 
-                    '<p>Pa gen fiche ki pokò synchronize.</p>' : 
-                    pendingSyncTickets.map(ticket => `
-                        <div class="ticket-management">
-                            <div class="ticket-management-header">
-                                <span><strong>Fiche #${String(ticket.number).padStart(6, '0')}</strong></span>
-                                <span>${new Date(ticket.date).toLocaleString()}</span>
-                            </div>
-                            <div class="ticket-details">
-                                <p><strong>${draws[ticket.draw].name} (${ticket.drawTime === 'morning' ? 'Maten' : 'Swè'})</strong></p>
-                                <p>Total: ${ticket.total} G</p>
-                            </div>
-                        </div>
-                    `).join('')
-                }
-            `;
-        }
         
         // NOUVEAU: Mettre à jour la notification du total pour les paris normaux
         function updateNormalBetTotalNotification() {

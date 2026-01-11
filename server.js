@@ -3,6 +3,7 @@ const mongoose = require('mongoose');
 const path = require('path');
 const compression = require('compression');
 const fs = require('fs');
+const cors = require('cors');
 
 const app = express();
 
@@ -17,6 +18,9 @@ app.use(compression({
         return compression.filter(req, res);
     }
 }));
+
+// Middleware CORS
+app.use(cors());
 
 // Middleware standard
 app.use(express.json());
@@ -1342,7 +1346,7 @@ app.delete('/api/tickets/:id', vérifierToken, async (req, res) => {
 });
 
 // Route pour les fiches multi-tirages
-app.get('/api/tickets/multi', vérifierToken, async (req, res) => {
+app.get('/api/tickets/multi-draw', vérifierToken, async (req, res) => {
   try {
     const tickets = await MultiDrawTicket.find()
       .sort({ date: -1 })
@@ -1370,7 +1374,7 @@ app.get('/api/tickets/multi', vérifierToken, async (req, res) => {
 });
 
 // Route pour sauvegarder une fiche multi-tirages
-app.post('/api/tickets/multi', vérifierToken, async (req, res) => {
+app.post('/api/tickets/multi-draw', vérifierToken, async (req, res) => {
   try {
     const { ticket, agentId, agentName } = req.body;
     
@@ -1411,7 +1415,7 @@ app.post('/api/tickets/multi', vérifierToken, async (req, res) => {
 });
 
 // Route pour vérifier les gagnants
-app.post('/api/winners/check', vérifierToken, async (req, res) => {
+app.post('/api/check-winners', vérifierToken, async (req, res) => {
   try {
     const { draw, draw_time } = req.body;
     
@@ -1534,7 +1538,7 @@ app.post('/api/winners/check', vérifierToken, async (req, res) => {
 });
 
 // Route pour les gagnants
-app.get('/api/winners', vérifierToken, async (req, res) => {
+app.get('/api/tickets/winning', vérifierToken, async (req, res) => {
   try {
     const winners = await Winner.find()
       .sort({ date: -1 })
@@ -1542,7 +1546,7 @@ app.get('/api/winners', vérifierToken, async (req, res) => {
     
     res.json({
       success: true,
-      winningTickets: winners.map(winner => ({
+      tickets: winners.map(winner => ({
         id: winner._id,
         ticket_number: winner.ticket_number,
         date: winner.date,
@@ -1704,7 +1708,7 @@ app.post('/api/reports/draw', vérifierToken, async (req, res) => {
 });
 
 // Route pour les informations de l'entreprise
-app.get('/api/company', vérifierToken, async (req, res) => {
+app.get('/api/company-info', vérifierToken, async (req, res) => {
   try {
     let config = await Config.findOne();
     
@@ -1715,13 +1719,11 @@ app.get('/api/company', vérifierToken, async (req, res) => {
     
     res.json({
       success: true,
-      info: {
-        name: config.company_name,
-        phone: config.company_phone,
-        address: config.company_address,
-        reportTitle: config.report_title,
-        reportPhone: config.report_phone
-      }
+      company_name: config.company_name,
+      company_phone: config.company_phone,
+      company_address: config.company_address,
+      report_title: config.report_title,
+      report_phone: config.report_phone
     });
   } catch (error) {
     console.error('Erreur chargement info entreprise:', error);
@@ -1784,6 +1786,35 @@ app.get('/api/auth/check', vérifierToken, async (req, res) => {
     res.status(500).json({
       success: false,
       error: 'Erreur lors de la vérification de la session'
+    });
+  }
+});
+
+// Route pour les tickets en attente
+app.get('/api/tickets/pending', vérifierToken, async (req, res) => {
+  try {
+    const tickets = await Ticket.find({ is_synced: false })
+      .sort({ date: -1 })
+      .limit(50);
+    
+    res.json({
+      success: true,
+      tickets: tickets.map(ticket => ({
+        id: ticket._id,
+        number: ticket.number,
+        date: ticket.date,
+        draw: ticket.draw,
+        draw_time: ticket.draw_time,
+        bets: ticket.bets,
+        total: ticket.total,
+        agent_name: ticket.agent_name
+      }))
+    });
+  } catch (error) {
+    console.error('Erreur tickets en attente:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Erreur lors du chargement des tickets en attente'
     });
   }
 });
@@ -1935,6 +1966,7 @@ const PORT = process.env.PORT || 10000;
 app.listen(PORT, () => {
   console.log(`🚀 Serveur démarré sur le port ${PORT}`);
   console.log(`📁 Compression GZIP activée`);
+  console.log(`🌐 CORS activé`);
   console.log(`👑 Master Dashboard: http://localhost:${PORT}/master-dashboard.html`);
   console.log(`🏢 Subsystem Admin: http://localhost:${PORT}/subsystem-admin.html`);
   console.log(`🎰 LOTATO: http://localhost:${PORT}/lotato.html`);
@@ -1945,27 +1977,28 @@ app.listen(PORT, () => {
   console.log('');
   console.log('✅ Serveur prêt avec toutes les routes !');
   console.log('');
-  console.log('📋 Routes API LOTATO ajoutées:');
-  console.log('  GET  /api/draws');
-  console.log('  GET  /api/results');
-  console.log('  GET  /api/results/latest');
-  console.log('  POST /api/bets');
-  console.log('  POST /api/tickets');
-  console.log('  GET  /api/tickets/latest');
-  console.log('  GET  /api/tickets/:id');
-  console.log('  GET  /api/tickets/search');
-  console.log('  GET  /api/tickets/history');
-  console.log('  GET  /api/tickets/all');
+  console.log('📋 Routes API LOTATO disponibles:');
+  console.log('  GET    /api/draws');
+  console.log('  GET    /api/results');
+  console.log('  GET    /api/results/latest');
+  console.log('  POST   /api/bets');
+  console.log('  POST   /api/tickets');
+  console.log('  GET    /api/tickets/latest');
+  console.log('  GET    /api/tickets/:id');
+  console.log('  GET    /api/tickets/search');
+  console.log('  GET    /api/tickets/history');
+  console.log('  GET    /api/tickets/all');
   console.log('  DELETE /api/tickets/:id');
-  console.log('  GET  /api/tickets/multi');
-  console.log('  POST /api/tickets/multi');
-  console.log('  POST /api/winners/check');
-  console.log('  GET  /api/winners');
-  console.log('  GET  /api/reports');
-  console.log('  POST /api/reports/end-of-draw');
-  console.log('  GET  /api/reports/general');
-  console.log('  POST /api/reports/draw');
-  console.log('  GET  /api/company');
-  console.log('  GET  /api/logo');
-  console.log('  GET  /api/auth/check');
+  console.log('  GET    /api/tickets/multi-draw');
+  console.log('  POST   /api/tickets/multi-draw');
+  console.log('  POST   /api/check-winners');
+  console.log('  GET    /api/tickets/winning');
+  console.log('  GET    /api/reports');
+  console.log('  POST   /api/reports/end-of-draw');
+  console.log('  GET    /api/reports/general');
+  console.log('  POST   /api/reports/draw');
+  console.log('  GET    /api/company-info');
+  console.log('  GET    /api/logo');
+  console.log('  GET    /api/auth/check');
+  console.log('  GET    /api/tickets/pending');
 });

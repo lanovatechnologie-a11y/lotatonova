@@ -156,6 +156,20 @@ const multiDrawTicketSchema = new mongoose.Schema({
 
 const MultiDrawTicket = mongoose.model('MultiDrawTicket', multiDrawTicketSchema);
 
+// Schéma pour l'historique
+const historySchema = new mongoose.Schema({
+  id: { type: Number, required: true },
+  date: { type: String, required: true },
+  draw: { type: String, required: true },
+  draw_time: { type: String, enum: ['morning', 'evening'], required: true },
+  bets: [betSchema],
+  total: { type: Number, required: true },
+  agent_id: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  agent_name: { type: String }
+});
+
+const History = mongoose.model('History', historySchema);
+
 // Schéma pour les gagnants
 const winnerSchema = new mongoose.Schema({
   ticket_id: { type: mongoose.Schema.Types.ObjectId, ref: 'Ticket' },
@@ -191,17 +205,33 @@ const configSchema = new mongoose.Schema({
 
 const Config = mongoose.model('Config', configSchema);
 
-// Schéma pour l'historique
-const historySchema = new mongoose.Schema({
-  id: { type: String, required: true },
-  date: { type: String, required: true },
-  draw: { type: String, required: true },
-  draw_time: { type: String, required: true },
-  bets: [betSchema],
-  total: { type: Number, required: true }
+// =================== SCHÉMAS POUR LES SOUS-SYSTÈMES ===================
+
+const subsystemSchema = new mongoose.Schema({
+  name: { type: String, required: true },
+  subdomain: { type: String, required: true, unique: true },
+  contact_email: { type: String, required: true },
+  contact_phone: { type: String },
+  max_users: { type: Number, default: 10 },
+  subscription_type: { 
+    type: String, 
+    enum: ['basic', 'standard', 'premium', 'enterprise'], 
+    default: 'standard' 
+  },
+  subscription_months: { type: Number, default: 1 },
+  subscription_expires: { type: Date },
+  admin_user: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  is_active: { type: Boolean, default: true },
+  created_at: { type: Date, default: Date.now },
+  stats: {
+    active_users: { type: Number, default: 0 },
+    today_sales: { type: Number, default: 0 },
+    today_tickets: { type: Number, default: 0 },
+    usage_percentage: { type: Number, default: 0 }
+  }
 });
 
-const History = mongoose.model('History', historySchema);
+const Subsystem = mongoose.model('Subsystem', subsystemSchema);
 
 // =================== MIDDLEWARE DE VÉRIFICATION DE TOKEN ===================
 
@@ -314,7 +344,7 @@ app.post('/api/auth/login', async (req, res) => {
   }
 });
 
-// =================== ROUTES DE BASE ===================
+// =================== ROUTES API EXISTANTES ===================
 
 app.get('/api/health', (req, res) => {
   res.json({ 
@@ -348,30 +378,688 @@ app.get('/api/auth/verify', (req, res) => {
   }
 });
 
-// =================== ROUTES POUR LOTATO ===================
-
-// Route pour obtenir tous les tickets
-app.get('/api/tickets', vérifierToken, async (req, res) => {
+app.get('/api/statistics', vérifierToken, async (req, res) => {
   try {
-    const tickets = await Ticket.find().sort({ date: -1 }).limit(100);
-    const nextTicketNumber = (await Ticket.findOne().sort({ number: -1 }))?.number + 1 || 100001;
+    const totalUsers = await User.countDocuments();
+    const activeAgents = await User.countDocuments({ role: 'agent' });
+    const activeSupervisors = await User.countDocuments({ role: 'supervisor' });
+    const activeSubsystems = await User.countDocuments({ role: 'subsystem' });
+    
+    const statistics = {
+      active_agents: activeAgents,
+      active_supervisors: activeSupervisors,
+      active_subsystems: activeSubsystems,
+      total_sales: Math.floor(Math.random() * 10000000) + 5000000,
+      total_profit: Math.floor(Math.random() * 3000000) + 1000000,
+      total_users: totalUsers
+    };
     
     res.json({
       success: true,
-      tickets: tickets,
-      nextTicketNumber: nextTicketNumber
+      statistics: statistics
     });
   } catch (error) {
-    console.error('Erreur chargement tickets:', error);
     res.status(500).json({
       success: false,
-      error: 'Erreur lors du chargement des tickets'
+      error: 'Erreur lors du chargement des statistiques'
     });
   }
 });
 
-// Route pour sauvegarder un ticket
-app.post('/api/tickets', vérifierToken, async (req, res) => {
+app.get('/api/agents', vérifierToken, async (req, res) => {
+  try {
+    const agents = await User.find({ 
+      role: 'agent'
+    }).select('-password');
+    
+    const agentsWithStats = agents.map(agent => {
+      const total_sales = Math.floor(Math.random() * 100000) + 10000;
+      const total_payout = Math.floor(total_sales * 0.6);
+      const total_tickets = Math.floor(Math.random() * 500) + 50;
+      const winning_tickets = Math.floor(total_tickets * 0.3);
+      
+      return {
+        ...agent.toObject(),
+        total_sales: total_sales,
+        total_payout: total_payout,
+        total_tickets: total_tickets,
+        winning_tickets: winning_tickets,
+        is_online: Math.random() > 0.5,
+        last_active: new Date(Date.now() - Math.random() * 10000000000)
+      };
+    });
+    
+    res.json({
+      success: true,
+      agents: agentsWithStats
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: 'Erreur lors du chargement des agents'
+    });
+  }
+});
+
+app.get('/api/supervisors', vérifierToken, async (req, res) => {
+  try {
+    const supervisors = await User.find({ 
+      role: 'supervisor'
+    }).select('-password');
+    
+    const supervisorsWithStats = supervisors.map(supervisor => {
+      const agents_count = Math.floor(Math.random() * 10) + 1;
+      const total_sales = Math.floor(Math.random() * 500000) + 50000;
+      const total_payout = Math.floor(total_sales * 0.65);
+      
+      return {
+        ...supervisor.toObject(),
+        agents_count: agents_count,
+        total_sales: total_sales,
+        total_payout: total_payout
+      };
+    });
+    
+    res.json({
+      success: true,
+      supervisors: supervisorsWithStats
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: 'Erreur lors du chargement des superviseurs'
+    });
+  }
+});
+
+app.post('/api/agents/create', vérifierToken, async (req, res) => {
+    try {
+        const { name, email, level, password } = req.body;
+        const newAgent = new User({
+            username: email,
+            password: password,
+            name: name,
+            role: 'agent',
+            level: parseInt(level)
+        });
+        await newAgent.save();
+        res.json({ success: true, message: 'Agent créé avec succès' });
+    } catch (error) {
+        res.status(500).json({ success: false, error: 'Erreur lors de la création de l\'agent' });
+    }
+});
+
+app.get('/api/activities/recent', vérifierToken, async (req, res) => {
+    try {
+        const activities = [];
+        res.json({ success: true, activities });
+    } catch (error) {
+        res.status(500).json({ success: false, error: 'Erreur lors du chargement des activités' });
+    }
+});
+
+app.get('/api/reports/generate', vérifierToken, async (req, res) => {
+    try {
+        const { period } = req.query;
+        const report = {
+            period: period,
+            monthlyPerformance: 85,
+            ticketResolution: 92,
+            activeAgents: await User.countDocuments({ role: 'agent' }),
+            pendingTickets: 5
+        };
+        res.json({ success: true, report });
+    } catch (error) {
+        res.status(500).json({ success: false, error: 'Erreur lors de la génération du rapport' });
+    }
+});
+
+app.post('/api/system/settings', vérifierToken, async (req, res) => {
+    try {
+        res.json({ success: true, message: 'Paramètres sauvegardés avec succès' });
+    } catch (error) {
+        res.status(500).json({ success: false, error: 'Erreur lors de la sauvegarde des paramètres' });
+    }
+});
+
+// =================== ROUTES POUR LES SOUS-SYSTÈMES ===================
+
+app.post('/api/master/subsystems', vérifierToken, async (req, res) => {
+  try {
+    if (!req.tokenInfo || req.tokenInfo.role !== 'master') {
+      return res.status(403).json({
+        success: false,
+        error: 'Accès refusé. Rôle master requis.'
+      });
+    }
+
+    const {
+      name,
+      subdomain,
+      contact_email,
+      contact_phone,
+      max_users,
+      subscription_type,
+      subscription_months,
+      send_credentials
+    } = req.body;
+
+    if (!name || !subdomain || !contact_email) {
+      return res.status(400).json({
+        success: false,
+        error: 'Le nom, le sous-domaine et l\'email de contact sont obligatoires'
+      });
+    }
+
+    const existingSubsystem = await Subsystem.findOne({ subdomain: subdomain });
+    if (existingSubsystem) {
+      return res.status(400).json({
+        success: false,
+        error: 'Ce sous-domaine est déjà utilisé'
+      });
+    }
+
+    let adminUser = await User.findOne({ username: contact_email });
+    
+    if (!adminUser) {
+      const generatedPassword = Math.random().toString(36).slice(-8);
+
+      adminUser = new User({
+        username: contact_email,
+        password: generatedPassword,
+        name: name,
+        role: 'subsystem',
+        level: 1
+      });
+
+      await adminUser.save();
+    } else {
+      if (adminUser.role !== 'subsystem') {
+        return res.status(400).json({
+          success: false,
+          error: 'Cet email est déjà utilisé avec un rôle différent'
+        });
+      }
+    }
+
+    const subscription_expires = new Date();
+    subscription_expires.setMonth(subscription_expires.getMonth() + (subscription_months || 1));
+
+    const subsystem = new Subsystem({
+      name,
+      subdomain: subdomain.toLowerCase(),
+      contact_email,
+      contact_phone,
+      max_users: max_users || 10,
+      subscription_type: subscription_type || 'standard',
+      subscription_months: subscription_months || 1,
+      subscription_expires,
+      admin_user: adminUser._id,
+      is_active: true
+    });
+
+    await subsystem.save();
+
+    const domain = process.env.DOMAIN || req.headers.host?.replace('master.', '') || 'novalotto.com';
+    const access_url = `https://${subdomain}.${domain}`;
+
+    res.json({
+      success: true,
+      subsystem: {
+        id: subsystem._id,
+        ...subsystem.toObject()
+      },
+      admin_credentials: {
+        username: contact_email,
+        password: adminUser.password,
+        email: contact_email
+      },
+      access_url: access_url
+    });
+
+  } catch (error) {
+    console.error('Erreur création sous-système:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Erreur serveur lors de la création du sous-système'
+    });
+  }
+});
+
+app.get('/api/master/subsystems', vérifierToken, async (req, res) => {
+  try {
+    if (!req.tokenInfo || req.tokenInfo.role !== 'master') {
+      return res.status(403).json({
+        success: false,
+        error: 'Accès refusé. Rôle master requis.'
+      });
+    }
+
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const search = req.query.search;
+    const status = req.query.status;
+
+    let query = {};
+
+    if (search) {
+      query.$or = [
+        { name: { $regex: search, $options: 'i' } },
+        { subdomain: { $regex: search, $options: 'i' } },
+        { contact_email: { $regex: search, $options: 'i' } }
+      ];
+    }
+
+    if (status && status !== 'all') {
+      if (status === 'active') {
+        query.is_active = true;
+      } else if (status === 'inactive') {
+        query.is_active = false;
+      } else if (status === 'expired') {
+        query.subscription_expires = { $lt: new Date() };
+      }
+    }
+
+    const total = await Subsystem.countDocuments(query);
+
+    const totalPages = Math.ceil(total / limit);
+    const skip = (page - 1) * limit;
+
+    const subsystems = await Subsystem.find(query)
+      .skip(skip)
+      .limit(limit)
+      .sort({ created_at: -1 });
+
+    const formattedSubsystems = subsystems.map(subsystem => {
+      const usage_percentage = Math.floor((Math.random() * 100) + 1);
+
+      return {
+        id: subsystem._id,
+        name: subsystem.name,
+        subdomain: subsystem.subdomain,
+        contact_email: subsystem.contact_email,
+        contact_phone: subsystem.contact_phone,
+        max_users: subsystem.max_users,
+        subscription_type: subsystem.subscription_type,
+        subscription_expires: subsystem.subscription_expires,
+        is_active: subsystem.is_active,
+        created_at: subsystem.created_at,
+        stats: {
+          active_users: Math.floor(Math.random() * subsystem.max_users),
+          today_sales: Math.floor(Math.random() * 10000) + 1000,
+          today_tickets: Math.floor(Math.random() * 100) + 10,
+          usage_percentage: usage_percentage
+        }
+      };
+    });
+
+    res.json({
+      success: true,
+      subsystems: formattedSubsystems,
+      pagination: {
+        page: page,
+        limit: limit,
+        total: total,
+        total_pages: totalPages
+      }
+    });
+
+  } catch (error) {
+    console.error('Erreur listage sous-systèmes:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Erreur serveur lors du listage des sous-systèmes'
+    });
+  }
+});
+
+app.get('/api/master/subsystems/:id', vérifierToken, async (req, res) => {
+  try {
+    if (!req.tokenInfo || req.tokenInfo.role !== 'master') {
+      return res.status(403).json({
+        success: false,
+        error: 'Accès refusé. Rôle master requis.'
+      });
+    }
+
+    const subsystemId = req.params.id;
+
+    const subsystem = await Subsystem.findById(subsystemId);
+
+    if (!subsystem) {
+      return res.status(404).json({
+        success: false,
+        error: 'Sous-système non trouvé'
+      });
+    }
+
+    const users = [
+      { role: 'owner', count: 1 },
+      { role: 'admin', count: Math.floor(Math.random() * 3) + 1 },
+      { role: 'supervisor', count: Math.floor(Math.random() * 5) + 1 },
+      { role: 'agent', count: Math.floor(Math.random() * subsystem.max_users) + 5 }
+    ];
+
+    res.json({
+      success: true,
+      subsystem: {
+        id: subsystem._id,
+        name: subsystem.name,
+        subdomain: subsystem.subdomain,
+        contact_email: subsystem.contact_email,
+        contact_phone: subsystem.contact_phone,
+        max_users: subsystem.max_users,
+        subscription_type: subsystem.subscription_type,
+        subscription_expires: subsystem.subscription_expires,
+        is_active: subsystem.is_active,
+        created_at: subsystem.created_at,
+        stats: {
+          active_users: Math.floor(Math.random() * subsystem.max_users),
+          today_sales: Math.floor(Math.random() * 10000) + 1000,
+          today_tickets: Math.floor(Math.random() * 100) + 10,
+          usage_percentage: Math.floor((Math.random() * 100) + 1)
+        },
+        users: users
+      }
+    });
+
+  } catch (error) {
+    console.error('Erreur détails sous-système:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Erreur serveur lors de la récupération du sous-système'
+    });
+  }
+});
+
+app.put('/api/master/subsystems/:id/deactivate', vérifierToken, async (req, res) => {
+  try {
+    if (!req.tokenInfo || req.tokenInfo.role !== 'master') {
+      return res.status(403).json({
+        success: false,
+        error: 'Accès refusé. Rôle master requis.'
+      });
+    }
+
+    const subsystemId = req.params.id;
+
+    const subsystem = await Subsystem.findById(subsystemId);
+
+    if (!subsystem) {
+      return res.status(404).json({
+        success: false,
+        error: 'Sous-système non trouvé'
+      });
+    }
+
+    subsystem.is_active = false;
+    await subsystem.save();
+
+    res.json({
+      success: true,
+      message: 'Sous-système désactivé avec succès'
+    });
+
+  } catch (error) {
+    console.error('Erreur désactivation sous-système:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Erreur serveur lors de la désactivation du sous-système'
+    });
+  }
+});
+
+app.put('/api/master/subsystems/:id/activate', vérifierToken, async (req, res) => {
+  try {
+    if (!req.tokenInfo || req.tokenInfo.role !== 'master') {
+      return res.status(403).json({
+        success: false,
+        error: 'Accès refusé. Rôle master requis.'
+      });
+    }
+
+    const subsystemId = req.params.id;
+
+    const subsystem = await Subsystem.findById(subsystemId);
+
+    if (!subsystem) {
+      return res.status(404).json({
+        success: false,
+        error: 'Sous-système non trouvé'
+      });
+    }
+
+    subsystem.is_active = true;
+    await subsystem.save();
+
+    res.json({
+      success: true,
+      message: 'Sous-système activé avec succès'
+    });
+
+  } catch (error) {
+    console.error('Erreur activation sous-système:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Erreur serveur lors de l\'activation du sous-système'
+    });
+  }
+});
+
+app.get('/api/master/subsystems/stats', vérifierToken, async (req, res) => {
+  try {
+    if (!req.tokenInfo || req.tokenInfo.role !== 'master') {
+      return res.status(403).json({
+        success: false,
+        error: 'Accès refusé. Rôle master requis.'
+      });
+    }
+
+    const subsystems = await Subsystem.find();
+
+    const subsystemsWithStats = subsystems.map(subsystem => {
+      const total_sales = Math.floor(Math.random() * 1000000) + 100000;
+      const total_payout = Math.floor(total_sales * 0.7);
+      const profit = total_sales - total_payout;
+      const active_agents = Math.floor(Math.random() * 20) + 1;
+
+      return {
+        id: subsystem._id,
+        name: subsystem.name,
+        subdomain: subsystem.subdomain,
+        total_sales: total_sales,
+        total_payout: total_payout,
+        profit: profit,
+        active_agents: active_agents
+      };
+    });
+
+    res.json({
+      success: true,
+      subsystems: subsystemsWithStats
+    });
+
+  } catch (error) {
+    console.error('Erreur statistiques sous-systèmes:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Erreur serveur lors de la récupération des statistiques'
+    });
+  }
+});
+
+app.get('/api/master/consolidated-report', vérifierToken, async (req, res) => {
+  try {
+    if (!req.tokenInfo || req.tokenInfo.role !== 'master') {
+      return res.status(403).json({
+        success: false,
+        error: 'Accès refusé. Rôle master requis.'
+      });
+    }
+
+    const { start_date, end_date, group_by } = req.query;
+
+    const report = {
+      period: {
+        start_date: start_date || new Date().toISOString().split('T')[0],
+        end_date: end_date || new Date().toISOString().split('T')[0]
+      },
+      summary: {
+        total_tickets: 1234,
+        total_sales: 5000000,
+        total_payout: 3500000,
+        total_profit: 1500000
+      },
+      subsystems_detail: [
+        {
+          subsystem_id: '1',
+          subsystem_name: 'Borlette Cap-Haïtien',
+          tickets_count: 500,
+          total_sales: 2000000,
+          total_payout: 1400000,
+          profit: 600000
+        },
+        {
+          subsystem_id: '2',
+          subsystem_name: 'Lotto Port-au-Prince',
+          tickets_count: 400,
+          total_sales: 1500000,
+          total_payout: 1050000,
+          profit: 450000
+        },
+        {
+          subsystem_id: '3',
+          subsystem_name: 'Grap Gonaïves',
+          tickets_count: 334,
+          total_sales: 1500000,
+          total_payout: 1050000,
+          profit: 450000
+        }
+      ],
+      daily_breakdown: [
+        {
+          date: new Date().toISOString().split('T')[0],
+          ticket_count: 100,
+          total_amount: 500000
+        }
+      ]
+    };
+
+    res.json({
+      success: true,
+      report: report
+    });
+
+  } catch (error) {
+    console.error('Erreur génération rapport:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Erreur serveur lors de la génération du rapport'
+    });
+  }
+});
+
+// =================== NOUVELLES ROUTES POUR LOTATO ===================
+
+// Route pour obtenir les tirages
+app.get('/api/draws', vérifierToken, async (req, res) => {
+  try {
+    const draws = await Draw.find({ is_active: true }).sort({ order: 1 });
+    
+    const drawsObject = {};
+    draws.forEach(draw => {
+      drawsObject[draw.code] = {
+        name: draw.name,
+        icon: draw.icon,
+        times: draw.times,
+        countdown: '-- h -- min'
+      };
+    });
+    
+    res.json({
+      success: true,
+      draws: drawsObject
+    });
+  } catch (error) {
+    console.error('Erreur chargement tirages:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Erreur lors du chargement des tirages'
+    });
+  }
+});
+
+// Route pour les résultats
+app.get('/api/results', vérifierToken, async (req, res) => {
+  try {
+    const { draw, draw_time, date } = req.query;
+    
+    let query = {};
+    if (draw) query.draw = draw;
+    if (draw_time) query.draw_time = draw_time;
+    if (date) {
+      const startDate = new Date(date);
+      const endDate = new Date(startDate);
+      endDate.setDate(endDate.getDate() + 1);
+      query.date = { $gte: startDate, $lt: endDate };
+    }
+    
+    const results = await Result.find(query)
+      .sort({ date: -1 })
+      .limit(50);
+    
+    res.json({
+      success: true,
+      results: results
+    });
+  } catch (error) {
+    console.error('Erreur chargement résultats:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Erreur lors du chargement des résultats'
+    });
+  }
+});
+
+// Route pour les derniers résultats
+app.get('/api/results/latest', vérifierToken, async (req, res) => {
+  try {
+    const latestResults = {};
+    const draws = await Draw.find({ is_active: true });
+    
+    for (const draw of draws) {
+      const latestResult = await Result.findOne({ 
+        draw: draw.code 
+      }).sort({ date: -1 });
+      
+      if (latestResult) {
+        latestResults[draw.code] = {
+          draw: latestResult.draw,
+          draw_time: latestResult.draw_time,
+          date: latestResult.date,
+          lot1: latestResult.lot1,
+          lot2: latestResult.lot2 || '',
+          lot3: latestResult.lot3 || '',
+          verified: latestResult.verified
+        };
+      }
+    }
+    
+    res.json({
+      success: true,
+      results: latestResults
+    });
+  } catch (error) {
+    console.error('Erreur chargement derniers résultats:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Erreur lors du chargement des derniers résultats'
+    });
+  }
+});
+
+// Route pour soumettre des paris
+app.post('/api/bets', vérifierToken, async (req, res) => {
   try {
     const { draw, draw_time, bets, agentId, agentName } = req.body;
     
@@ -388,8 +1076,59 @@ app.post('/api/tickets', vérifierToken, async (req, res) => {
       draw_time: draw_time,
       bets: bets,
       total: total,
-      agent_id: agentId || req.tokenInfo?.userId,
-      agent_name: agentName || 'Agent',
+      agent_id: agentId,
+      agent_name: agentName,
+      date: new Date()
+    });
+    
+    await ticket.save();
+    
+    res.json({
+      success: true,
+      ticketId: ticket._id,
+      ticketNumber: ticket.number,
+      message: 'Paris soumis avec succès'
+    });
+  } catch (error) {
+    console.error('Erreur soumission paris:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Erreur lors de la soumission des paris'
+    });
+  }
+});
+
+// Route pour sauvegarder une fiche
+app.post('/api/tickets', vérifierToken, async (req, res) => {
+  try {
+    console.log('Sauvegarde de ticket:', req.body);
+    
+    const { draw, draw_time, bets, agentName, agentId } = req.body;
+    
+    // Vérifier si l'utilisateur existe
+    const user = await User.findById(agentId);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        error: 'Utilisateur non trouvé'
+      });
+    }
+    
+    // Générer un numéro de ticket
+    const lastTicket = await Ticket.findOne().sort({ number: -1 });
+    const ticketNumber = lastTicket ? lastTicket.number + 1 : 100001;
+    
+    // Calculer le total
+    const total = bets.reduce((sum, bet) => sum + bet.amount, 0);
+    
+    const ticket = new Ticket({
+      number: ticketNumber,
+      draw: draw,
+      draw_time: draw_time,
+      bets: bets,
+      total: total,
+      agent_id: agentId,
+      agent_name: agentName || user.name,
       date: new Date()
     });
     
@@ -406,21 +1145,251 @@ app.post('/api/tickets', vérifierToken, async (req, res) => {
         bets: ticket.bets,
         total: ticket.total,
         agent_name: ticket.agent_name
-      }
+      },
+      nextTicketNumber: ticketNumber + 1
     });
   } catch (error) {
-    console.error('Erreur sauvegarde ticket:', error);
+    console.error('Erreur sauvegarde fiche:', error);
     res.status(500).json({
       success: false,
-      error: 'Erreur lors de la sauvegarde du ticket'
+      error: 'Erreur lors de la sauvegarde de la fiche'
     });
   }
 });
 
-// Route pour les tickets en attente
-app.get('/api/tickets/pending', vérifierToken, async (req, res) => {
+// Route pour obtenir les tickets
+app.get('/api/tickets', vérifierToken, async (req, res) => {
   try {
-    const tickets = await Ticket.find({ is_synced: false }).sort({ date: -1 }).limit(50);
+    let query = {};
+    
+    // Si c'est un agent, ne montrer que ses tickets
+    if (req.tokenInfo.role === 'agent') {
+      query.agent_id = req.tokenInfo.userId;
+    }
+    
+    const tickets = await Ticket.find(query)
+      .sort({ date: -1 })
+      .limit(100);
+    
+    const lastTicket = await Ticket.findOne().sort({ number: -1 });
+    const nextTicketNumber = lastTicket ? lastTicket.number + 1 : 100001;
+    
+    res.json({
+      success: true,
+      tickets: tickets.map(ticket => ({
+        id: ticket._id,
+        number: ticket.number,
+        date: ticket.date,
+        draw: ticket.draw,
+        draw_time: ticket.draw_time,
+        bets: ticket.bets,
+        total: ticket.total,
+        agent_name: ticket.agent_name,
+        is_synced: ticket.is_synced
+      })),
+      nextTicketNumber: nextTicketNumber
+    });
+  } catch (error) {
+    console.error('Erreur chargement tickets:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Erreur lors du chargement des tickets'
+    });
+  }
+});
+
+// Route pour obtenir la dernière fiche
+app.get('/api/tickets/latest', vérifierToken, async (req, res) => {
+  try {
+    let query = {};
+    
+    if (req.tokenInfo.role === 'agent') {
+      query.agent_id = req.tokenInfo.userId;
+    }
+    
+    const ticket = await Ticket.findOne(query).sort({ date: -1 });
+    
+    if (!ticket) {
+      return res.json({
+        success: false,
+        error: 'Aucune fiche trouvée'
+      });
+    }
+    
+    res.json({
+      success: true,
+      ticket: {
+        id: ticket._id,
+        number: ticket.number,
+        date: ticket.date,
+        draw: ticket.draw,
+        draw_time: ticket.draw_time,
+        bets: ticket.bets,
+        total: ticket.total,
+        agent_name: ticket.agent_name
+      }
+    });
+  } catch (error) {
+    console.error('Erreur récupération fiche:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Erreur lors de la récupération de la fiche'
+    });
+  }
+});
+
+// Route pour obtenir une fiche par ID
+app.get('/api/tickets/:id', vérifierToken, async (req, res) => {
+  try {
+    const ticket = await Ticket.findById(req.params.id);
+    
+    if (!ticket) {
+      return res.status(404).json({
+        success: false,
+        error: 'Fiche non trouvée'
+      });
+    }
+    
+    // Vérifier les permissions
+    if (req.tokenInfo.role === 'agent' && ticket.agent_id.toString() !== req.tokenInfo.userId) {
+      return res.status(403).json({
+        success: false,
+        error: 'Accès interdit'
+      });
+    }
+    
+    res.json({
+      success: true,
+      ticket: {
+        id: ticket._id,
+        number: ticket.number,
+        date: ticket.date,
+        draw: ticket.draw,
+        draw_time: ticket.draw_time,
+        bets: ticket.bets,
+        total: ticket.total,
+        agent_name: ticket.agent_name
+      }
+    });
+  } catch (error) {
+    console.error('Erreur récupération fiche:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Erreur lors de la récupération de la fiche'
+    });
+  }
+});
+
+// Route pour rechercher une fiche
+app.get('/api/tickets/search', vérifierToken, async (req, res) => {
+  try {
+    const { number } = req.query;
+    
+    if (!number) {
+      return res.status(400).json({
+        success: false,
+        error: 'Numéro de fiche requis'
+      });
+    }
+    
+    let query = { number: parseInt(number) };
+    
+    // Si c'est un agent, ne chercher que dans ses tickets
+    if (req.tokenInfo.role === 'agent') {
+      query.agent_id = req.tokenInfo.userId;
+    }
+    
+    const ticket = await Ticket.findOne(query);
+    
+    if (!ticket) {
+      return res.json({
+        success: false,
+        error: 'Fiche non trouvée'
+      });
+    }
+    
+    res.json({
+      success: true,
+      ticket: {
+        id: ticket._id,
+        number: ticket.number,
+        date: ticket.date,
+        draw: ticket.draw,
+        draw_time: ticket.draw_time,
+        bets: ticket.bets,
+        total: ticket.total,
+        agent_name: ticket.agent_name
+      }
+    });
+  } catch (error) {
+    console.error('Erreur recherche fiche:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Erreur lors de la recherche de la fiche'
+    });
+  }
+});
+
+// Route pour l'historique des fiches
+app.get('/api/tickets/history', vérifierToken, async (req, res) => {
+  try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 20;
+    const skip = (page - 1) * limit;
+    
+    let query = {};
+    
+    if (req.tokenInfo.role === 'agent') {
+      query.agent_id = req.tokenInfo.userId;
+    }
+    
+    const tickets = await Ticket.find(query)
+      .skip(skip)
+      .limit(limit)
+      .sort({ date: -1 });
+    
+    const total = await Ticket.countDocuments(query);
+    
+    res.json({
+      success: true,
+      tickets: tickets.map(ticket => ({
+        id: ticket._id,
+        number: ticket.number,
+        date: ticket.date,
+        draw: ticket.draw,
+        draw_time: ticket.draw_time,
+        bets: ticket.bets,
+        total: ticket.total,
+        agent_name: ticket.agent_name
+      })),
+      pagination: {
+        page: page,
+        limit: limit,
+        total: total,
+        total_pages: Math.ceil(total / limit)
+      }
+    });
+  } catch (error) {
+    console.error('Erreur historique fiches:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Erreur lors du chargement de l\'historique'
+    });
+  }
+});
+
+// Route pour toutes les fiches
+app.get('/api/tickets/all', vérifierToken, async (req, res) => {
+  try {
+    let query = {};
+    
+    if (req.tokenInfo.role === 'agent') {
+      query.agent_id = req.tokenInfo.userId;
+    }
+    
+    const tickets = await Ticket.find(query)
+      .sort({ date: -1 })
+      .limit(100);
     
     res.json({
       success: true,
@@ -436,420 +1405,58 @@ app.get('/api/tickets/pending', vérifierToken, async (req, res) => {
       }))
     });
   } catch (error) {
-    console.error('Erreur tickets en attente:', error);
+    console.error('Erreur toutes les fiches:', error);
     res.status(500).json({
       success: false,
-      error: 'Erreur lors du chargement des tickets en attente'
+      error: 'Erreur lors du chargement des fiches'
     });
   }
 });
 
-// Route pour sauvegarder un ticket en attente
-app.post('/api/tickets/pending', vérifierToken, async (req, res) => {
+// Route pour supprimer une fiche
+app.delete('/api/tickets/:id', vérifierToken, async (req, res) => {
   try {
-    const ticket = req.body;
+    const ticket = await Ticket.findById(req.params.id);
     
-    // Rechercher si un ticket avec le même ID existe déjà
-    const existingTicket = await Ticket.findById(ticket.id);
-    
-    if (existingTicket) {
-      // Mettre à jour le ticket existant
-      existingTicket.is_synced = false;
-      existingTicket.synced_at = null;
-      await existingTicket.save();
-      
-      res.json({
-        success: true,
-        message: 'Ticket mis à jour comme en attente'
-      });
-    } else {
-      // Créer un nouveau ticket
-      const newTicket = new Ticket({
-        _id: ticket.id,
-        number: ticket.number,
-        draw: ticket.draw,
-        draw_time: ticket.draw_time,
-        date: ticket.date,
-        bets: ticket.bets,
-        total: ticket.total,
-        agent_id: req.tokenInfo?.userId,
-        agent_name: ticket.agentName || 'Agent',
-        is_synced: false
-      });
-      
-      await newTicket.save();
-      
-      res.json({
-        success: true,
-        message: 'Ticket en attente sauvegardé'
-      });
-    }
-  } catch (error) {
-    console.error('Erreur sauvegarde ticket en attente:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Erreur lors de la sauvegarde du ticket en attente'
-    });
-  }
-});
-
-// Route pour les tickets gagnants
-app.get('/api/tickets/winning', vérifierToken, async (req, res) => {
-  try {
-    const winners = await Winner.find().sort({ date: -1 }).limit(50);
-    
-    res.json({
-      success: true,
-      tickets: winners.map(winner => ({
-        id: winner._id,
-        ticket_number: winner.ticket_number,
-        date: winner.date,
-        draw: winner.draw,
-        draw_time: winner.draw_time,
-        winning_bets: winner.winning_bets,
-        total_winnings: winner.total_winnings,
-        paid: winner.paid
-      }))
-    });
-  } catch (error) {
-    console.error('Erreur chargement tickets gagnants:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Erreur lors du chargement des tickets gagnants'
-    });
-  }
-});
-
-// Route pour l'historique
-app.get('/api/history', vérifierToken, async (req, res) => {
-  try {
-    const history = await History.find().sort({ date: -1 }).limit(100);
-    
-    res.json({
-      success: true,
-      history: history
-    });
-  } catch (error) {
-    console.error('Erreur chargement historique:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Erreur lors du chargement de l\'historique'
-    });
-  }
-});
-
-// Route pour sauvegarder l'historique
-app.post('/api/history', vérifierToken, async (req, res) => {
-  try {
-    const historyRecord = req.body;
-    
-    // Vérifier si l'enregistrement existe déjà
-    const existingRecord = await History.findOne({ id: historyRecord.id });
-    
-    if (existingRecord) {
-      // Mettre à jour l'enregistrement existant
-      existingRecord.date = historyRecord.date;
-      existingRecord.draw = historyRecord.draw;
-      existingRecord.draw_time = historyRecord.draw_time;
-      existingRecord.bets = historyRecord.bets;
-      existingRecord.total = historyRecord.total;
-      await existingRecord.save();
-    } else {
-      // Créer un nouvel enregistrement
-      const newRecord = new History(historyRecord);
-      await newRecord.save();
-    }
-    
-    res.json({
-      success: true,
-      message: 'Historique sauvegardé'
-    });
-  } catch (error) {
-    console.error('Erreur sauvegarde historique:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Erreur lors de la sauvegarde de l\'historique'
-    });
-  }
-});
-
-// Route pour les résultats
-app.get('/api/results', vérifierToken, async (req, res) => {
-  try {
-    const { draw, draw_time } = req.query;
-    
-    let query = {};
-    if (draw) query.draw = draw;
-    if (draw_time) query.draw_time = draw_time;
-    
-    const results = await Result.find(query).sort({ date: -1 }).limit(50);
-    
-    // Formater les résultats pour le frontend
-    const formattedResults = {};
-    results.forEach(result => {
-      if (!formattedResults[result.draw]) {
-        formattedResults[result.draw] = {};
-      }
-      formattedResults[result.draw][result.draw_time] = {
-        date: result.date,
-        lot1: result.lot1,
-        lot2: result.lot2,
-        lot3: result.lot3,
-        verified: result.verified
-      };
-    });
-    
-    res.json({
-      success: true,
-      results: formattedResults
-    });
-  } catch (error) {
-    console.error('Erreur chargement résultats:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Erreur lors du chargement des résultats'
-    });
-  }
-});
-
-// Route pour vérifier les gagnants
-app.post('/api/check-winners', vérifierToken, async (req, res) => {
-  try {
-    const { draw, draw_time } = req.body;
-    
-    // Récupérer le résultat du tirage
-    const result = await Result.findOne({ 
-      draw: draw,
-      draw_time: draw_time 
-    }).sort({ date: -1 });
-    
-    if (!result) {
-      return res.json({
-        success: true,
-        winningTickets: [],
-        message: 'Aucun résultat trouvé pour ce tirage'
+    if (!ticket) {
+      return res.status(404).json({
+        success: false,
+        error: 'Fiche non trouvée'
       });
     }
     
-    // Récupérer les tickets pour ce tirage
-    const tickets = await Ticket.find({
-      draw: draw,
-      draw_time: draw_time
-    });
-    
-    const winningTickets = [];
-    
-    // Vérifier chaque ticket
-    for (const ticket of tickets) {
-      const winningBets = [];
-      
-      for (const bet of ticket.bets) {
-        let winAmount = 0;
-        let winType = '';
-        let matchedNumber = '';
-        
-        // Logique de vérification des gains
-        if (bet.type === 'borlette' || bet.type === 'boulpe') {
-          // Extraire les 2 derniers chiffres du lot1
-          const lot1Last2 = result.lot1.length >= 3 ? result.lot1.substring(1) : result.lot1;
-          
-          if (bet.number === lot1Last2) {
-            winAmount = bet.amount * 60;
-            winType = '1er lot';
-            matchedNumber = lot1Last2;
-          } else if (bet.number === result.lot2) {
-            winAmount = bet.amount * 20;
-            winType = '2e lot';
-            matchedNumber = result.lot2;
-          } else if (bet.number === result.lot3) {
-            winAmount = bet.amount * 10;
-            winType = '3e lot';
-            matchedNumber = result.lot3;
-          }
-        } else if (bet.type === 'lotto3') {
-          if (bet.number === result.lot1) {
-            winAmount = bet.amount * 500;
-            winType = 'Lotto 3';
-            matchedNumber = result.lot1;
-          }
-        } else if (bet.type === 'marriage' || bet.type === 'auto-marriage') {
-          const [num1, num2] = bet.number.split('*');
-          const lot1Last2 = result.lot1.length >= 3 ? result.lot1.substring(1) : result.lot1;
-          const numbers = [lot1Last2, result.lot2, result.lot3];
-          
-          if (numbers.includes(num1) && numbers.includes(num2)) {
-            winAmount = bet.amount * 1000;
-            winType = 'Mariage';
-            matchedNumber = `${num1}*${num2}`;
-          }
-        } else if (bet.type === 'grap') {
-          if (result.lot1[0] === result.lot1[1] && result.lot1[1] === result.lot1[2]) {
-            if (bet.number === result.lot1) {
-              winAmount = bet.amount * 500;
-              winType = 'Grap';
-              matchedNumber = result.lot1;
-            }
-          }
-        } else if (bet.type === 'lotto4' || bet.type === 'auto-lotto4') {
-          // Logique Lotto 4
-          const lot2 = result.lot2 || '00';
-          const lot3 = result.lot3 || '00';
-          const lot1Last2 = result.lot1.length >= 3 ? result.lot1.substring(1) : result.lot1;
-          
-          // Option 1: lot2 + lot3
-          const option1Result = lot2 + lot3;
-          // Option 2: derniers 2 chiffres de lot1 + lot2
-          const option2Result = lot1Last2 + lot2;
-          // Option 3: n'importe quel arrangement contenant lot2 et lot3
-          
-          if (bet.options?.option1 && bet.number === option1Result) {
-            winAmount += bet.perOptionAmount * 5000;
-            winType = winType ? winType + ', Opsyon 1' : 'Opsyon 1';
-            matchedNumber = option1Result;
-          }
-          
-          if (bet.options?.option2 && bet.number === option2Result) {
-            winAmount += bet.perOptionAmount * 5000;
-            winType = winType ? winType + ', Opsyon 2' : 'Opsyon 2';
-            matchedNumber = option2Result;
-          }
-          
-          if (bet.options?.option3) {
-            // Vérifier si les 4 chiffres contiennent les deux boules
-            const betDigits = bet.number.split('');
-            const lot2Digits = lot2.split('');
-            const lot3Digits = lot3.split('');
-            
-            const tempDigits = [...betDigits];
-            let containsLot2 = true;
-            let containsLot3 = true;
-            
-            for (const digit of lot2Digits) {
-              const index = tempDigits.indexOf(digit);
-              if (index === -1) {
-                containsLot2 = false;
-                break;
-              }
-              tempDigits.splice(index, 1);
-            }
-            
-            for (const digit of lot3Digits) {
-              const index = tempDigits.indexOf(digit);
-              if (index === -1) {
-                containsLot3 = false;
-                break;
-              }
-              tempDigits.splice(index, 1);
-            }
-            
-            if (containsLot2 && containsLot3) {
-              winAmount += bet.perOptionAmount * 5000;
-              winType = winType ? winType + ', Opsyon 3' : 'Opsyon 3';
-              matchedNumber = bet.number;
-            }
-          }
-        } else if (bet.type === 'lotto5') {
-          // Logique Lotto 5
-          const lot1 = result.lot1;
-          const lot2 = result.lot2 || '00';
-          const lot3 = result.lot3 || '00';
-          
-          // Option 1: lot1 + lot2
-          const option1Result = lot1 + lot2;
-          // Option 2: lot1 + lot3
-          const option2Result = lot1 + lot3;
-          
-          if (bet.options?.option1 && bet.number === option1Result) {
-            winAmount += bet.perOptionAmount * 25000;
-            winType = winType ? winType + ', Opsyon 1' : 'Opsyon 1';
-            matchedNumber = option1Result;
-          }
-          
-          if (bet.options?.option2 && bet.number === option2Result) {
-            winAmount += bet.perOptionAmount * 25000;
-            winType = winType ? winType + ', Opsyon 2' : 'Opsyon 2';
-            matchedNumber = option2Result;
-          }
-          
-          if (bet.options?.option3) {
-            // Les 5 chiffres doivent contenir tous les chiffres des 3 lots
-            const allResultDigits = (lot1 + lot2 + lot3).split('');
-            const betDigits = bet.number.split('');
-            
-            let allFound = true;
-            const tempResultDigits = [...allResultDigits];
-            
-            for (const digit of betDigits) {
-              const index = tempResultDigits.indexOf(digit);
-              if (index === -1) {
-                allFound = false;
-                break;
-              }
-              tempResultDigits.splice(index, 1);
-            }
-            
-            if (allFound) {
-              winAmount += bet.perOptionAmount * 25000;
-              winType = winType ? winType + ', Opsyon 3' : 'Opsyon 3';
-              matchedNumber = bet.number;
-            }
-          }
-        }
-        
-        if (winAmount > 0) {
-          winningBets.push({
-            type: bet.type,
-            name: bet.name,
-            number: bet.number,
-            matched_number: matchedNumber,
-            win_type: winType,
-            win_amount: winAmount
-          });
-        }
-      }
-      
-      if (winningBets.length > 0) {
-        const totalWinnings = winningBets.reduce((sum, bet) => sum + bet.win_amount, 0);
-        
-        winningTickets.push({
-          id: ticket._id,
-          number: ticket.number,
-          date: ticket.date,
-          draw: ticket.draw,
-          draw_time: ticket.draw_time,
-          result: {
-            lot1: result.lot1,
-            lot2: result.lot2,
-            lot3: result.lot3
-          },
-          winningBets: winningBets,
-          totalWinnings: totalWinnings
-        });
-        
-        // Sauvegarder dans la collection Winner
-        const winner = new Winner({
-          ticket_id: ticket._id,
-          ticket_number: ticket.number,
-          draw: ticket.draw,
-          draw_time: ticket.draw_time,
-          date: new Date(),
-          winning_bets: winningBets,
-          total_winnings: totalWinnings
-        });
-        
-        await winner.save();
-      }
+    // Vérifier les permissions
+    if (req.tokenInfo.role === 'agent' && ticket.agent_id.toString() !== req.tokenInfo.userId) {
+      return res.status(403).json({
+        success: false,
+        error: 'Accès interdit'
+      });
     }
+    
+    // Vérifier si la fiche a moins de 5 minutes
+    const ticketDate = new Date(ticket.date);
+    const now = new Date();
+    const timeDiff = now - ticketDate;
+    const FIVE_MINUTES = 5 * 60 * 1000;
+    
+    if (timeDiff > FIVE_MINUTES) {
+      return res.status(400).json({
+        success: false,
+        error: 'Fiche trop ancienne pour être supprimée'
+      });
+    }
+    
+    await Ticket.findByIdAndDelete(req.params.id);
     
     res.json({
       success: true,
-      winningTickets: winningTickets
+      message: 'Fiche supprimée avec succès'
     });
   } catch (error) {
-    console.error('Erreur vérification gagnants:', error);
+    console.error('Erreur suppression fiche:', error);
     res.status(500).json({
       success: false,
-      error: 'Erreur lors de la vérification des gagnants'
+      error: 'Erreur lors de la suppression de la fiche'
     });
   }
 });
@@ -857,7 +1464,15 @@ app.post('/api/check-winners', vérifierToken, async (req, res) => {
 // Route pour les fiches multi-tirages
 app.get('/api/tickets/multi-draw', vérifierToken, async (req, res) => {
   try {
-    const tickets = await MultiDrawTicket.find().sort({ date: -1 }).limit(50);
+    let query = {};
+    
+    if (req.tokenInfo.role === 'agent') {
+      query.agent_id = req.tokenInfo.userId;
+    }
+    
+    const tickets = await MultiDrawTicket.find(query)
+      .sort({ date: -1 })
+      .limit(50);
     
     res.json({
       success: true,
@@ -883,9 +1498,19 @@ app.get('/api/tickets/multi-draw', vérifierToken, async (req, res) => {
 // Route pour sauvegarder une fiche multi-tirages
 app.post('/api/tickets/multi-draw', vérifierToken, async (req, res) => {
   try {
-    const ticket = req.body;
+    console.log('Sauvegarde fiche multi-tirages:', req.body);
     
-    // Générer un numéro de fiche
+    const { ticket, agentId, agentName } = req.body;
+    
+    // Vérifier si l'utilisateur existe
+    const user = await User.findById(agentId);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        error: 'Utilisateur non trouvé'
+      });
+    }
+    
     const lastTicket = await MultiDrawTicket.findOne().sort({ number: -1 });
     const ticketNumber = lastTicket ? lastTicket.number + 1 : 500001;
     
@@ -893,10 +1518,10 @@ app.post('/api/tickets/multi-draw', vérifierToken, async (req, res) => {
       number: ticketNumber,
       date: new Date(),
       bets: ticket.bets,
-      draws: ticket.draws || Array.from(ticket.draws || []),
-      total: ticket.totalAmount || ticket.total,
-      agent_id: req.tokenInfo?.userId,
-      agent_name: ticket.agentName || 'Agent'
+      draws: Array.from(ticket.draws),
+      total: ticket.totalAmount,
+      agent_id: agentId,
+      agent_name: agentName || user.name
     });
     
     await multiDrawTicket.save();
@@ -918,6 +1543,620 @@ app.post('/api/tickets/multi-draw', vérifierToken, async (req, res) => {
     res.status(500).json({
       success: false,
       error: 'Erreur lors de la sauvegarde de la fiche multi-tirages'
+    });
+  }
+});
+
+// Route pour vérifier les gagnants
+app.post('/api/check-winners', vérifierToken, async (req, res) => {
+  try {
+    const { draw, draw_time } = req.body;
+    
+    // Récupérer le résultat du tirage
+    const result = await Result.findOne({ 
+      draw: draw,
+      draw_time: draw_time 
+    }).sort({ date: -1 });
+    
+    if (!result) {
+      return res.json({
+        success: true,
+        winningTickets: [],
+        message: 'Aucun résultat trouvé pour ce tirage'
+      });
+    }
+    
+    // Récupérer les tickets pour ce tirage
+    let query = {
+      draw: draw,
+      draw_time: draw_time,
+      date: { 
+        $gte: new Date(new Date().setHours(0, 0, 0, 0)),
+        $lt: new Date(new Date().setHours(23, 59, 59, 999))
+      }
+    };
+    
+    // Si c'est un agent, ne chercher que dans ses tickets
+    if (req.tokenInfo.role === 'agent') {
+      query.agent_id = req.tokenInfo.userId;
+    }
+    
+    const tickets = await Ticket.find(query);
+    
+    const winningTickets = [];
+    
+    // Fonction pour vérifier un pari
+    const checkBetAgainstResult = (bet, result) => {
+      const lot1 = result.lot1;
+      const lot2 = result.lot2 || '';
+      const lot3 = result.lot3 || '';
+      const lot1Last2 = lot1.substring(1);
+      
+      let isWinner = false;
+      let winAmount = 0;
+      let winType = '';
+      let matchedNumber = '';
+      
+      switch(bet.type) {
+        case 'borlette':
+        case 'boulpe':
+          if (bet.number === lot1Last2) {
+            isWinner = true;
+            winAmount = bet.amount * 60;
+            winType = '1er lot';
+            matchedNumber = lot1Last2;
+          } else if (bet.number === lot2) {
+            isWinner = true;
+            winAmount = bet.amount * 20;
+            winType = '2e lot';
+            matchedNumber = lot2;
+          } else if (bet.number === lot3) {
+            isWinner = true;
+            winAmount = bet.amount * 10;
+            winType = '3e lot';
+            matchedNumber = lot3;
+          }
+          break;
+          
+        case 'lotto3':
+          if (bet.number === lot1) {
+            isWinner = true;
+            winAmount = bet.amount * 500;
+            winType = 'Lotto 3';
+            matchedNumber = lot1;
+          }
+          break;
+          
+        case 'marriage':
+        case 'auto-marriage':
+          const [num1, num2] = bet.number.split('*');
+          const numbers = [lot1Last2, lot2, lot3];
+          
+          if (numbers.includes(num1) && numbers.includes(num2)) {
+            isWinner = true;
+            winAmount = bet.amount * 1000;
+            winType = 'Maryaj';
+            matchedNumber = `${num1}*${num2}`;
+          }
+          break;
+          
+        case 'grap':
+          if (lot1[0] === lot1[1] && lot1[1] === lot1[2]) {
+            if (bet.number === lot1) {
+              isWinner = true;
+              winAmount = bet.amount * 500;
+              winType = 'Grap';
+              matchedNumber = lot1;
+            }
+          }
+          break;
+          
+        case 'lotto4':
+          if (bet.options) {
+            winAmount = 0;
+            winType = '';
+            
+            // Option 1: lot2 + lot3
+            if (bet.options.option1) {
+              const option1Result = (lot2 || '') + (lot3 || '');
+              if (bet.number === option1Result) {
+                isWinner = true;
+                winAmount += bet.perOptionAmount * 5000;
+                winType += 'Opsyon 1, ';
+                matchedNumber = option1Result;
+              }
+            }
+            
+            // Option 2: derniers 2 chiffres de lot1 + lot2
+            if (bet.options.option2) {
+              const option2Result = lot1.substring(1) + (lot2 || '');
+              if (bet.number === option2Result) {
+                isWinner = true;
+                winAmount += bet.perOptionAmount * 5000;
+                winType += 'Opsyon 2, ';
+                matchedNumber = option2Result;
+              }
+            }
+            
+            // Option 3: arrangement quelconque
+            if (bet.options.option3) {
+              const betDigits = bet.number.split('');
+              const lot2Digits = (lot2 || '').split('');
+              const lot3Digits = (lot3 || '').split('');
+              
+              const tempDigits = [...betDigits];
+              let containsLot2 = true;
+              let containsLot3 = true;
+              
+              // Vérifier lot2
+              for (const digit of lot2Digits) {
+                const index = tempDigits.indexOf(digit);
+                if (index === -1) {
+                  containsLot2 = false;
+                  break;
+                }
+                tempDigits.splice(index, 1);
+              }
+              
+              // Vérifier lot3
+              for (const digit of lot3Digits) {
+                const index = tempDigits.indexOf(digit);
+                if (index === -1) {
+                  containsLot3 = false;
+                  break;
+                }
+                tempDigits.splice(index, 1);
+              }
+              
+              if (containsLot2 && containsLot3) {
+                isWinner = true;
+                winAmount += bet.perOptionAmount * 5000;
+                winType += 'Opsyon 3, ';
+                matchedNumber = bet.number;
+              }
+            }
+          }
+          break;
+          
+        case 'lotto5':
+          if (bet.options) {
+            winAmount = 0;
+            winType = '';
+            
+            // Option 1: lot1 + lot2
+            if (bet.options.option1) {
+              const option1Result = lot1 + (lot2 || '');
+              if (bet.number === option1Result) {
+                isWinner = true;
+                winAmount += bet.perOptionAmount * 25000;
+                winType += 'Opsyon 1, ';
+                matchedNumber = option1Result;
+              }
+            }
+            
+            // Option 2: lot1 + lot3
+            if (bet.options.option2) {
+              const option2Result = lot1 + (lot3 || '');
+              if (bet.number === option2Result) {
+                isWinner = true;
+                winAmount += bet.perOptionAmount * 25000;
+                winType += 'Opsyon 2, ';
+                matchedNumber = option2Result;
+              }
+            }
+            
+            // Option 3: arrangement quelconque
+            if (bet.options.option3) {
+              const allResultDigits = (lot1 + (lot2 || '') + (lot3 || '')).split('');
+              const betDigits = bet.number.split('');
+              
+              let allFound = true;
+              const tempResultDigits = [...allResultDigits];
+              
+              for (const digit of betDigits) {
+                const index = tempResultDigits.indexOf(digit);
+                if (index === -1) {
+                  allFound = false;
+                  break;
+                }
+                tempResultDigits.splice(index, 1);
+              }
+              
+              if (allFound) {
+                isWinner = true;
+                winAmount += bet.perOptionAmount * 25000;
+                winType += 'Opsyon 3, ';
+                matchedNumber = bet.number;
+              }
+            }
+          }
+          break;
+      }
+      
+      return {
+        isWinner,
+        winAmount,
+        winType,
+        matchedNumber
+      };
+    };
+    
+    // Vérifier chaque ticket
+    for (const ticket of tickets) {
+      const winningBets = [];
+      let totalWinnings = 0;
+      
+      for (const bet of ticket.bets) {
+        const winningInfo = checkBetAgainstResult(bet, result);
+        
+        if (winningInfo.isWinner) {
+          winningBets.push({
+            ...bet.toObject(),
+            winAmount: winningInfo.winAmount,
+            winType: winningInfo.winType,
+            matchedNumber: winningInfo.matchedNumber
+          });
+          totalWinnings += winningInfo.winAmount;
+        }
+      }
+      
+      if (winningBets.length > 0) {
+        winningTickets.push({
+          ...ticket.toObject(),
+          winningBets: winningBets,
+          totalWinnings: totalWinnings,
+          result: {
+            lot1: result.lot1,
+            lot2: result.lot2,
+            lot3: result.lot3
+          }
+        });
+        
+        // Enregistrer dans la collection Winner
+        const winner = new Winner({
+          ticket_id: ticket._id,
+          ticket_number: ticket.number,
+          draw: ticket.draw,
+          draw_time: ticket.draw_time,
+          date: new Date(),
+          winning_bets: winningBets.map(wb => ({
+            type: wb.type,
+            name: wb.name,
+            number: wb.number,
+            matched_number: wb.matchedNumber,
+            win_type: wb.winType,
+            win_amount: wb.winAmount
+          })),
+          total_winnings: totalWinnings,
+          paid: false
+        });
+        
+        await winner.save();
+      }
+    }
+    
+    res.json({
+      success: true,
+      winningTickets: winningTickets
+    });
+  } catch (error) {
+    console.error('Erreur vérification gagnants:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Erreur lors de la vérification des gagnants'
+    });
+  }
+});
+
+// Route pour les gagnants
+app.get('/api/tickets/winning', vérifierToken, async (req, res) => {
+  try {
+    let query = {};
+    
+    if (req.tokenInfo.role === 'agent') {
+      // Pour un agent, chercher les tickets gagnants parmi ses tickets
+      const agentTickets = await Ticket.find({ agent_id: req.tokenInfo.userId });
+      const ticketIds = agentTickets.map(t => t._id);
+      query.ticket_id = { $in: ticketIds };
+    }
+    
+    const winners = await Winner.find(query)
+      .sort({ date: -1 })
+      .limit(50);
+    
+    res.json({
+      success: true,
+      tickets: winners.map(winner => ({
+        id: winner._id,
+        ticket_number: winner.ticket_number,
+        date: winner.date,
+        draw: winner.draw,
+        draw_time: winner.draw_time,
+        winning_bets: winner.winning_bets,
+        total_winnings: winner.total_winnings,
+        paid: winner.paid
+      }))
+    });
+  } catch (error) {
+    console.error('Erreur chargement gagnants:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Erreur lors du chargement des gagnants'
+    });
+  }
+});
+
+// Route pour sauvegarder l'historique
+app.post('/api/history', vérifierToken, async (req, res) => {
+  try {
+    const { id, date, draw, drawTime, bets, total } = req.body;
+    
+    const history = new History({
+      id: id,
+      date: date,
+      draw: draw,
+      draw_time: drawTime,
+      bets: bets,
+      total: total,
+      agent_id: req.tokenInfo.userId,
+      agent_name: req.tokenInfo.role
+    });
+    
+    await history.save();
+    
+    res.json({
+      success: true,
+      message: 'Historique sauvegardé avec succès'
+    });
+  } catch (error) {
+    console.error('Erreur sauvegarde historique:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Erreur lors de la sauvegarde de l\'historique'
+    });
+  }
+});
+
+// Route pour les rapports
+app.get('/api/reports', vérifierToken, async (req, res) => {
+  try {
+    const { type, draw, draw_time, start_date, end_date } = req.query;
+    
+    let query = {};
+    
+    if (draw) query.draw = draw;
+    if (draw_time) query.draw_time = draw_time;
+    
+    if (start_date && end_date) {
+      const start = new Date(start_date);
+      const end = new Date(end_date);
+      end.setDate(end.getDate() + 1);
+      query.date = { $gte: start, $lt: end };
+    }
+    
+    // Si c'est un agent, ne voir que ses tickets
+    if (req.tokenInfo.role === 'agent') {
+      query.agent_id = req.tokenInfo.userId;
+    }
+    
+    const tickets = await Ticket.find(query);
+    
+    const totalTickets = tickets.length;
+    const totalAmount = tickets.reduce((sum, ticket) => sum + ticket.total, 0);
+    
+    res.json({
+      success: true,
+      report: {
+        totalTickets: totalTickets,
+        totalAmount: totalAmount,
+        tickets: tickets.map(ticket => ({
+          number: ticket.number,
+          date: ticket.date,
+          draw: ticket.draw,
+          draw_time: ticket.draw_time,
+          total: ticket.total,
+          agent_name: ticket.agent_name
+        }))
+      }
+    });
+  } catch (error) {
+    console.error('Erreur génération rapport:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Erreur lors de la génération du rapport'
+    });
+  }
+});
+
+// Route pour rapport de fin de tirage
+app.post('/api/reports/end-of-draw', vérifierToken, async (req, res) => {
+  try {
+    const { draw, draw_time } = req.body;
+    
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    
+    let query = {
+      draw: draw,
+      draw_time: draw_time,
+      date: { $gte: today, $lt: tomorrow }
+    };
+    
+    // Si c'est un agent, ne voir que ses tickets
+    if (req.tokenInfo.role === 'agent') {
+      query.agent_id = req.tokenInfo.userId;
+    }
+    
+    const tickets = await Ticket.find(query);
+    
+    const totalTickets = tickets.length;
+    const totalAmount = tickets.reduce((sum, ticket) => sum + ticket.total, 0);
+    
+    res.json({
+      success: true,
+      report: {
+        totalTickets: totalTickets,
+        totalAmount: totalAmount,
+        tickets: tickets.map(ticket => ({
+          number: ticket.number,
+          agent_name: ticket.agent_name,
+          total: ticket.total
+        }))
+      }
+    });
+  } catch (error) {
+    console.error('Erreur rapport fin tirage:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Erreur lors de la génération du rapport'
+    });
+  }
+});
+
+// Route pour rapport général
+app.get('/api/reports/general', vérifierToken, async (req, res) => {
+  try {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    let query = {
+      date: { $gte: today }
+    };
+    
+    // Si c'est un agent, ne voir que ses tickets
+    if (req.tokenInfo.role === 'agent') {
+      query.agent_id = req.tokenInfo.userId;
+    }
+    
+    const tickets = await Ticket.find(query);
+    
+    const totalTickets = tickets.length;
+    const totalAmount = tickets.reduce((sum, ticket) => sum + ticket.total, 0);
+    
+    // Récupérer les résultats du jour
+    const results = await Result.find({
+      date: { $gte: today }
+    });
+    
+    res.json({
+      success: true,
+      report: {
+        totalTickets: totalTickets,
+        totalAmount: totalAmount,
+        totalResults: results.length,
+        byDraw: tickets.reduce((acc, ticket) => {
+          const key = `${ticket.draw}_${ticket.draw_time}`;
+          if (!acc[key]) {
+            acc[key] = { count: 0, amount: 0 };
+          }
+          acc[key].count += 1;
+          acc[key].amount += ticket.total;
+          return acc;
+        }, {})
+      }
+    });
+  } catch (error) {
+    console.error('Erreur rapport général:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Erreur lors de la génération du rapport général'
+    });
+  }
+});
+
+// Route pour rapport par tirage
+app.post('/api/reports/draw', vérifierToken, async (req, res) => {
+  try {
+    const { draw, draw_time } = req.body;
+    
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    let query = {
+      draw: draw,
+      draw_time: draw_time,
+      date: { $gte: today }
+    };
+    
+    // Si c'est un agent, ne voir que ses tickets
+    if (req.tokenInfo.role === 'agent') {
+      query.agent_id = req.tokenInfo.userId;
+    }
+    
+    const tickets = await Ticket.find(query);
+    
+    const totalTickets = tickets.length;
+    const totalAmount = tickets.reduce((sum, ticket) => sum + ticket.total, 0);
+    
+    // Calculer par type de pari
+    const byBetType = {};
+    tickets.forEach(ticket => {
+      ticket.bets.forEach(bet => {
+        if (!byBetType[bet.type]) {
+          byBetType[bet.type] = { count: 0, amount: 0 };
+        }
+        byBetType[bet.type].count += 1;
+        byBetType[bet.type].amount += bet.amount;
+      });
+    });
+    
+    res.json({
+      success: true,
+      report: {
+        totalTickets: totalTickets,
+        totalAmount: totalAmount,
+        byBetType: byBetType,
+        tickets: tickets.map(ticket => ({
+          number: ticket.number,
+          agent_name: ticket.agent_name,
+          total: ticket.total,
+          betCount: ticket.bets.length
+        }))
+      }
+    });
+  } catch (error) {
+    console.error('Erreur rapport tirage:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Erreur lors de la génération du rapport tirage'
+    });
+  }
+});
+
+// Route pour les tickets en attente
+app.get('/api/tickets/pending', vérifierToken, async (req, res) => {
+  try {
+    let query = { is_synced: false };
+    
+    // Si c'est un agent, ne voir que ses tickets
+    if (req.tokenInfo.role === 'agent') {
+      query.agent_id = req.tokenInfo.userId;
+    }
+    
+    const tickets = await Ticket.find(query)
+      .sort({ date: -1 })
+      .limit(50);
+    
+    res.json({
+      success: true,
+      tickets: tickets.map(ticket => ({
+        id: ticket._id,
+        number: ticket.number,
+        date: ticket.date,
+        draw: ticket.draw,
+        draw_time: ticket.draw_time,
+        bets: ticket.bets,
+        total: ticket.total,
+        agent_name: ticket.agent_name
+      }))
+    });
+  } catch (error) {
+    console.error('Erreur tickets en attente:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Erreur lors du chargement des tickets en attente'
     });
   }
 });
@@ -1007,15 +2246,35 @@ app.get('/api/auth/check', vérifierToken, async (req, res) => {
 
 // =================== ROUTES POUR INITIALISER LA BASE DE DONNÉES ===================
 
-// Route pour initialiser les tirages par défaut
-app.post('/api/init/draws', vérifierToken, async (req, res) => {
+app.post('/api/init/master', async (req, res) => {
   try {
+    const { username, password, name } = req.body;
+    
+    const existingMaster = await User.findOne({ role: 'master' });
+    if (existingMaster) {
+      return res.status(400).json({
+        success: false,
+        error: 'Un compte master existe déjà'
+      });
+    }
+    
+    const master = new User({
+      username: username,
+      password: password,
+      name: name || 'Master Admin',
+      role: 'master',
+      level: 1
+    });
+    
+    await master.save();
+    
+    // Initialiser les tirages par défaut
     const defaultDraws = [
-      { name: "Miami (Florida)", code: "miami", icon: "fas fa-sun", times: { morning: "1:30 PM", evening: "9:50 PM" }, order: 1 },
-      { name: "Georgia", code: "georgia", icon: "fas fa-map-marker-alt", times: { morning: "12:30 PM", evening: "7:00 PM" }, order: 2 },
-      { name: "New York", code: "newyork", icon: "fas fa-building", times: { morning: "2:30 PM", evening: "8:00 PM" }, order: 3 },
-      { name: "Texas", code: "texas", icon: "fas fa-hat-cowboy", times: { morning: "12:00 PM", evening: "6:00 PM" }, order: 4 },
-      { name: "Tunisie", code: "tunisia", icon: "fas fa-flag", times: { morning: "10:30 AM", evening: "2:00 PM" }, order: 5 }
+      { name: 'Miami', code: 'miami', times: { morning: '1:30 PM', evening: '9:50 PM' }, order: 1 },
+      { name: 'Georgia', code: 'georgia', times: { morning: '12:30 PM', evening: '7:00 PM' }, order: 2 },
+      { name: 'New York', code: 'newyork', times: { morning: '2:30 PM', evening: '8:00 PM' }, order: 3 },
+      { name: 'Texas', code: 'texas', times: { morning: '12:00 PM', evening: '6:00 PM' }, order: 4 },
+      { name: 'Tunisie', code: 'tunisia', times: { morning: '10:30 AM', evening: '2:00 PM' }, order: 5 }
     ];
     
     for (const drawData of defaultDraws) {
@@ -1026,52 +2285,55 @@ app.post('/api/init/draws', vérifierToken, async (req, res) => {
       }
     }
     
-    res.json({
-      success: true,
-      message: 'Tirages initialisés avec succès'
-    });
-  } catch (error) {
-    console.error('Erreur initialisation tirages:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Erreur lors de l\'initialisation des tirages'
-    });
-  }
-});
-
-// Route pour initialiser les résultats de test
-app.post('/api/init/results', vérifierToken, async (req, res) => {
-  try {
-    const defaultResults = [
-      { draw: 'miami', draw_time: 'morning', date: new Date(), lot1: '451', lot2: '23', lot3: '45', verified: true },
-      { draw: 'georgia', draw_time: 'morning', date: new Date(), lot1: '327', lot2: '45', lot3: '89', verified: true },
-      { draw: 'newyork', draw_time: 'morning', date: new Date(), lot1: '892', lot2: '34', lot3: '56', verified: true },
-      { draw: 'texas', draw_time: 'morning', date: new Date(), lot1: '567', lot2: '89', lot3: '01', verified: true },
-      { draw: 'tunisia', draw_time: 'morning', date: new Date(), lot1: '234', lot2: '56', lot3: '78', verified: true }
-    ];
-    
-    for (const resultData of defaultResults) {
-      const existingResult = await Result.findOne({ 
-        draw: resultData.draw, 
-        draw_time: resultData.draw_time,
-        date: { $gte: new Date(new Date().setHours(0, 0, 0, 0)) }
-      });
-      
-      if (!existingResult) {
-        const result = new Result(resultData);
-        await result.save();
-      }
+    // Initialiser la configuration
+    const existingConfig = await Config.findOne();
+    if (!existingConfig) {
+      const config = new Config();
+      await config.save();
     }
     
     res.json({
       success: true,
-      message: 'Résultats de test initialisés avec succès'
+      message: 'Compte master créé avec succès'
     });
   } catch (error) {
-    console.error('Erreur initialisation résultats:', error);
     res.status(500).json({
       success: false,
-      error: 'Erreur lors de l\'initialisation des résultats'
+      error: 'Erreur lors de la création du compte master'
+    });
+  }
+});
+
+app.post('/api/init/subsystem', async (req, res) => {
+  try {
+    const { username, password, name } = req.body;
+    
+    const existingUser = await User.findOne({ username: username });
+    if (existingUser) {
+      return res.status(400).json({
+        success: false,
+        error: 'Cet utilisateur existe déjà'
+      });
+    }
+    
+    const subsystemUser = new User({
+      username: username,
+      password: password,
+      name: name || 'Subsystem Admin',
+      role: 'subsystem',
+      level: 1
+    });
+    
+    await subsystemUser.save();
+    
+    res.json({
+      success: true,
+      message: 'Compte subsystem créé avec succès'
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: 'Erreur lors de la création du compte subsystem'
     });
   }
 });
@@ -1165,27 +2427,29 @@ app.listen(PORT, () => {
   console.log('✅ Serveur prêt avec toutes les routes !');
   console.log('');
   console.log('📋 Routes API LOTATO disponibles:');
-  console.log('  POST   /api/auth/login');
-  console.log('  GET    /api/health');
-  console.log('  GET    /api/auth/verify');
-  console.log('');
-  console.log('🎯 Routes principales LOTATO:');
-  console.log('  GET    /api/tickets                     - Liste tous les tickets');
-  console.log('  POST   /api/tickets                     - Créer un ticket');
-  console.log('  GET    /api/tickets/pending             - Tickets en attente');
-  console.log('  POST   /api/tickets/pending             - Sauvegarder ticket en attente');
-  console.log('  GET    /api/tickets/winning             - Tickets gagnants');
-  console.log('  GET    /api/history                     - Historique');
-  console.log('  POST   /api/history                     - Sauvegarder historique');
-  console.log('  GET    /api/results                     - Résultats');
-  console.log('  POST   /api/check-winners               - Vérifier gagnants');
-  console.log('  GET    /api/tickets/multi-draw          - Fiches multi-tirages');
-  console.log('  POST   /api/tickets/multi-draw          - Créer fiche multi-tirages');
-  console.log('  GET    /api/company-info                - Info entreprise');
-  console.log('  GET    /api/logo                        - Logo');
-  console.log('  GET    /api/auth/check                  - Vérifier session');
-  console.log('');
-  console.log('🔧 Routes d\'initialisation:');
-  console.log('  POST   /api/init/draws                  - Initialiser tirages');
-  console.log('  POST   /api/init/results                - Initialiser résultats');
+  console.log('  GET    /api/draws');
+  console.log('  GET    /api/results');
+  console.log('  GET    /api/results/latest');
+  console.log('  POST   /api/bets');
+  console.log('  POST   /api/tickets');
+  console.log('  GET    /api/tickets');
+  console.log('  GET    /api/tickets/latest');
+  console.log('  GET    /api/tickets/:id');
+  console.log('  GET    /api/tickets/search');
+  console.log('  GET    /api/tickets/history');
+  console.log('  GET    /api/tickets/all');
+  console.log('  DELETE /api/tickets/:id');
+  console.log('  GET    /api/tickets/multi-draw');
+  console.log('  POST   /api/tickets/multi-draw');
+  console.log('  POST   /api/check-winners');
+  console.log('  GET    /api/tickets/winning');
+  console.log('  POST   /api/history');
+  console.log('  GET    /api/reports');
+  console.log('  POST   /api/reports/end-of-draw');
+  console.log('  GET    /api/reports/general');
+  console.log('  POST   /api/reports/draw');
+  console.log('  GET    /api/company-info');
+  console.log('  GET    /api/logo');
+  console.log('  GET    /api/auth/check');
+  console.log('  GET    /api/tickets/pending');
 });

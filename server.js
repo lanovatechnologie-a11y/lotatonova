@@ -1,25 +1,33 @@
-// server-lotato.js
+// server.js (Lotato – Production Ready)
+
 const express = require('express');
 const mongoose = require('mongoose');
 const path = require('path');
 
 const app = express();
 
-// ================== CONFIG ==================
+// ================= CONFIG =================
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(__dirname));
 
-// ================== MONGODB ==================
-mongoose.connect('mongodb://localhost:27017/lotato', {
-    useNewUrlParser: true,
-    useUnifiedTopology: true
-});
+// ================= MONGODB =================
+const MONGO_URI = process.env.MONGODB_URI;
 
-console.log('✅ MongoDB Lotato connecté');
+if (!MONGO_URI) {
+    console.error("❌ MONGODB_URI non défini dans Render");
+    process.exit(1);
+}
 
-// ================== MODELS ==================
-const TicketSchema = new mongoose.Schema({
+mongoose.connect(MONGO_URI)
+    .then(() => console.log("✅ MongoDB Atlas connecté"))
+    .catch(err => {
+        console.error("❌ Erreur MongoDB :", err.message);
+        process.exit(1);
+    });
+
+// ================= MODELS =================
+const Ticket = mongoose.model('Ticket', new mongoose.Schema({
     ticketNumber: Number,
     draw: String,
     draw_time: String,
@@ -27,75 +35,65 @@ const TicketSchema = new mongoose.Schema({
     total: Number,
     agent: String,
     createdAt: { type: Date, default: Date.now }
-});
+}));
 
-const Ticket = mongoose.model('Ticket', TicketSchema);
-
-const DrawSchema = new mongoose.Schema({
+const Draw = mongoose.model('Draw', new mongoose.Schema({
     name: String,
     morning: String,
     evening: String,
     active: Boolean
-});
+}));
 
-const Draw = mongoose.model('Draw', DrawSchema);
-
-const ResultSchema = new mongoose.Schema({
+const Result = mongoose.model('Result', new mongoose.Schema({
     draw: String,
     draw_time: String,
     lot1: String,
     lot2: String,
     lot3: String,
-    date: Date
-});
+    date: { type: Date, default: Date.now }
+}));
 
-const Result = mongoose.model('Result', ResultSchema);
+// ================= ROUTES LOTATO =================
 
-// ================== ROUTES LOTATO ==================
-
-// 🔹 Charger les tirages
+// Tirages
 app.get('/api/lotato/draws', async (req, res) => {
-    const draws = await Draw.find({ active: true });
-    res.json(draws);
+    res.json(await Draw.find({ active: true }));
 });
 
-// 🔹 Enregistrer un ticket
+// Enregistrer ticket
 app.post('/api/lotato/ticket', async (req, res) => {
     try {
         const ticket = new Ticket(req.body);
         await ticket.save();
         res.json({ success: true, ticket });
-    } catch (err) {
-        res.status(500).json({ success: false, error: err.message });
+    } catch (e) {
+        res.status(500).json({ success: false, error: e.message });
     }
 });
 
-// 🔹 Historique tickets
+// Historique
 app.get('/api/lotato/tickets', async (req, res) => {
-    const tickets = await Ticket.find().sort({ createdAt: -1 });
-    res.json(tickets);
+    res.json(await Ticket.find().sort({ createdAt: -1 }));
 });
 
-// 🔹 Publier résultats
+// Publier résultat
 app.post('/api/lotato/result', async (req, res) => {
-    const result = new Result(req.body);
-    await result.save();
+    await new Result(req.body).save();
     res.json({ success: true });
 });
 
-// 🔹 Lire résultats
+// Lire résultats
 app.get('/api/lotato/results', async (req, res) => {
-    const results = await Result.find().sort({ date: -1 });
-    res.json(results);
+    res.json(await Result.find().sort({ date: -1 }));
 });
 
-// ================== LOTATO UI ==================
-app.get('/lotato', (req, res) => {
+// UI
+app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'lotato.html'));
 });
 
-// ================== START ==================
-const PORT = 3000;
+// ================= START =================
+const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-    console.log(`🎲 Lotato Server actif sur http://localhost:${PORT}`);
+    console.log(`🎲 Lotato actif sur le port ${PORT}`);
 });

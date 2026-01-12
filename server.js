@@ -4,6 +4,7 @@ const path = require('path');
 const compression = require('compression');
 const fs = require('fs');
 const cors = require('cors');
+const bcrypt = require('bcryptjs');
 
 const app = express();
 
@@ -229,6 +230,13 @@ function vérifierToken(req, res, next) {
   }
   
   if (!token) {
+    token = req.headers['authorization'];
+    if (token && token.startsWith('Bearer ')) {
+      token = token.slice(7);
+    }
+  }
+  
+  if (!token) {
     token = req.headers['x-auth-token'];
   }
   
@@ -262,16 +270,24 @@ app.post('/api/auth/login', async (req, res) => {
   try {
     const { username, password, role } = req.body;
     
-    console.log('Tentative de connexion:', { username, password, role });
+    console.log('Tentative de connexion:', { username, role });
     
     const user = await User.findOne({ 
       username,
-      password,
       role
     });
 
     if (!user) {
       console.log('Utilisateur non trouvé ou informations incorrectes');
+      return res.status(401).json({
+        success: false,
+        error: 'Identifiants ou rôle incorrect'
+      });
+    }
+
+    // Vérifier le mot de passe (dans cet exemple, on compare en clair pour la démo)
+    if (user.password !== password) {
+      console.log('Mot de passe incorrect');
       return res.status(401).json({
         success: false,
         error: 'Identifiants ou rôle incorrect'
@@ -1093,7 +1109,7 @@ app.post('/api/bets', vérifierToken, async (req, res) => {
   }
 });
 
-// Route pour sauvegarder une fiche
+// Route pour sauvegarder une fiche (POST /api/tickets)
 app.post('/api/tickets', vérifierToken, async (req, res) => {
   try {
     const { draw, draw_time, bets, agentId, agentName } = req.body;
@@ -1127,7 +1143,8 @@ app.post('/api/tickets', vérifierToken, async (req, res) => {
         bets: ticket.bets,
         total: ticket.total,
         agent_name: ticket.agent_name
-      }
+      },
+      nextTicketNumber: ticketNumber + 1
     });
   } catch (error) {
     console.error('Erreur sauvegarde fiche:', error);
@@ -1249,7 +1266,7 @@ app.get('/api/tickets/search', vérifierToken, async (req, res) => {
   }
 });
 
-// Route pour l'historique des fiches
+// Route pour l'historique des fiches (GET /api/tickets/history)
 app.get('/api/tickets/history', vérifierToken, async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
@@ -1291,12 +1308,15 @@ app.get('/api/tickets/history', vérifierToken, async (req, res) => {
   }
 });
 
-// Route pour toutes les fiches
-app.get('/api/tickets/all', vérifierToken, async (req, res) => {
+// Route pour toutes les fiches (GET /api/tickets)
+app.get('/api/tickets', vérifierToken, async (req, res) => {
   try {
     const tickets = await Ticket.find()
       .sort({ date: -1 })
       .limit(100);
+    
+    const lastTicket = await Ticket.findOne().sort({ number: -1 });
+    const nextTicketNumber = lastTicket ? lastTicket.number + 1 : 100001;
     
     res.json({
       success: true,
@@ -1309,7 +1329,8 @@ app.get('/api/tickets/all', vérifierToken, async (req, res) => {
         bets: ticket.bets,
         total: ticket.total,
         agent_name: ticket.agent_name
-      }))
+      })),
+      nextTicketNumber: nextTicketNumber
     });
   } catch (error) {
     console.error('Erreur toutes les fiches:', error);
@@ -1345,7 +1366,7 @@ app.delete('/api/tickets/:id', vérifierToken, async (req, res) => {
   }
 });
 
-// Route pour les fiches multi-tirages
+// Route pour les fiches multi-tirages (GET /api/tickets/multi-draw)
 app.get('/api/tickets/multi-draw', vérifierToken, async (req, res) => {
   try {
     const tickets = await MultiDrawTicket.find()
@@ -1373,7 +1394,7 @@ app.get('/api/tickets/multi-draw', vérifierToken, async (req, res) => {
   }
 });
 
-// Route pour sauvegarder une fiche multi-tirages
+// Route pour sauvegarder une fiche multi-tirages (POST /api/tickets/multi-draw)
 app.post('/api/tickets/multi-draw', vérifierToken, async (req, res) => {
   try {
     const { ticket, agentId, agentName } = req.body;
@@ -1414,7 +1435,7 @@ app.post('/api/tickets/multi-draw', vérifierToken, async (req, res) => {
   }
 });
 
-// Route pour vérifier les gagnants
+// Route pour vérifier les gagnants (POST /api/check-winners)
 app.post('/api/check-winners', vérifierToken, async (req, res) => {
   try {
     const { draw, draw_time } = req.body;
@@ -1537,7 +1558,7 @@ app.post('/api/check-winners', vérifierToken, async (req, res) => {
   }
 });
 
-// Route pour les gagnants
+// Route pour les gagnants (GET /api/tickets/winning)
 app.get('/api/tickets/winning', vérifierToken, async (req, res) => {
   try {
     const winners = await Winner.find()
@@ -1566,7 +1587,7 @@ app.get('/api/tickets/winning', vérifierToken, async (req, res) => {
   }
 });
 
-// Route pour les rapports
+// Route pour les rapports (GET /api/reports)
 app.get('/api/reports', vérifierToken, async (req, res) => {
   try {
     const { type, draw, draw_time, start_date, end_date } = req.query;
@@ -1612,7 +1633,7 @@ app.get('/api/reports', vérifierToken, async (req, res) => {
   }
 });
 
-// Route pour rapport de fin de tirage
+// Route pour rapport de fin de tirage (POST /api/reports/end-of-draw)
 app.post('/api/reports/end-of-draw', vérifierToken, async (req, res) => {
   try {
     const { draw, draw_time } = req.body;
@@ -1645,7 +1666,7 @@ app.post('/api/reports/end-of-draw', vérifierToken, async (req, res) => {
   }
 });
 
-// Route pour rapport général
+// Route pour rapport général (GET /api/reports/general)
 app.get('/api/reports/general', vérifierToken, async (req, res) => {
   try {
     const today = new Date();
@@ -1674,7 +1695,7 @@ app.get('/api/reports/general', vérifierToken, async (req, res) => {
   }
 });
 
-// Route pour rapport par tirage
+// Route pour rapport par tirage (POST /api/reports/draw)
 app.post('/api/reports/draw', vérifierToken, async (req, res) => {
   try {
     const { draw, draw_time } = req.body;
@@ -1707,7 +1728,7 @@ app.post('/api/reports/draw', vérifierToken, async (req, res) => {
   }
 });
 
-// Route pour les informations de l'entreprise
+// Route pour les informations de l'entreprise (GET /api/company-info)
 app.get('/api/company-info', vérifierToken, async (req, res) => {
   try {
     let config = await Config.findOne();
@@ -1734,7 +1755,7 @@ app.get('/api/company-info', vérifierToken, async (req, res) => {
   }
 });
 
-// Route pour le logo
+// Route pour le logo (GET /api/logo)
 app.get('/api/logo', vérifierToken, async (req, res) => {
   try {
     const config = await Config.findOne();
@@ -1752,7 +1773,7 @@ app.get('/api/logo', vérifierToken, async (req, res) => {
   }
 });
 
-// Route pour vérifier la session
+// Route pour vérifier la session (GET /api/auth/check)
 app.get('/api/auth/check', vérifierToken, async (req, res) => {
   try {
     if (!req.tokenInfo) {
@@ -1790,7 +1811,7 @@ app.get('/api/auth/check', vérifierToken, async (req, res) => {
   }
 });
 
-// Route pour les tickets en attente
+// Route pour les tickets en attente (GET /api/tickets/pending)
 app.get('/api/tickets/pending', vérifierToken, async (req, res) => {
   try {
     const tickets = await Ticket.find({ is_synced: false })
@@ -1815,6 +1836,70 @@ app.get('/api/tickets/pending', vérifierToken, async (req, res) => {
     res.status(500).json({
       success: false,
       error: 'Erreur lors du chargement des tickets en attente'
+    });
+  }
+});
+
+// Route pour l'historique (POST /api/history) - Compatibilité avec lotato.html
+app.post('/api/history', vérifierToken, async (req, res) => {
+  try {
+    const historyRecord = req.body;
+    
+    // Pour la compatibilité avec lotato.html, on sauvegarde dans l'historique
+    // On peut utiliser la collection Ticket ou créer une collection séparée
+    // Pour simplifier, on va utiliser la collection Ticket
+    
+    const ticket = new Ticket({
+      number: Date.now() % 1000000, // Numéro temporaire
+      draw: historyRecord.draw,
+      draw_time: historyRecord.drawTime,
+      date: new Date(historyRecord.date),
+      bets: historyRecord.bets,
+      total: historyRecord.total,
+      agent_name: 'System',
+      is_synced: true
+    });
+    
+    await ticket.save();
+    
+    res.json({
+      success: true,
+      message: 'Historique sauvegardé avec succès'
+    });
+  } catch (error) {
+    console.error('Erreur sauvegarde historique:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Erreur lors de la sauvegarde de l\'historique'
+    });
+  }
+});
+
+// Route pour obtenir l'historique (GET /api/history) - Compatibilité avec lotato.html
+app.get('/api/history', vérifierToken, async (req, res) => {
+  try {
+    const tickets = await Ticket.find()
+      .sort({ date: -1 })
+      .limit(50);
+    
+    res.json({
+      success: true,
+      tickets: tickets.map(ticket => ({
+        id: ticket._id,
+        number: ticket.number,
+        date: ticket.date,
+        draw: ticket.draw,
+        draw_time: ticket.draw_time,
+        bets: ticket.bets,
+        total: ticket.total,
+        agent_name: ticket.agent_name
+      }))
+    });
+  } catch (error) {
+    console.error('Erreur chargement historique:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Erreur lors du chargement de l\'historique'
     });
   }
 });
@@ -1987,7 +2072,7 @@ app.listen(PORT, () => {
   console.log('  GET    /api/tickets/:id');
   console.log('  GET    /api/tickets/search');
   console.log('  GET    /api/tickets/history');
-  console.log('  GET    /api/tickets/all');
+  console.log('  GET    /api/tickets/all (alias pour /api/tickets)');
   console.log('  DELETE /api/tickets/:id');
   console.log('  GET    /api/tickets/multi-draw');
   console.log('  POST   /api/tickets/multi-draw');
@@ -2001,4 +2086,6 @@ app.listen(PORT, () => {
   console.log('  GET    /api/logo');
   console.log('  GET    /api/auth/check');
   console.log('  GET    /api/tickets/pending');
+  console.log('  POST   /api/history');
+  console.log('  GET    /api/history');
 });

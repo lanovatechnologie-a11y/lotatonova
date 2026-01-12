@@ -2402,32 +2402,26 @@
         </div>
     </div>
     <script>
-// Configuration de base avec APP_CONFIG
-const API_BASE_URL = 'https://lotatonova-fv0b.onrender.com';
-
-// Configuration API Backend MODIFIÉE pour utiliser routes LOTATO
-const APP_CONFIG = {
-    health: `${API_BASE_URL}/api/health`,  // Garde l'ancien pour test
-    login: `${API_BASE_URL}/api/auth/login`,
-    // Routes LOTATO spécifiques
-    results: `${API_BASE_URL}/api/lotato/results`,
-    checkWinners: `${API_BASE_URL}/api/lotato/check-winners`,
-    tickets: `${API_BASE_URL}/api/lotato/tickets`,
-    ticketsPending: `${API_BASE_URL}/api/lotato/tickets/pending`,
-    winningTickets: `${API_BASE_URL}/api/lotato/tickets/winning`,
-    history: `${API_BASE_URL}/api/lotato/history`,
-    multiDrawTickets: `${API_BASE_URL}/api/lotato/tickets/multi-draw`,
-    companyInfo: `${API_BASE_URL}/api/lotato/company-info`,
-    logo: `${API_BASE_URL}/api/lotato/logo`,
-    
-    // Ajoute aussi les routes générales au cas où
-    generalHealth: `${API_BASE_URL}/api/health`,
-    generalResults: `${API_BASE_URL}/api/results`
-};
-
-const FIVE_MINUTES = 5 * 60 * 1000; // 5 minutes en millisecondes
-
-             // 5 minutes en millisecondes
+        // Configuration de base avec APP_CONFIG
+        const API_BASE_URL = 'https://lotatonova-fv0b.onrender.com';
+        // Configuration API Backend
+        const APP_CONFIG = {
+            health: `${API_BASE_URL}/api/health`,
+            login: `${API_BASE_URL}/api/auth/login`,
+            // NOUVEAU: Endpoints pour les résultats
+            results: `${API_BASE_URL}/api/results`,
+            checkWinners: `${API_BASE_URL}/api/check-winners`,
+            // NOUVEAUX: Endpoints pour les tickets
+            tickets: `${API_BASE_URL}/api/tickets`,
+            ticketsPending: `${API_BASE_URL}/api/tickets/pending`,
+            winningTickets: `${API_BASE_URL}/api/tickets/winning`,
+            history: `${API_BASE_URL}/api/history`,
+            multiDrawTickets: `${API_BASE_URL}/api/tickets/multi-draw`,
+            companyInfo: `${API_BASE_URL}/api/company-info`,
+            logo: `${API_BASE_URL}/api/logo`
+        };
+        
+        const FIVE_MINUTES = 5 * 60 * 1000; // 5 minutes en millisecondes
         
         // NOUVEAU: Base de données simulée pour les résultats (sera remplacée par l'API)
         let resultsDatabase = {

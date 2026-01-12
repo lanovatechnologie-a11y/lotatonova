@@ -4,7 +4,6 @@ const path = require('path');
 const compression = require('compression');
 const fs = require('fs');
 const cors = require('cors');
-const bcrypt = require('bcryptjs');
 
 const app = express();
 

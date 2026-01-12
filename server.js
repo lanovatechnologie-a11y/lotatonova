@@ -1,4 +1,4 @@
-// server.js (Lotato – Production Ready)
+// server.js – Lotato (Render OK)
 
 const express = require('express');
 const mongoose = require('mongoose');
@@ -12,10 +12,10 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.static(__dirname));
 
 // ================= MONGODB =================
-const MONGO_URI = process.env.MONGODB_URI;
+const MONGO_URI = process.env["MONGODB-URL"];
 
 if (!MONGO_URI) {
-    console.error("❌ MONGODB_URI non défini dans Render");
+    console.error("❌ Variable MONGODB-URL introuvable dans Render");
     process.exit(1);
 }
 
@@ -54,13 +54,10 @@ const Result = mongoose.model('Result', new mongoose.Schema({
 }));
 
 // ================= ROUTES LOTATO =================
-
-// Tirages
 app.get('/api/lotato/draws', async (req, res) => {
     res.json(await Draw.find({ active: true }));
 });
 
-// Enregistrer ticket
 app.post('/api/lotato/ticket', async (req, res) => {
     try {
         const ticket = new Ticket(req.body);
@@ -71,23 +68,20 @@ app.post('/api/lotato/ticket', async (req, res) => {
     }
 });
 
-// Historique
 app.get('/api/lotato/tickets', async (req, res) => {
     res.json(await Ticket.find().sort({ createdAt: -1 }));
 });
 
-// Publier résultat
 app.post('/api/lotato/result', async (req, res) => {
     await new Result(req.body).save();
     res.json({ success: true });
 });
 
-// Lire résultats
 app.get('/api/lotato/results', async (req, res) => {
     res.json(await Result.find().sort({ date: -1 }));
 });
 
-// UI
+// ================= UI =================
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'lotato.html'));
 });

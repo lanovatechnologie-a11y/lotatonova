@@ -1,19 +1,12 @@
-// server.js - Serveur complet Lotato avec MongoDB Atlas
+// server.js - Serveur Lotato avec variable MONGODB-URL
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const http = require('http');
-const socketIo = require('socket.io');
 require('dotenv').config();
 
 const app = express();
 const server = http.createServer(app);
-const io = socketIo(server, {
-  cors: {
-    origin: "*",
-    methods: ["GET", "POST"]
-  }
-});
 
 // Middleware
 app.use(cors({
@@ -23,151 +16,221 @@ app.use(cors({
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Variables d'environnement
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb+srv://username:password@cluster.mongodb.net/lotato';
-const PORT = process.env.PORT || 5000;
+// Variables d'environnement - NOTE: Render utilise MONGODB-URL (avec tiret)
+const MONGODB_URL = process.env['MONGODB-URL'] || process.env.MONGODB_URI;
+const PORT = process.env.PORT || 10000;
 
-// Connexion MongoDB Atlas
-mongoose.connect(MONGODB_URI, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-  maxPoolSize: 10,
-  socketTimeoutMS: 45000,
-})
-.then(() => console.log('✅ MongoDB Atlas connecté'))
-.catch(err => {
-  console.error('❌ Erreur MongoDB:', err);
+// Debug: Afficher les variables d'environnement disponibles
+console.log('🔧 Variables d\'environnement disponibles:');
+console.log('PORT:', process.env.PORT);
+console.log('MONGODB-URL:', process.env['MONGODB-URL'] ? 'Définie' : 'Non définie');
+console.log('MONGODB_URI:', process.env.MONGODB_URI ? 'Définie' : 'Non définie');
+
+if (!MONGODB_URL) {
+  console.error('❌ ERREUR CRITIQUE: Aucune variable MongoDB trouvée!');
+  console.error('⚠️  Vérifiez que MONGODB-URL est définie dans Render Environment');
+  console.error('📍 Allez dans: Render Dashboard → Lotatonova → Environment');
+  console.error('📍 Ajoutez: MONGODB-URL = votre_uri_mongodb_atlas');
   process.exit(1);
-});
+}
 
-// ==================== SCHÉMAS & MODÈLES ====================
-
-// Modèle Utilisateur
-const userSchema = new mongoose.Schema({
-  email: { type: String, required: true, unique: true },
-  password: { type: String, required: true }, // Sans hachage comme demandé
-  nom: { type: String, required: true },
-  prenom: { type: String, required: true },
-  role: { type: String, enum: ['admin', 'utilisateur', 'moderateur'], default: 'utilisateur' },
-  date_inscription: { type: Date, default: Date.now },
-  derniere_connexion: { type: Date },
-  actif: { type: Boolean, default: true },
-  preferences: {
-    theme: { type: String, default: 'clair' },
-    notifications: { type: Boolean, default: true }
+// Fonction pour nettoyer l'URL MongoDB (corriger les problèmes de format)
+const cleanMongoDBUrl = (url) => {
+  if (!url) return url;
+  
+  // Retirer les guillemets si présents
+  let cleanedUrl = url.replace(/["']/g, '');
+  
+  // Vérifier si l'URL commence bien par mongodb:// ou mongodb+srv://
+  if (!cleanedUrl.startsWith('mongodb://') && !cleanedUrl.startsWith('mongodb+srv://')) {
+    console.warn('⚠️  L\'URL MongoDB ne semble pas avoir le bon format');
+    console.warn('   URL reçue:', cleanedUrl.substring(0, 50) + '...');
   }
-});
+  
+  // Ajouter le nom de la base de données si absent
+  if (!cleanedUrl.includes('/?')) {
+    const parts = cleanedUrl.split('/');
+    if (parts.length === 3 || (parts.length === 4 && parts[3] === '')) {
+      cleanedUrl = cleanedUrl.endsWith('/') ? cleanedUrl + 'lotatonova' : cleanedUrl + '/lotatonova';
+    }
+  }
+  
+  return cleanedUrl;
+};
 
-// Modèle Ticket/Problème
-const ticketSchema = new mongoose.Schema({
-  titre: { type: String, required: true },
-  description: { type: String, required: true },
-  categorie: { type: String, enum: ['bug', 'amelioration', 'question', 'urgent'], required: true },
-  statut: { type: String, enum: ['ouvert', 'en_cours', 'resolu', 'ferme'], default: 'ouvert' },
-  priorite: { type: String, enum: ['basse', 'moyenne', 'haute', 'critique'], default: 'moyenne' },
-  createur_id: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-  assigne_a: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
-  date_creation: { type: Date, default: Date.now },
-  date_modification: { type: Date, default: Date.now },
-  date_resolution: { type: Date },
-  commentaires: [{
-    auteur_id: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
-    contenu: { type: String, required: true },
-    date: { type: Date, default: Date.now }
-  }],
-  pieces_jointes: [{
-    nom: String,
-    url: String,
-    type: String,
-    taille: Number
-  }]
-});
+// URL MongoDB nettoyée
+const MONGO_URI = cleanMongoDBUrl(MONGODB_URL);
+console.log('🔗 URI MongoDB (nettoyée):', MONGO_URI.substring(0, 60) + '...');
 
-// Modèle Projet
-const projetSchema = new mongoose.Schema({
-  nom: { type: String, required: true },
-  description: { type: String },
-  createur_id: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-  membres: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
-  date_creation: { type: Date, default: Date.now },
-  tickets: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Ticket' }]
-});
-
-// Modèle Notification
-const notificationSchema = new mongoose.Schema({
-  utilisateur_id: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-  type: { type: String, enum: ['ticket', 'commentaire', 'assignation', 'systeme'] },
-  titre: { type: String, required: true },
-  message: { type: String, required: true },
-  lu: { type: Boolean, default: false },
-  date: { type: Date, default: Date.now },
-  lien: { type: String }
-});
-
-// Création des modèles
-const User = mongoose.model('User', userSchema);
-const Ticket = mongoose.model('Ticket', ticketSchema);
-const Projet = mongoose.model('Projet', projetSchema);
-const Notification = mongoose.model('Notification', notificationSchema);
-
-// ==================== MIDDLEWARE D'AUTHENTIFICATION ====================
-const authenticate = async (req, res, next) => {
+// ==================== CONNEXION MONGODB ATLAS ====================
+const connectToMongoDB = async () => {
   try {
-    const authHeader = req.headers.authorization;
-    if (!authHeader) {
-      return res.status(401).json({ error: 'Token manquant' });
-    }
+    console.log('🔄 Connexion à MongoDB Atlas...');
     
-    // Format: "Bearer email:password" (base64)
-    const token = authHeader.split(' ')[1];
-    const credentials = Buffer.from(token, 'base64').toString();
-    const [email, password] = credentials.split(':');
+    const options = {
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
+      serverSelectionTimeoutMS: 30000,
+      socketTimeoutMS: 45000,
+      maxPoolSize: 10,
+      retryWrites: true,
+      w: 'majority'
+    };
     
-    const user = await User.findOne({ email, password });
-    if (!user) {
-      return res.status(401).json({ error: 'Authentification échouée' });
-    }
+    await mongoose.connect(MONGO_URI, options);
     
-    req.user = user;
-    next();
+    console.log('✅ MongoDB connecté avec succès!');
+    console.log('📊 Base de données:', mongoose.connection.name);
+    console.log('📍 Hôte:', mongoose.connection.host);
+    
   } catch (error) {
-    res.status(401).json({ error: 'Authentification invalide' });
+    console.error('❌ ÉCHEC de connexion MongoDB:');
+    console.error('Message:', error.message);
+    console.error('Code:', error.code || 'N/A');
+    
+    // Tentative de secours sans SRV
+    if (MONGO_URI.includes('+srv://')) {
+      console.log('🔄 Tentative avec connexion standard...');
+      try {
+        const standardURI = MONGO_URI.replace('mongodb+srv://', 'mongodb://');
+        await mongoose.connect(standardURI, {
+          useNewUrlParser: true,
+          useUnifiedTopology: true,
+          serverSelectionTimeoutMS: 30000,
+          socketTimeoutMS: 45000
+        });
+        console.log('✅ Connecté avec URI standard');
+      } catch (error2) {
+        console.error('❌ Échec complet de connexion');
+        console.error('Dernière erreur:', error2.message);
+        process.exit(1);
+      }
+    } else {
+      console.error('💀 Impossible de se connecter à MongoDB');
+      process.exit(1);
+    }
   }
 };
 
-// ==================== ROUTES UTILISATEURS ====================
+// ==================== MODÈLES SIMPLIFIÉS ====================
+const userSchema = new mongoose.Schema({
+  email: { type: String, required: true, unique: true },
+  password: { type: String, required: true },
+  nom: { type: String, required: true },
+  prenom: { type: String, required: true },
+  role: { type: String, default: 'user' },
+  created: { type: Date, default: Date.now }
+});
+
+const ticketSchema = new mongoose.Schema({
+  title: { type: String, required: true },
+  description: { type: String, required: true },
+  category: { type: String, required: true },
+  status: { type: String, default: 'open' },
+  priority: { type: String, default: 'medium' },
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  createdAt: { type: Date, default: Date.now },
+  updatedAt: { type: Date, default: Date.now }
+});
+
+const User = mongoose.model('User', userSchema);
+const Ticket = mongoose.model('Ticket', ticketSchema);
+
+// ==================== ROUTES ESSENTIELLES ====================
+
+// Route racine
+app.get('/', (req, res) => {
+  res.json({
+    app: 'Lotato Nova API',
+    status: 'online',
+    version: '1.0.0',
+    mongodb: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected',
+    time: new Date().toISOString()
+  });
+});
+
+// Health check pour Render
+app.get('/health', (req, res) => {
+  const dbStatus = mongoose.connection.readyState;
+  res.status(dbStatus === 1 ? 200 : 503).json({
+    status: dbStatus === 1 ? 'healthy' : 'unhealthy',
+    database: dbStatus === 1 ? 'connected' : 'disconnected'
+  });
+});
+
+// Test de la base de données
+app.get('/test-db', async (req, res) => {
+  try {
+    // Essayer de compter les utilisateurs pour tester la connexion
+    const userCount = await User.countDocuments();
+    res.json({
+      success: true,
+      message: 'Base de données accessible',
+      userCount: userCount,
+      dbState: mongoose.connection.readyState
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message,
+      dbState: mongoose.connection.readyState
+    });
+  }
+});
 
 // Inscription
 app.post('/api/register', async (req, res) => {
   try {
     const { email, password, nom, prenom } = req.body;
     
-    // Vérifier si l'utilisateur existe déjà
-    const existingUser = await User.findOne({ email });
-    if (existingUser) {
-      return res.status(400).json({ error: 'Email déjà utilisé' });
+    // Validation simple
+    if (!email || !password || !nom || !prenom) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Tous les champs sont requis' 
+      });
     }
     
+    // Vérifier si l'email existe déjà
+    const existing = await User.findOne({ email });
+    if (existing) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Cet email est déjà utilisé' 
+      });
+    }
+    
+    // Créer l'utilisateur
     const user = new User({
       email,
-      password, // Stocké en clair
+      password, // Stocké en clair comme demandé
       nom,
       prenom
     });
     
     await user.save();
     
+    // Retourner sans le mot de passe
+    const userResponse = {
+      id: user._id,
+      email: user.email,
+      nom: user.nom,
+      prenom: user.prenom,
+      created: user.created
+    };
+    
     res.status(201).json({
-      message: 'Utilisateur créé avec succès',
-      user: {
-        id: user._id,
-        email: user.email,
-        nom: user.nom,
-        prenom: user.prenom
-      }
+      success: true,
+      message: 'Compte créé avec succès',
+      user: userResponse
     });
+    
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error('Erreur inscription:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: 'Erreur serveur lors de l\'inscription' 
+    });
   }
 });
 
@@ -176,469 +239,230 @@ app.post('/api/login', async (req, res) => {
   try {
     const { email, password } = req.body;
     
+    if (!email || !password) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Email et mot de passe requis' 
+      });
+    }
+    
+    // Rechercher l'utilisateur
     const user = await User.findOne({ email, password });
+    
     if (!user) {
-      return res.status(401).json({ error: 'Email ou mot de passe incorrect' });
+      return res.status(401).json({ 
+        success: false, 
+        error: 'Email ou mot de passe incorrect' 
+      });
     }
     
-    // Mettre à jour la dernière connexion
-    user.derniere_connexion = new Date();
-    await user.save();
-    
-    // Créer un token simple (email:password en base64)
-    const token = Buffer.from(`${email}:${password}`).toString('base64');
-    
-    res.json({
-      message: 'Connexion réussie',
-      token,
-      user: {
-        id: user._id,
-        email: user.email,
-        nom: user.nom,
-        prenom: user.prenom,
-        role: user.role
-      }
-    });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-// Récupérer le profil utilisateur
-app.get('/api/profile', authenticate, async (req, res) => {
-  try {
-    const user = await User.findById(req.user._id).select('-password');
-    res.json(user);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-// Mettre à jour le profil
-app.put('/api/profile', authenticate, async (req, res) => {
-  try {
-    const updates = req.body;
-    delete updates.password; // Empêcher la modification du mot de passe via cette route
-    
-    const user = await User.findByIdAndUpdate(
-      req.user._id,
-      updates,
-      { new: true, runValidators: true }
-    ).select('-password');
-    
-    res.json({
-      message: 'Profil mis à jour',
-      user
-    });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-// Changer le mot de passe
-app.post('/api/change-password', authenticate, async (req, res) => {
-  try {
-    const { currentPassword, newPassword } = req.body;
-    
-    const user = await User.findById(req.user._id);
-    
-    // Vérifier l'ancien mot de passe (en clair)
-    if (user.password !== currentPassword) {
-      return res.status(401).json({ error: 'Mot de passe actuel incorrect' });
-    }
-    
-    // Mettre à jour avec le nouveau mot de passe (en clair)
-    user.password = newPassword;
-    await user.save();
-    
-    res.json({ message: 'Mot de passe changé avec succès' });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-// ==================== ROUTES TICKETS ====================
-
-// Créer un ticket
-app.post('/api/tickets', authenticate, async (req, res) => {
-  try {
-    const ticketData = {
-      ...req.body,
-      createur_id: req.user._id
+    // Réponse réussie
+    const userResponse = {
+      id: user._id,
+      email: user.email,
+      nom: user.nom,
+      prenom: user.prenom,
+      role: user.role
     };
     
-    const ticket = new Ticket(ticketData);
-    await ticket.save();
+    res.json({
+      success: true,
+      message: 'Connexion réussie',
+      user: userResponse
+    });
     
-    // Notifier les administrateurs
-    const admins = await User.find({ role: 'admin' });
-    for (const admin of admins) {
-      const notification = new Notification({
-        utilisateur_id: admin._id,
-        type: 'ticket',
-        titre: 'Nouveau ticket',
-        message: `Un nouveau ticket a été créé par ${req.user.prenom} ${req.user.nom}`,
-        lien: `/tickets/${ticket._id}`
-      });
-      await notification.save();
-    }
-    
-    res.status(201).json({
-      message: 'Ticket créé avec succès',
-      ticket
+  } catch (error) {
+    console.error('Erreur connexion:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: 'Erreur serveur lors de la connexion' 
+    });
+  }
+});
+
+// Récupérer tous les utilisateurs
+app.get('/api/users', async (req, res) => {
+  try {
+    const users = await User.find({}, { password: 0 }); // Exclure les mots de passe
+    res.json({
+      success: true,
+      count: users.length,
+      users: users
     });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ 
+      success: false, 
+      error: error.message 
+    });
   }
 });
 
-// Lister tous les tickets
-app.get('/api/tickets', authenticate, async (req, res) => {
+// Créer un ticket
+app.post('/api/tickets', async (req, res) => {
   try {
-    let query = {};
-    const { statut, categorie, priorite, assigne } = req.query;
+    const { title, description, category, userId } = req.body;
     
-    // Filtres
-    if (statut) query.statut = statut;
-    if (categorie) query.categorie = categorie;
-    if (priorite) query.priorite = priorite;
-    if (assigne) query.assigne_a = assigne;
-    
-    // Si l'utilisateur n'est pas admin, voir seulement ses tickets ou ceux assignés
-    if (req.user.role !== 'admin') {
-      query.$or = [
-        { createur_id: req.user._id },
-        { assigne_a: req.user._id }
-      ];
+    if (!title || !description || !category || !userId) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Données manquantes' 
+      });
     }
     
-    const tickets = await Ticket.find(query)
-      .populate('createur_id', 'nom prenom email')
-      .populate('assigne_a', 'nom prenom email')
-      .sort({ date_creation: -1 });
+    const ticket = new Ticket({
+      title,
+      description,
+      category,
+      userId
+    });
     
-    res.json(tickets);
+    await ticket.save();
+    
+    res.status(201).json({
+      success: true,
+      message: 'Ticket créé',
+      ticket: ticket
+    });
+    
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ 
+      success: false, 
+      error: error.message 
+    });
   }
 });
 
-// Récupérer un ticket spécifique
-app.get('/api/tickets/:id', authenticate, async (req, res) => {
+// Récupérer tous les tickets
+app.get('/api/tickets', async (req, res) => {
+  try {
+    const tickets = await Ticket.find()
+      .populate('userId', 'nom prenom email')
+      .sort({ createdAt: -1 });
+    
+    res.json({
+      success: true,
+      count: tickets.length,
+      tickets: tickets
+    });
+  } catch (error) {
+    res.status(500).json({ 
+      success: false, 
+      error: error.message 
+    });
+  }
+});
+
+// Récupérer un ticket par ID
+app.get('/api/tickets/:id', async (req, res) => {
   try {
     const ticket = await Ticket.findById(req.params.id)
-      .populate('createur_id', 'nom prenom email')
-      .populate('assigne_a', 'nom prenom email')
-      .populate('commentaires.auteur_id', 'nom prenom email');
+      .populate('userId', 'nom prenom email');
     
     if (!ticket) {
-      return res.status(404).json({ error: 'Ticket non trouvé' });
+      return res.status(404).json({ 
+        success: false, 
+        error: 'Ticket non trouvé' 
+      });
     }
     
-    // Vérifier les permissions
-    if (req.user.role !== 'admin' && 
-        ticket.createur_id._id.toString() !== req.user._id.toString() &&
-        (!ticket.assigne_a || ticket.assigne_a._id.toString() !== req.user._id.toString())) {
-      return res.status(403).json({ error: 'Accès non autorisé' });
-    }
-    
-    res.json(ticket);
+    res.json({
+      success: true,
+      ticket: ticket
+    });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ 
+      success: false, 
+      error: error.message 
+    });
   }
 });
 
 // Mettre à jour un ticket
-app.put('/api/tickets/:id', authenticate, async (req, res) => {
+app.put('/api/tickets/:id', async (req, res) => {
   try {
-    const ticket = await Ticket.findById(req.params.id);
+    const { status } = req.body;
     
-    if (!ticket) {
-      return res.status(404).json({ error: 'Ticket non trouvé' });
-    }
-    
-    // Vérifier les permissions
-    if (req.user.role !== 'admin' && 
-        ticket.createur_id.toString() !== req.user._id.toString()) {
-      return res.status(403).json({ error: 'Accès non autorisé' });
-    }
-    
-    const updates = req.body;
-    updates.date_modification = new Date();
-    
-    // Si le statut passe à "résolu", enregistrer la date
-    if (updates.statut === 'resolu' && ticket.statut !== 'resolu') {
-      updates.date_resolution = new Date();
-    }
-    
-    const updatedTicket = await Ticket.findByIdAndUpdate(
+    const ticket = await Ticket.findByIdAndUpdate(
       req.params.id,
-      updates,
+      { 
+        status,
+        updatedAt: new Date()
+      },
       { new: true, runValidators: true }
     );
     
-    res.json({
-      message: 'Ticket mis à jour',
-      ticket: updatedTicket
-    });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-// Ajouter un commentaire
-app.post('/api/tickets/:id/comments', authenticate, async (req, res) => {
-  try {
-    const ticket = await Ticket.findById(req.params.id);
-    
     if (!ticket) {
-      return res.status(404).json({ error: 'Ticket non trouvé' });
-    }
-    
-    const commentaire = {
-      auteur_id: req.user._id,
-      contenu: req.body.contenu,
-      date: new Date()
-    };
-    
-    ticket.commentaires.push(commentaire);
-    ticket.date_modification = new Date();
-    await ticket.save();
-    
-    // Notifier le créateur du ticket et la personne assignée
-    const notifications = [];
-    
-    if (ticket.createur_id.toString() !== req.user._id.toString()) {
-      const notification = new Notification({
-        utilisateur_id: ticket.createur_id,
-        type: 'commentaire',
-        titre: 'Nouveau commentaire',
-        message: `${req.user.prenom} a commenté votre ticket "${ticket.titre}"`,
-        lien: `/tickets/${ticket._id}`
+      return res.status(404).json({ 
+        success: false, 
+        error: 'Ticket non trouvé' 
       });
-      notifications.push(notification.save());
     }
-    
-    if (ticket.assigne_a && ticket.assigne_a.toString() !== req.user._id.toString()) {
-      const notification = new Notification({
-        utilisateur_id: ticket.assigne_a,
-        type: 'commentaire',
-        titre: 'Nouveau commentaire',
-        message: `${req.user.prenom} a commenté le ticket "${ticket.titre}"`,
-        lien: `/tickets/${ticket._id}`
-      });
-      notifications.push(notification.save());
-    }
-    
-    await Promise.all(notifications);
     
     res.json({
-      message: 'Commentaire ajouté',
-      commentaire
+      success: true,
+      message: 'Ticket mis à jour',
+      ticket: ticket
     });
   } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-// ==================== ROUTES PROJETS ====================
-
-// Créer un projet
-app.post('/api/projets', authenticate, async (req, res) => {
-  try {
-    const projetData = {
-      ...req.body,
-      createur_id: req.user._id,
-      membres: [req.user._id] // Ajouter le créateur comme membre
-    };
-    
-    const projet = new Projet(projetData);
-    await projet.save();
-    
-    res.status(201).json({
-      message: 'Projet créé',
-      projet
+    res.status(500).json({ 
+      success: false, 
+      error: error.message 
     });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
   }
 });
 
-// Lister les projets
-app.get('/api/projets', authenticate, async (req, res) => {
+// Route 404
+app.use((req, res) => {
+  res.status(404).json({ 
+    success: false,
+    error: 'Route non trouvée' 
+  });
+});
+
+// ==================== DÉMARRAGE ====================
+const startServer = async () => {
   try {
-    const projets = await Projet.find({
-      $or: [
-        { createur_id: req.user._id },
-        { membres: req.user._id }
-      ]
-    })
-    .populate('createur_id', 'nom prenom')
-    .populate('membres', 'nom prenom email');
+    // Connexion à MongoDB d'abord
+    await connectToMongoDB();
     
-    res.json(projets);
+    // Démarrer le serveur
+    server.listen(PORT, () => {
+      console.log('\n' + '='.repeat(60));
+      console.log('🚀 SERVEUR LOTATO NOVA - DÉMARRÉ SUR RENDER');
+      console.log('='.repeat(60));
+      console.log(`📍 Port: ${PORT}`);
+      console.log(`🌍 URL publique: https://lotatonova-fv0b.onrender.com`);
+      console.log(`📊 MongoDB: ${mongoose.connection.readyState === 1 ? 'CONNECTÉ ✅' : 'DÉCONNECTÉ ❌'}`);
+      console.log(`📁 Base de données: ${mongoose.connection.name || 'N/A'}`);
+      console.log(`⏰ Heure: ${new Date().toLocaleString()}`);
+      console.log('='.repeat(60));
+      console.log('\n📋 Routes disponibles:');
+      console.log('  GET  /              - Status de l\'API');
+      console.log('  GET  /health        - Health check pour Render');
+      console.log('  GET  /test-db       - Test de la base de données');
+      console.log('  POST /api/register  - Inscription');
+      console.log('  POST /api/login     - Connexion');
+      console.log('  GET  /api/users     - Liste des utilisateurs');
+      console.log('  POST /api/tickets   - Créer un ticket');
+      console.log('  GET  /api/tickets   - Liste des tickets');
+      console.log('='.repeat(60) + '\n');
+    });
+    
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error('💥 Impossible de démarrer le serveur:', error);
+    process.exit(1);
   }
-});
+};
 
-// ==================== ROUTES NOTIFICATIONS ====================
-
-// Récupérer les notifications
-app.get('/api/notifications', authenticate, async (req, res) => {
-  try {
-    const notifications = await Notification.find({
-      utilisateur_id: req.user._id
-    })
-    .sort({ date: -1 })
-    .limit(50);
-    
-    res.json(notifications);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-// Marquer une notification comme lue
-app.put('/api/notifications/:id/read', authenticate, async (req, res) => {
-  try {
-    const notification = await Notification.findOneAndUpdate(
-      { _id: req.params.id, utilisateur_id: req.user._id },
-      { lu: true },
-      { new: true }
-    );
-    
-    if (!notification) {
-      return res.status(404).json({ error: 'Notification non trouvée' });
-    }
-    
-    res.json({ message: 'Notification marquée comme lue', notification });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-// Marquer toutes les notifications comme lues
-app.put('/api/notifications/read-all', authenticate, async (req, res) => {
-  try {
-    await Notification.updateMany(
-      { utilisateur_id: req.user._id, lu: false },
-      { lu: true }
-    );
-    
-    res.json({ message: 'Toutes les notifications marquées comme lues' });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-// ==================== ROUTES ADMIN ====================
-
-// Récupérer tous les utilisateurs (admin seulement)
-app.get('/api/admin/users', authenticate, async (req, res) => {
-  try {
-    if (req.user.role !== 'admin') {
-      return res.status(403).json({ error: 'Accès réservé aux administrateurs' });
-    }
-    
-    const users = await User.find().select('-password');
-    res.json(users);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-// Statistiques (admin seulement)
-app.get('/api/admin/stats', authenticate, async (req, res) => {
-  try {
-    if (req.user.role !== 'admin') {
-      return res.status(403).json({ error: 'Accès réservé aux administrateurs' });
-    }
-    
-    const stats = {
-      totalUsers: await User.countDocuments(),
-      activeUsers: await User.countDocuments({ actif: true }),
-      totalTickets: await Ticket.countDocuments(),
-      openTickets: await Ticket.countDocuments({ statut: 'ouvert' }),
-      resolvedTickets: await Ticket.countDocuments({ statut: 'resolu' }),
-      totalProjects: await Projet.countDocuments()
-    };
-    
-    res.json(stats);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-// ==================== SOCKET.IO ====================
-
-io.on('connection', (socket) => {
-  console.log('Nouvelle connexion Socket.io');
-  
-  socket.on('join-ticket', (ticketId) => {
-    socket.join(`ticket-${ticketId}`);
-  });
-  
-  socket.on('new-comment', (data) => {
-    io.to(`ticket-${data.ticketId}`).emit('comment-added', data.comment);
-  });
-  
-  socket.on('ticket-updated', (data) => {
-    io.emit('ticket-changed', data);
-  });
-  
-  socket.on('disconnect', () => {
-    console.log('Déconnexion Socket.io');
-  });
-});
-
-// ==================== ROUTES UTILITAIRES ====================
-
-// Health check
-app.get('/api/health', (req, res) => {
-  res.json({
-    status: 'OK',
-    timestamp: new Date().toISOString(),
-    database: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected'
-  });
-});
-
-// Route de test
-app.get('/api/test', (req, res) => {
-  res.json({ 
-    message: 'API Lotato fonctionnelle',
-    version: '1.0.0',
-    date: new Date().toISOString()
-  });
-});
-
-// Gestion des erreurs 404
-app.use('*', (req, res) => {
-  res.status(404).json({ error: 'Route non trouvée' });
-});
-
-// Gestion globale des erreurs
-app.use((err, req, res, next) => {
-  console.error('Erreur:', err.stack);
-  res.status(500).json({ 
-    error: 'Erreur interne du serveur',
-    message: err.message 
-  });
-});
-
-// ==================== DÉMARRAGE DU SERVEUR ====================
-server.listen(PORT, () => {
-  console.log(`🚀 Serveur Lotato démarré sur le port ${PORT}`);
-  console.log(`📡 MongoDB: ${mongoose.connection.host}`);
-  console.log(`🔗 URL: http://localhost:${PORT}`);
-});
-
-// Fermeture propre
-process.on('SIGINT', async () => {
+// Gestion de la fermeture
+process.on('SIGTERM', async () => {
+  console.log('\n🛑 Arrêt du serveur (SIGTERM)...');
   await mongoose.connection.close();
-  console.log('⏏️ Déconnexion de MongoDB');
   server.close(() => {
-    console.log('👋 Serveur arrêté');
+    console.log('👋 Serveur arrêté proprement');
     process.exit(0);
   });
 });
+
+// Démarrer
+startServer();

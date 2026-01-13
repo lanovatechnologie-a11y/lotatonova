@@ -2402,23 +2402,28 @@
         </div>
     </div>
     <script>
-        // Configuration de base avec APP_CONFIG
-        const API_BASE_URL = 'https://lotatonova-fv0b.onrender.com';
+        // Configuration de base avec APP_CONFIG - URLs corrigées pour le backend local
+        const API_BASE_URL = window.location.origin; // Utilise l'origine actuelle (localhost:3000)
         // Configuration API Backend
         const APP_CONFIG = {
+            // Endpoints de base
             health: `${API_BASE_URL}/api/health`,
             login: `${API_BASE_URL}/api/auth/login`,
-            // NOUVEAU: Endpoints pour les résultats
+            
+            // Gestion des résultats
             results: `${API_BASE_URL}/api/results`,
-            checkWinners: `${API_BASE_URL}/api/check-winners`,
-            // NOUVEAUX: Endpoints pour les tickets
+            checkWinners: `${API_BASE_URL}/api/tickets/check-winners`,
+            
+            // Gestion des tickets
             tickets: `${API_BASE_URL}/api/tickets`,
             ticketsPending: `${API_BASE_URL}/api/tickets/pending`,
             winningTickets: `${API_BASE_URL}/api/tickets/winning`,
             history: `${API_BASE_URL}/api/history`,
             multiDrawTickets: `${API_BASE_URL}/api/tickets/multi-draw`,
-            companyInfo: `${API_BASE_URL}/api/company-info`,
-            logo: `${API_BASE_URL}/api/logo`
+            
+            // Informations de l'entreprise
+            companyInfo: `${API_BASE_URL}/api/company/info`,
+            logo: `${API_BASE_URL}/api/company/logo`
         };
         
         const FIVE_MINUTES = 5 * 60 * 1000; // 5 minutes en millisecondes
@@ -2661,9 +2666,9 @@
         // NOUVEAU: Gestion du token
         let authToken = null;
         
-        // NOUVEAU: Fonctions API
+        // NOUVEAU: Fonctions API améliorées avec gestion d'erreurs
         async function apiCall(endpoint, method = 'GET', data = null) {
-            const url = endpoint.startsWith('http') ? endpoint : `${API_BASE_URL}${endpoint}`;
+            const url = endpoint.startsWith('http') ? endpoint : endpoint;
             const headers = {
                 'Content-Type': 'application/json',
             };
@@ -2676,6 +2681,7 @@
             const options = {
                 method,
                 headers,
+                credentials: 'include' // Pour les cookies de session
             };
             
             if (data && (method === 'POST' || method === 'PUT' || method === 'PATCH')) {
@@ -2683,15 +2689,24 @@
             }
             
             try {
+                console.log(`API Call: ${method} ${url}`, data);
                 const response = await fetch(url, options);
                 
                 if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
+                    const errorText = await response.text();
+                    console.error(`API Error (${response.status}):`, errorText);
+                    throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
                 }
                 
-                return await response.json();
+                const contentType = response.headers.get('content-type');
+                if (contentType && contentType.includes('application/json')) {
+                    return await response.json();
+                } else {
+                    return await response.text();
+                }
             } catch (error) {
                 console.error('API call error:', error);
+                showNotification(`Erreur API: ${error.message}`, "error");
                 throw error;
             }
         }
@@ -2699,103 +2714,96 @@
         // NOUVEAU: Vérifier l'authentification
         function checkAuth() {
             const token = localStorage.getItem('nova_token');
+            const admin = localStorage.getItem('nova_admin');
             
-            if (!token) {
-                // Rediriger vers la page de connexion
-                window.location.href = '/index.html';
-                return false;
+            if (token && admin) {
+                authToken = token;
+                currentAdmin = JSON.parse(admin);
+                return true;
             }
             
-            authToken = token;
-            return true;
+            // Afficher l'écran de connexion intégré
+            document.getElementById('login-screen').style.display = 'flex';
+            return false;
         }
         
         // NOUVEAU: Charger les données depuis l'API
         async function loadDataFromAPI() {
             try {
+                console.log('Chargement des données depuis l\'API...');
+                
+                // Vérifier la santé de l'API
+                await apiCall(APP_CONFIG.health);
+                
                 // Charger les tickets
                 const ticketsData = await apiCall(APP_CONFIG.tickets);
-                savedTickets = ticketsData.tickets || [];
-                ticketNumber = ticketsData.nextTicketNumber || 1;
+                savedTickets = ticketsData.tickets || ticketsData || [];
                 
                 // Charger les tickets en attente
-                const pendingData = await apiCall(APP_CONFIG.ticketsPending);
-                pendingSyncTickets = pendingData.tickets || [];
+                try {
+                    const pendingData = await apiCall(APP_CONFIG.ticketsPending);
+                    pendingSyncTickets = pendingData.tickets || pendingData || [];
+                } catch (error) {
+                    console.warn('Impossible de charger les tickets en attente:', error);
+                }
                 
                 // Charger les tickets gagnants
-                const winningData = await apiCall(APP_CONFIG.winningTickets);
-                winningTickets = winningData.tickets || [];
-                
-                // Charger les fiches multi-tirages
-                const multiDrawData = await apiCall(APP_CONFIG.multiDrawTickets);
-                multiDrawTickets = multiDrawData.tickets || [];
+                try {
+                    const winningData = await apiCall(APP_CONFIG.winningTickets);
+                    winningTickets = winningData.tickets || winningData || [];
+                } catch (error) {
+                    console.warn('Impossible de charger les tickets gagnants:', error);
+                }
                 
                 // Charger les informations de l'entreprise
-                const companyData = await apiCall(APP_CONFIG.companyInfo);
-                if (companyData) {
-                    companyInfo = companyData;
+                try {
+                    const companyData = await apiCall(APP_CONFIG.companyInfo);
+                    if (companyData) {
+                        companyInfo = companyData;
+                    }
+                } catch (error) {
+                    console.warn('Impossible de charger les informations de l\'entreprise:', error);
                 }
                 
-                // Charger le logo
-                const logoData = await apiCall(APP_CONFIG.logo);
-                if (logoData && logoData.logoUrl) {
-                    companyLogo = logoData.logoUrl;
-                }
+                // Mettre à jour le logo
+                updateLogoDisplay();
                 
-                console.log('Données chargées depuis l\'API:', { 
+                console.log('Données chargées avec succès:', { 
                     tickets: savedTickets.length, 
-                    ticketNumber, 
                     pending: pendingSyncTickets.length,
-                    winning: winningTickets.length,
-                    multiDraw: multiDrawTickets.length
+                    winning: winningTickets.length
                 });
+                
+                return true;
             } catch (error) {
                 console.error('Erreur lors du chargement des données:', error);
-                showNotification("Erreur de chargement des données", "error");
+                showNotification("Mode hors ligne activé - Données locales seulement", "warning");
+                return false;
             }
         }
         
-        // NOUVEAU: Sauvegarder un ticket via API
-        async function saveTicketAPI(ticket) {
+        // NOUVEAU: Fonction de connexion
+        async function login(username, password) {
             try {
-                const response = await apiCall(APP_CONFIG.tickets, 'POST', ticket);
-                return response;
+                const response = await apiCall(APP_CONFIG.login, 'POST', {
+                    username: username,
+                    password: password
+                });
+                
+                if (response.token && response.admin) {
+                    authToken = response.token;
+                    currentAdmin = response.admin;
+                    
+                    // Stocker dans localStorage
+                    localStorage.setItem('nova_token', response.token);
+                    localStorage.setItem('nova_admin', JSON.stringify(response.admin));
+                    
+                    return true;
+                }
+                return false;
             } catch (error) {
-                console.error('Erreur lors de la sauvegarde du ticket:', error);
-                throw error;
-            }
-        }
-        
-        // NOUVEAU: Sauvegarder un ticket en attente via API
-        async function savePendingTicketAPI(ticket) {
-            try {
-                const response = await apiCall(APP_CONFIG.ticketsPending, 'POST', ticket);
-                return response;
-            } catch (error) {
-                console.error('Erreur lors de la sauvegarde du ticket en attente:', error);
-                throw error;
-            }
-        }
-        
-        // NOUVEAU: Sauvegarder une fiche multi-tirages via API
-        async function saveMultiDrawTicketAPI(ticket) {
-            try {
-                const response = await apiCall(APP_CONFIG.multiDrawTickets, 'POST', ticket);
-                return response;
-            } catch (error) {
-                console.error('Erreur lors de la sauvegarde de la fiche multi-tirages:', error);
-                throw error;
-            }
-        }
-        
-        // NOUVEAU: Sauvegarder l'historique via API
-        async function saveHistoryAPI(historyRecord) {
-            try {
-                const response = await apiCall(APP_CONFIG.history, 'POST', historyRecord);
-                return response;
-            } catch (error) {
-                console.error('Erreur lors de la sauvegarde de l\'historique:', error);
-                throw error;
+                console.error('Erreur de connexion:', error);
+                return false;
             }
         }
         
@@ -2803,15 +2811,40 @@
         document.addEventListener('DOMContentLoaded', function() {
             console.log("Document chargé, initialisation...");
             
-            // Vérifier l'authentification
+            // Essayer de vérifier l'authentification
             if (!checkAuth()) {
+                // Configurer le bouton de connexion
+                document.getElementById('login-btn').addEventListener('click', async function() {
+                    const username = document.getElementById('admin-username').value;
+                    const password = document.getElementById('admin-password').value;
+                    
+                    if (!username || !password) {
+                        document.getElementById('login-error').style.display = 'block';
+                        return;
+                    }
+                    
+                    const success = await login(username, password);
+                    
+                    if (success) {
+                        document.getElementById('login-screen').style.display = 'none';
+                        showMainApp();
+                        loadDataFromAPI();
+                    } else {
+                        document.getElementById('login-error').style.display = 'block';
+                    }
+                });
+                
+                // Permettre la connexion avec Enter
+                document.getElementById('admin-password').addEventListener('keypress', function(e) {
+                    if (e.key === 'Enter') {
+                        document.getElementById('login-btn').click();
+                    }
+                });
+                
                 return;
             }
             
-            // Masquer l'écran de connexion intégré
-            document.getElementById('login-screen').style.display = 'none';
-            
-            // Afficher l'application principale
+            // Si déjà authentifié, afficher l'application
             showMainApp();
             
             // Mettre à jour l'heure
@@ -2936,8 +2969,6 @@
                 document.querySelector('.container').style.display = 'block';
             });
             
-            // Connexion intégrée supprimée - utilisation de la page index.html
-            
             // Boutons de connexion
             document.getElementById('retry-connection').addEventListener('click', function() {
                 console.log("Réessayer connexion");
@@ -3023,7 +3054,7 @@
             console.log("Chargement des fiches multi-tirages depuis l'API...");
             try {
                 const response = await apiCall(APP_CONFIG.multiDrawTickets);
-                multiDrawTickets = response.tickets || [];
+                multiDrawTickets = response.tickets || response || [];
                 console.log(`${multiDrawTickets.length} fiches multi-tirages chargées`);
             } catch (error) {
                 console.error('Erreur lors du chargement des fiches multi-tirages:', error);
@@ -3037,7 +3068,8 @@
             try {
                 // Envoyer la dernière fiche multi-tirages si elle existe
                 if (currentMultiDrawTicket.bets.length > 0) {
-                    await saveMultiDrawTicketAPI(currentMultiDrawTicket);
+                    const response = await apiCall(APP_CONFIG.multiDrawTickets, 'POST', currentMultiDrawTicket);
+                    return response;
                 }
             } catch (error) {
                 console.error('Erreur lors de la sauvegarde des fiches multi-tirages:', error);
@@ -3264,7 +3296,7 @@
             
             try {
                 // Sauvegarder via API
-                await saveMultiDrawTicketAPI(ticket);
+                await apiCall(APP_CONFIG.multiDrawTickets, 'POST', ticket);
                 
                 // Imprimer
                 printMultiDrawTicket(ticket);
@@ -3890,8 +3922,8 @@
             try {
                 // Appel API pour les résultats
                 const resultsData = await apiCall(APP_CONFIG.results);
-                if (resultsData && resultsData.results) {
-                    resultsDatabase = resultsData.results;
+                if (resultsData) {
+                    resultsDatabase = resultsData.results || resultsData;
                 }
                 
                 console.log("Utilisation des résultats:", resultsDatabase);
@@ -3916,8 +3948,8 @@
             
             try {
                 const resultsData = await apiCall(APP_CONFIG.results);
-                if (resultsData && resultsData.results) {
-                    resultsDatabase = resultsData.results;
+                if (resultsData) {
+                    resultsDatabase = resultsData.results || resultsData;
                     updateResultsDisplay();
                     console.log("Résultats mis à jour");
                 }
@@ -5883,7 +5915,7 @@
                     total: activeBets.reduce((sum, bet) => sum + bet.amount, 0)
                 };
                 
-                await saveHistoryAPI(record);
+                await apiCall(APP_CONFIG.history, 'POST', record);
                 console.log("Historique sauvegardé via API");
             } catch (error) {
                 console.error("Erreur lors de la sauvegarde de l'historique:", error);
@@ -5999,7 +6031,7 @@
             
             try {
                 // Sauvegarder via API
-                const response = await saveTicketAPI(ticket);
+                const response = await apiCall(APP_CONFIG.tickets, 'POST', ticket);
                 
                 // Ajouter aux tickets sauvegardés localement
                 savedTickets.push(ticket);

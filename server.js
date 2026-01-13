@@ -37,7 +37,7 @@ app.use(express.static(__dirname, {
 }));
 
 // Connexion MongoDB
-mongoose.connect(process.env.MONGO_URL || 'mongodb://localhost:27017/lottodb', {
+mongoose.connect(process.env.MONGO_URL || 'mongodb://localhost:27017/novalotto', {
   useNewUrlParser: true,
   useUnifiedTopology: true,
 });
@@ -50,7 +50,7 @@ db.once('open', () => {
 
 // =================== SCHÉMAS SIMPLES ===================
 
-// Schema utilisateur simple
+// Schema utilisateur simple (mot de passe en clair comme dans le code original)
 const userSchema = new mongoose.Schema({
   username: { type: String, required: true, unique: true },
   password: { type: String, required: true },
@@ -266,7 +266,7 @@ app.post('/api/auth/login', async (req, res) => {
     
     const user = await User.findOne({ 
       username,
-      password,
+      password, // Mot de passe en clair comme dans le code original
       role
     });
 

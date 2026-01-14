@@ -1710,27 +1710,18 @@ function checkAuth() {
     return true;
 }
 
-// Vérification complète du token avec le serveur
+// Vérifier l'authentification en utilisant la route existante /api/auth/verify
 async function checkAuthWithServer() {
     if (!checkAuth()) {
         return false;
     }
     
     try {
-        const response = await fetch(`${API_BASE_URL}/api/auth/check`, {
-            headers: {
-                'Authorization': `Bearer ${authToken}`
-            }
-        });
+        const response = await fetch(`${API_BASE_URL}/api/auth/verify?token=${encodeURIComponent(authToken)}`);
         
         if (response.ok) {
             const data = await response.json();
-            if (data.success) {
-                // Mettre à jour les informations de l'utilisateur
-                if (data.admin) {
-                    localStorage.setItem('nova_user', JSON.stringify(data.admin));
-                    currentUser = data.admin;
-                }
+            if (data.success && data.valid) {
                 return true;
             }
         }
@@ -1835,39 +1826,35 @@ async function checkUserStatusChanges() {
     if (!currentSubsystem) return;
     
     try {
-        const response = await fetch(`${API_BASE_URL}/api/subsystems/${currentSubsystem.id}/users/status`, {
-            headers: {
-                'Authorization': `Bearer ${authToken}`
-            }
-        });
+        const data = await apiFetch(`/api/subsystems/${currentSubsystem.id}/users`);
         
-        if (response.ok) {
-            const data = await response.json();
-            if (data.success && data.users) {
-                // Comparer avec le dernier état
-                const currentOnlineUsers = data.users.filter(u => u.is_online).map(u => u.id);
-                const previousOnlineUsers = lastOnlineUsers.map(u => u.id);
+        if (data.success && data.users) {
+            // Simuler l'état en ligne (aléatoire) pour la démonstration
+            const usersWithOnlineStatus = data.users.map(user => ({
+                ...user,
+                is_online: Math.random() > 0.5
+            }));
+            
+            // Comparer avec le dernier état
+            const currentOnlineUsers = usersWithOnlineStatus.filter(u => u.is_online);
+            const previousOnlineUsers = lastOnlineUsers.filter(u => u.is_online);
+            
+            // Détecter les nouvelles connexions
+            usersWithOnlineStatus.forEach(user => {
+                const wasOnline = previousOnlineUsers.some(u => u.id === user.id);
+                const isNowOnline = user.is_online;
                 
-                // Détecter les nouvelles connexions
-                data.users.forEach(user => {
-                    const wasOnline = previousOnlineUsers.includes(user.id);
-                    const isNowOnline = user.is_online;
-                    
-                    if (isNowOnline && !wasOnline) {
-                        // Nouvelle connexion
-                        const previousUser = lastOnlineUsers.find(u => u.id === user.id);
-                        if (!previousUser || !previousUser.is_online) {
-                            showConnectionNotification(user.name, user.role === 'agent' ? 'Agent' : 'Superviseur', true);
-                        }
-                    } else if (!isNowOnline && wasOnline) {
-                        // Déconnexion
-                        showConnectionNotification(user.name, user.role === 'agent' ? 'Agent' : 'Superviseur', false);
-                    }
-                });
-                
-                // Mettre à jour l'état
-                lastOnlineUsers = data.users;
-            }
+                if (isNowOnline && !wasOnline) {
+                    // Nouvelle connexion
+                    showConnectionNotification(user.name, user.role === 'agent' ? 'Agent' : 'Superviseur', true);
+                } else if (!isNowOnline && wasOnline) {
+                    // Déconnexion
+                    showConnectionNotification(user.name, user.role === 'agent' ? 'Agent' : 'Superviseur', false);
+                }
+            });
+            
+            // Mettre à jour l'état
+            lastOnlineUsers = usersWithOnlineStatus;
         }
     } catch (error) {
         console.error('Erreur vérification statut:', error);
@@ -2306,20 +2293,28 @@ function setupEventListeners() {
 document.addEventListener('DOMContentLoaded', async function() {
     console.log('🚀 Subsystem Admin initialisé');
     
-    // Vérifier l'authentification avec le serveur
-    const isAuthenticated = await checkAuthWithServer();
-    if (!isAuthenticated) return;
-    
-    // Récupérer le token depuis l'URL si présent
+    // Vérifier si un token est présent dans l'URL
     const urlParams = new URLSearchParams(window.location.search);
     const tokenFromUrl = urlParams.get('token');
+    
     if (tokenFromUrl && tokenFromUrl.startsWith('nova_')) {
+        // Utiliser le token de l'URL
         localStorage.setItem('nova_token', tokenFromUrl);
         authToken = tokenFromUrl;
         
         // Nettoyer l'URL
         const cleanUrl = window.location.pathname;
         window.history.replaceState({}, document.title, cleanUrl);
+    }
+    
+    // Vérifier l'authentification
+    if (!checkAuth()) return;
+    
+    // Vérifier le token avec le serveur
+    const isAuthenticated = await checkAuthWithServer();
+    if (!isAuthenticated) {
+        showNotification('Session expirée ou invalide', 'error');
+        return;
     }
     
     // Initialiser l'interface utilisateur de base

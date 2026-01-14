@@ -743,11 +743,6 @@
             margin-bottom: 20px;
         }
         
-        .subscription-info h3 {
-            margin-bottom: 10px;
-            font-size: 1.1rem;
-        }
-        
         .quick-stats {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
@@ -999,6 +994,43 @@
         
         .status-offline {
             background-color: #95a5a6;
+        }
+        
+        /* Notification pour connexion/déconnexion */
+        .connection-notification {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            padding: 12px 16px;
+            border-radius: 8px;
+            background-color: var(--primary-color);
+            color: white;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            z-index: 3000;
+            animation: slideInUp 0.3s ease-out;
+            max-width: 300px;
+        }
+        
+        @keyframes slideInUp {
+            from {
+                opacity: 0;
+                transform: translateY(100%);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .connection-online {
+            background-color: var(--success-color);
+        }
+        
+        .connection-offline {
+            background-color: var(--warning-color);
         }
     </style>
 </head>
@@ -1657,13 +1689,15 @@
 
     <script>
 // Configuration
-const API_BASE_URL = 'https://lotatonova-fv0b.onrender.com';
+const API_BASE_URL = window.location.origin;
 
 // Variables globales
 let authToken = localStorage.getItem('nova_token');
 let currentUser = JSON.parse(localStorage.getItem('nova_user') || '{}');
 let currentSubsystem = null;
 let userSubsystems = [];
+let lastOnlineUsers = [];
+let connectionCheckInterval = null;
 
 // Vérification basique du token
 function checkAuth() {
@@ -1674,6 +1708,41 @@ function checkAuth() {
         return false;
     }
     return true;
+}
+
+// Vérification complète du token avec le serveur
+async function checkAuthWithServer() {
+    if (!checkAuth()) {
+        return false;
+    }
+    
+    try {
+        const response = await fetch(`${API_BASE_URL}/api/auth/check`, {
+            headers: {
+                'Authorization': `Bearer ${authToken}`
+            }
+        });
+        
+        if (response.ok) {
+            const data = await response.json();
+            if (data.success) {
+                // Mettre à jour les informations de l'utilisateur
+                if (data.admin) {
+                    localStorage.setItem('nova_user', JSON.stringify(data.admin));
+                    currentUser = data.admin;
+                }
+                return true;
+            }
+        }
+    } catch (error) {
+        console.error('Erreur vérification auth:', error);
+    }
+    
+    // Si échec, déconnexion
+    localStorage.removeItem('nova_token');
+    localStorage.removeItem('nova_user');
+    window.location.href = 'index.html';
+    return false;
 }
 
 // Fonction API principale
@@ -1735,6 +1804,74 @@ function showNotification(message, type = 'info') {
     setTimeout(() => {
         if (notification.parentNode) notification.remove();
     }, 5000);
+}
+
+// Notification pour connexion/déconnexion
+function showConnectionNotification(userName, userType, isOnline) {
+    const container = document.getElementById('notification-container');
+    const notification = document.createElement('div');
+    notification.className = `connection-notification ${isOnline ? 'connection-online' : 'connection-offline'}`;
+    notification.innerHTML = `
+        <i class="fas fa-${isOnline ? 'user-check' : 'user-slash'}"></i>
+        <div>
+            <strong>${userName}</strong>
+            <div style="font-size: 0.8rem; opacity: 0.9;">
+                ${userType} ${isOnline ? 'connecté' : 'déconnecté'}
+            </div>
+        </div>
+        <button style="background: none; border: none; color: inherit; margin-left: auto; cursor: pointer;" onclick="this.parentElement.remove()">
+            <i class="fas fa-times"></i>
+        </button>
+    `;
+    container.appendChild(notification);
+    
+    setTimeout(() => {
+        if (notification.parentNode) notification.remove();
+    }, 5000);
+}
+
+// Vérifier les changements d'état des utilisateurs
+async function checkUserStatusChanges() {
+    if (!currentSubsystem) return;
+    
+    try {
+        const response = await fetch(`${API_BASE_URL}/api/subsystems/${currentSubsystem.id}/users/status`, {
+            headers: {
+                'Authorization': `Bearer ${authToken}`
+            }
+        });
+        
+        if (response.ok) {
+            const data = await response.json();
+            if (data.success && data.users) {
+                // Comparer avec le dernier état
+                const currentOnlineUsers = data.users.filter(u => u.is_online).map(u => u.id);
+                const previousOnlineUsers = lastOnlineUsers.map(u => u.id);
+                
+                // Détecter les nouvelles connexions
+                data.users.forEach(user => {
+                    const wasOnline = previousOnlineUsers.includes(user.id);
+                    const isNowOnline = user.is_online;
+                    
+                    if (isNowOnline && !wasOnline) {
+                        // Nouvelle connexion
+                        const previousUser = lastOnlineUsers.find(u => u.id === user.id);
+                        if (!previousUser || !previousUser.is_online) {
+                            showConnectionNotification(user.name, user.role === 'agent' ? 'Agent' : 'Superviseur', true);
+                        }
+                    } else if (!isNowOnline && wasOnline) {
+                        // Déconnexion
+                        showConnectionNotification(user.name, user.role === 'agent' ? 'Agent' : 'Superviseur', false);
+                    }
+                });
+                
+                // Mettre à jour l'état
+                lastOnlineUsers = data.users;
+            }
+        }
+    } catch (error) {
+        console.error('Erreur vérification statut:', error);
+    }
 }
 
 // Charger les données du dashboard
@@ -1841,6 +1978,9 @@ async function initializeSubsystemData(subsystemId) {
             updateUserInterface();
             await loadDashboardData();
             
+            // Démarrer la surveillance des connexions
+            startConnectionMonitoring();
+            
             return true;
         } else {
             showNotification(data.error || 'Erreur lors du chargement du sous-système', 'error');
@@ -1851,6 +1991,23 @@ async function initializeSubsystemData(subsystemId) {
         showNotification('Erreur de connexion au serveur', 'error');
         return false;
     }
+}
+
+// Démarrer la surveillance des connexions
+function startConnectionMonitoring() {
+    if (connectionCheckInterval) {
+        clearInterval(connectionCheckInterval);
+    }
+    
+    // Vérifier les connexions toutes les 30 secondes
+    connectionCheckInterval = setInterval(() => {
+        checkUserStatusChanges();
+    }, 30000);
+    
+    // Première vérification immédiate
+    setTimeout(() => {
+        checkUserStatusChanges();
+    }, 1000);
 }
 
 // Afficher la popup de sélection de sous-système
@@ -1977,6 +2134,9 @@ function setupEventListeners() {
     
     document.getElementById('logout-btn').addEventListener('click', () => {
         if (confirm('Êtes-vous sûr de vouloir vous déconnecter ?')) {
+            if (connectionCheckInterval) {
+                clearInterval(connectionCheckInterval);
+            }
             localStorage.clear();
             window.location.href = 'index.html';
         }
@@ -2061,6 +2221,9 @@ function setupEventListeners() {
                 showNotification(`${role === 'agent' ? 'Agent' : 'Superviseur'} créé avec succès`, 'success');
                 document.getElementById('add-user-modal').classList.remove('active');
                 e.target.reset();
+                
+                // Notifier les autres administrateurs
+                showConnectionNotification(fullName, role === 'agent' ? 'Agent' : 'Superviseur', true);
             } else {
                 showNotification(response.error || 'Erreur lors de la création', 'error');
             }
@@ -2143,8 +2306,21 @@ function setupEventListeners() {
 document.addEventListener('DOMContentLoaded', async function() {
     console.log('🚀 Subsystem Admin initialisé');
     
-    // Vérifier l'authentification
-    if (!checkAuth()) return;
+    // Vérifier l'authentification avec le serveur
+    const isAuthenticated = await checkAuthWithServer();
+    if (!isAuthenticated) return;
+    
+    // Récupérer le token depuis l'URL si présent
+    const urlParams = new URLSearchParams(window.location.search);
+    const tokenFromUrl = urlParams.get('token');
+    if (tokenFromUrl && tokenFromUrl.startsWith('nova_')) {
+        localStorage.setItem('nova_token', tokenFromUrl);
+        authToken = tokenFromUrl;
+        
+        // Nettoyer l'URL
+        const cleanUrl = window.location.pathname;
+        window.history.replaceState({}, document.title, cleanUrl);
+    }
     
     // Initialiser l'interface utilisateur de base
     document.getElementById('user-avatar').textContent = currentUser.name?.charAt(0)?.toUpperCase() || 'A';

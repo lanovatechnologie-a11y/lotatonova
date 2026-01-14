@@ -1692,15 +1692,40 @@
 const API_BASE_URL = window.location.origin;
 
 // Variables globales
-let authToken = localStorage.getItem('nova_token');
-let currentUser = JSON.parse(localStorage.getItem('nova_user') || '{}');
+let authToken = null;
+let currentUser = null;
 let currentSubsystem = null;
 let userSubsystems = [];
 let lastOnlineUsers = [];
 let connectionCheckInterval = null;
 
+// Fonction pour extraire et stocker le token de l'URL
+function extractTokenFromURL() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const tokenFromUrl = urlParams.get('token');
+    
+    if (tokenFromUrl && tokenFromUrl.startsWith('nova_')) {
+        // Stocker le token dans localStorage
+        localStorage.setItem('nova_token', tokenFromUrl);
+        
+        // Nettoyer l'URL pour ne pas exposer le token
+        const cleanUrl = window.location.pathname;
+        window.history.replaceState({}, document.title, cleanUrl);
+        
+        return tokenFromUrl;
+    }
+    
+    return null;
+}
+
 // Vérification basique du token
 function checkAuth() {
+    // D'abord essayer de récupérer le token de l'URL
+    const tokenFromUrl = extractTokenFromURL();
+    
+    // Ensuite, vérifier le token
+    authToken = tokenFromUrl || localStorage.getItem('nova_token');
+    
     if (!authToken || !authToken.startsWith('nova_')) {
         localStorage.removeItem('nova_token');
         localStorage.removeItem('nova_user');
@@ -1710,36 +1735,12 @@ function checkAuth() {
     return true;
 }
 
-// Vérifier l'authentification en utilisant la route existante /api/auth/verify
-async function checkAuthWithServer() {
-    if (!checkAuth()) {
-        return false;
-    }
-    
-    try {
-        const response = await fetch(`${API_BASE_URL}/api/auth/verify?token=${encodeURIComponent(authToken)}`);
-        
-        if (response.ok) {
-            const data = await response.json();
-            if (data.success && data.valid) {
-                return true;
-            }
-        }
-    } catch (error) {
-        console.error('Erreur vérification auth:', error);
-    }
-    
-    // Si échec, déconnexion
-    localStorage.removeItem('nova_token');
-    localStorage.removeItem('nova_user');
-    window.location.href = 'index.html';
-    return false;
-}
-
 // Fonction API principale
 async function apiFetch(endpoint, options = {}) {
-    if (!checkAuth()) {
-        throw new Error('Non authentifié');
+    if (!authToken) {
+        if (!checkAuth()) {
+            throw new Error('Non authentifié');
+        }
     }
     
     const url = `${API_BASE_URL}${endpoint}`;
@@ -1821,6 +1822,39 @@ function showConnectionNotification(userName, userType, isOnline) {
     }, 5000);
 }
 
+// Charger les données de l'utilisateur
+async function loadUserData() {
+    try {
+        const response = await fetch(`${API_BASE_URL}/api/auth/verify?token=${encodeURIComponent(authToken)}`);
+        if (response.ok) {
+            const data = await response.json();
+            if (data.success && data.valid) {
+                // Récupérer les informations utilisateur depuis localStorage ou les données de la session
+                const storedUser = localStorage.getItem('nova_user');
+                if (storedUser) {
+                    currentUser = JSON.parse(storedUser);
+                } else {
+                    // Si pas dans localStorage, essayer de récupérer via API
+                    const userResponse = await apiFetch('/api/subsystems/mine');
+                    if (userResponse.success && userResponse.subsystems && userResponse.subsystems.length > 0) {
+                        currentUser = {
+                            name: 'Administrateur Sous-Système',
+                            role: 'subsystem'
+                        };
+                        localStorage.setItem('nova_user', JSON.stringify(currentUser));
+                    }
+                }
+                
+                return true;
+            }
+        }
+    } catch (error) {
+        console.error('Erreur chargement données utilisateur:', error);
+    }
+    
+    return false;
+}
+
 // Vérifier les changements d'état des utilisateurs
 async function checkUserStatusChanges() {
     if (!currentSubsystem) return;
@@ -1899,7 +1933,7 @@ function updateUserInterface() {
     if (currentSubsystem) {
         document.getElementById('subsystem-name').textContent = currentSubsystem.name || 'Sous-Système';
         document.getElementById('subsystem-domain').textContent = (currentSubsystem.subdomain || 'sous-domaine') + '.novalotto.com';
-        document.getElementById('user-name').textContent = currentUser.name || 'Administrateur';
+        document.getElementById('user-name').textContent = currentUser?.name || 'Administrateur';
         document.getElementById('user-role').textContent = 'Admin Sous-Système';
         
         document.getElementById('no-subsystem-message').style.display = 'none';
@@ -2293,37 +2327,31 @@ function setupEventListeners() {
 document.addEventListener('DOMContentLoaded', async function() {
     console.log('🚀 Subsystem Admin initialisé');
     
-    // Vérifier si un token est présent dans l'URL
-    const urlParams = new URLSearchParams(window.location.search);
-    const tokenFromUrl = urlParams.get('token');
-    
-    if (tokenFromUrl && tokenFromUrl.startsWith('nova_')) {
-        // Utiliser le token de l'URL
-        localStorage.setItem('nova_token', tokenFromUrl);
-        authToken = tokenFromUrl;
-        
-        // Nettoyer l'URL
-        const cleanUrl = window.location.pathname;
-        window.history.replaceState({}, document.title, cleanUrl);
-    }
-    
-    // Vérifier l'authentification
-    if (!checkAuth()) return;
-    
-    // Vérifier le token avec le serveur
-    const isAuthenticated = await checkAuthWithServer();
-    if (!isAuthenticated) {
-        showNotification('Session expirée ou invalide', 'error');
+    // Étape 1: Vérifier l'authentification (cela va extraire le token de l'URL si présent)
+    if (!checkAuth()) {
+        console.error('Échec de l\'authentification');
         return;
     }
     
-    // Initialiser l'interface utilisateur de base
-    document.getElementById('user-avatar').textContent = currentUser.name?.charAt(0)?.toUpperCase() || 'A';
-    document.getElementById('user-name').textContent = currentUser.name || 'Administrateur';
+    // Étape 2: Charger les données de l'utilisateur
+    const userLoaded = await loadUserData();
+    if (!userLoaded) {
+        showNotification('Erreur lors du chargement des données utilisateur', 'error');
+        return;
+    }
+    
+    // Étape 3: Initialiser l'interface utilisateur de base
+    document.getElementById('user-avatar').textContent = currentUser?.name?.charAt(0)?.toUpperCase() || 'A';
+    document.getElementById('user-name').textContent = currentUser?.name || 'Administrateur';
     document.getElementById('user-role').textContent = 'Admin Sous-Système';
     
-    // Charger les sous-systèmes
-    userSubsystems = await getUserSubsystems();
+    // Étape 4: Charger les sous-systèmes
+    try {
+        userSubsystems = await getUserSubsystems();
+    } catch (error) {
+        console.error('Erreur chargement sous-systèmes:', error);
+        userSubsystems = [];
+    }
     
     const subsystemId = getSubsystemId();
     

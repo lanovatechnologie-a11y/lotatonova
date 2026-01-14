@@ -6770,5 +6770,78 @@
             .catch(err => console.log('Échec d\'enregistrement', err));
         }
     </script>
+    <script>
+/* ===============================
+   LOTATO API PATCH — v1.0
+   Corrige la communication avec server.js
+   =============================== */
+
+(function () {
+
+  // ===== TOKEN =====
+  let token = localStorage.getItem("token") || sessionStorage.getItem("token");
+  if (!token) {
+    alert("Session expirée. Reconnectez-vous.");
+    location.href = "/login.html";
+    return;
+  }
+
+  // ===== FETCH WRAPPER GLOBAL =====
+  const _fetch = window.fetch;
+  window.fetch = function (url, options = {}) {
+
+    // Bloque localhost en production
+    if (typeof url === "string" && url.includes("localhost")) {
+      url = url.replace(/https?:\/\/localhost:\d+/i, "");
+    }
+
+    options.headers = {
+      "Content-Type": "application/json",
+      "x-auth-token": token,
+      ...(options.headers || {})
+    };
+
+    return _fetch(url, options);
+  };
+
+  console.log("✅ LOTATO API PATCH actif");
+
+  // ===== NORMALISATION TICKET =====
+  window.normalizeTicketForAPI = function (ticket) {
+    return {
+      draw: ticket.draw || ticket.game || "Borlette",
+      draw_time: ticket.draw_time || ticket.drawTime || ticket.time,
+      bets: ticket.bets || ticket.lines || ticket.numbers || [],
+      total: ticket.total || ticket.totalAmount || ticket.amount || 0
+    };
+  };
+
+  // ===== SAFE SAVE TICKET =====
+  window.safeSaveTicket = function (ticket) {
+    const data = normalizeTicketForAPI(ticket);
+    return fetch("/api/tickets", {
+      method: "POST",
+      body: JSON.stringify(data)
+    }).then(r => r.json());
+  };
+
+  // ===== SAFE LOAD RESULTS =====
+  window.safeLoadResults = function (draw, time) {
+    return fetch(`/api/results/${draw}/${time}`)
+      .then(r => r.json())
+      .then(r => {
+        if (r && r.numbers && Array.isArray(r.numbers)) return r.numbers;
+        if (r && r.result) return r.result;
+        return null;
+      });
+  };
+
+  // ===== DATE FIX =====
+  window.getISODate = function () {
+    return new Date().toISOString().split("T")[0];
+  };
+
+})();
+</script>
 </body>
 </html>

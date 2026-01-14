@@ -1693,7 +1693,7 @@ const API_BASE_URL = window.location.origin;
 
 // Variables globales
 let authToken = localStorage.getItem('nova_token');
-let currentUser = JSON.parse(localStorage.getItem('nova_user_data') || '{}');
+let currentUser = JSON.parse(localStorage.getItem('nova_user') || '{}');
 let currentSubsystem = null;
 let userSubsystems = [];
 let lastOnlineUsers = [];
@@ -1702,66 +1702,44 @@ let connectionCheckInterval = null;
 // Vérification basique du token
 function checkAuth() {
     if (!authToken || !authToken.startsWith('nova_')) {
-        // Ne pas rediriger immédiatement, laisser l'utilisateur voir l'interface
-        console.warn('Token manquant ou invalide, mode déconnecté activé');
+        localStorage.removeItem('nova_token');
+        localStorage.removeItem('nova_user');
+        window.location.href = 'index.html';
         return false;
     }
     return true;
 }
 
-// Vérification complète du token avec le serveur
+// Vérifier l'authentification en utilisant la route existante /api/auth/verify
 async function checkAuthWithServer() {
     if (!checkAuth()) {
-        // Si pas de token, mode déconnecté
         return false;
     }
     
     try {
-        const response = await fetch(`${API_BASE_URL}/api/auth/check`, {
-            headers: {
-                'Authorization': `Bearer ${authToken}`
-            }
-        });
+        const response = await fetch(`${API_BASE_URL}/api/auth/verify?token=${encodeURIComponent(authToken)}`);
         
         if (response.ok) {
             const data = await response.json();
-            if (data.success) {
-                // Mettre à jour les informations de l'utilisateur
-                if (data.user) {
-                    localStorage.setItem('nova_user_data', JSON.stringify(data.user));
-                    currentUser = data.user;
-                }
+            if (data.success && data.valid) {
                 return true;
             }
         }
-        
-        // Si le serveur répond mais avec une erreur
-        if (response.status === 401) {
-            console.warn('Token invalide ou expiré, nettoyage...');
-            // Nettoyer uniquement le token, laisser l'utilisateur sur la page
-            localStorage.removeItem('nova_token');
-            authToken = null;
-            showNotification('Votre session a expiré. Veuillez vous reconnecter.', 'warning');
-            return false;
-        }
-        
-        // Autres erreurs serveur
-        console.error('Erreur vérification auth:', response.status);
-        return false;
-        
     } catch (error) {
         console.error('Erreur vérification auth:', error);
-        // Erreur réseau, mode déconnecté
-        showNotification('Mode déconnecté: connexion serveur indisponible', 'warning');
-        return false;
     }
+    
+    // Si échec, déconnexion
+    localStorage.removeItem('nova_token');
+    localStorage.removeItem('nova_user');
+    window.location.href = 'index.html';
+    return false;
 }
 
 // Fonction API principale
 async function apiFetch(endpoint, options = {}) {
     if (!checkAuth()) {
-        // Mode déconnecté, simuler une réponse
-        return { success: false, error: 'Non authentifié (mode déconnecté)' };
+        throw new Error('Non authentifié');
     }
     
     const url = `${API_BASE_URL}${endpoint}`;
@@ -1778,26 +1756,25 @@ async function apiFetch(endpoint, options = {}) {
         });
         
         if (response.status === 401) {
-            // Token invalide, nettoyer et passer en mode déconnecté
+            // Token invalide
             localStorage.removeItem('nova_token');
-            authToken = null;
-            showNotification('Session expirée, mode déconnecté activé', 'warning');
-            return { success: false, error: 'Session expirée' };
+            localStorage.removeItem('nova_user');
+            window.location.href = 'index.html';
+            throw new Error('Session expirée');
         }
         
         if (!response.ok) {
             const errorText = await response.text();
-            console.error(`Erreur API ${response.status}:`, errorText);
-            showNotification('Erreur serveur, mode déconnecté', 'warning');
-            return { success: false, error: `HTTP ${response.status}` };
+            throw new Error(`HTTP ${response.status}: ${errorText}`);
         }
         
         return await response.json();
     } catch (error) {
-        console.error('Erreur API (réseau):', error);
-        // Mode déconnecté pour les erreurs réseau
-        showNotification('Mode déconnecté: erreur réseau', 'warning');
-        return { success: false, error: 'Erreur réseau' };
+        if (error.message !== 'Session expirée') {
+            console.error('Erreur API:', error);
+            showNotification('Erreur de connexion au serveur', 'error');
+        }
+        throw error;
     }
 }
 
@@ -1849,39 +1826,35 @@ async function checkUserStatusChanges() {
     if (!currentSubsystem) return;
     
     try {
-        const response = await fetch(`${API_BASE_URL}/api/subsystems/${currentSubsystem.id}/users/status`, {
-            headers: {
-                'Authorization': `Bearer ${authToken}`
-            }
-        });
+        const data = await apiFetch(`/api/subsystems/${currentSubsystem.id}/users`);
         
-        if (response.ok) {
-            const data = await response.json();
-            if (data.success && data.users) {
-                // Comparer avec le dernier état
-                const currentOnlineUsers = data.users.filter(u => u.is_online).map(u => u.id);
-                const previousOnlineUsers = lastOnlineUsers.map(u => u.id);
+        if (data.success && data.users) {
+            // Simuler l'état en ligne (aléatoire) pour la démonstration
+            const usersWithOnlineStatus = data.users.map(user => ({
+                ...user,
+                is_online: Math.random() > 0.5
+            }));
+            
+            // Comparer avec le dernier état
+            const currentOnlineUsers = usersWithOnlineStatus.filter(u => u.is_online);
+            const previousOnlineUsers = lastOnlineUsers.filter(u => u.is_online);
+            
+            // Détecter les nouvelles connexions
+            usersWithOnlineStatus.forEach(user => {
+                const wasOnline = previousOnlineUsers.some(u => u.id === user.id);
+                const isNowOnline = user.is_online;
                 
-                // Détecter les nouvelles connexions
-                data.users.forEach(user => {
-                    const wasOnline = previousOnlineUsers.includes(user.id);
-                    const isNowOnline = user.is_online;
-                    
-                    if (isNowOnline && !wasOnline) {
-                        // Nouvelle connexion
-                        const previousUser = lastOnlineUsers.find(u => u.id === user.id);
-                        if (!previousUser || !previousUser.is_online) {
-                            showConnectionNotification(user.name, user.role === 'agent' ? 'Agent' : 'Superviseur', true);
-                        }
-                    } else if (!isNowOnline && wasOnline) {
-                        // Déconnexion
-                        showConnectionNotification(user.name, user.role === 'agent' ? 'Agent' : 'Superviseur', false);
-                    }
-                });
-                
-                // Mettre à jour l'état
-                lastOnlineUsers = data.users;
-            }
+                if (isNowOnline && !wasOnline) {
+                    // Nouvelle connexion
+                    showConnectionNotification(user.name, user.role === 'agent' ? 'Agent' : 'Superviseur', true);
+                } else if (!isNowOnline && wasOnline) {
+                    // Déconnexion
+                    showConnectionNotification(user.name, user.role === 'agent' ? 'Agent' : 'Superviseur', false);
+                }
+            });
+            
+            // Mettre à jour l'état
+            lastOnlineUsers = usersWithOnlineStatus;
         }
     } catch (error) {
         console.error('Erreur vérification statut:', error);
@@ -1906,16 +1879,6 @@ async function loadDashboardData() {
             document.getElementById('total-users').textContent = `${data.active_users || 0}/${data.max_users || 0}`;
             document.getElementById('total-tickets').textContent = data.total_tickets || '0';
             document.getElementById('estimated-profit').textContent = data.estimated_profit ? data.estimated_profit.toLocaleString() + ' HTG' : '0 HTG';
-        } else {
-            // Données de démo en cas d'erreur
-            document.getElementById('online-users').textContent = '5';
-            document.getElementById('today-sales').textContent = '45,800 HTG';
-            document.getElementById('today-tickets').textContent = '124';
-            document.getElementById('pending-alerts').textContent = '3';
-            document.getElementById('total-sales').textContent = '850,000 HTG';
-            document.getElementById('total-users').textContent = '12/50';
-            document.getElementById('total-tickets').textContent = '3,245';
-            document.getElementById('estimated-profit').textContent = '180,000 HTG';
         }
     } catch (error) {
         console.error('Erreur chargement dashboard:', error);
@@ -1941,12 +1904,6 @@ function updateUserInterface() {
         
         document.getElementById('no-subsystem-message').style.display = 'none';
         document.getElementById('subsystem-info-alert').style.display = 'block';
-        
-        // Afficher toutes les sections cachées
-        document.querySelectorAll('.section-content').forEach(section => {
-            section.style.display = 'none';
-        });
-        
         document.getElementById('dashboard-section').style.display = 'block';
         
         document.getElementById('system-status-dot').className = 'status-dot';
@@ -1954,11 +1911,7 @@ function updateUserInterface() {
     } else {
         document.getElementById('no-subsystem-message').style.display = 'block';
         document.getElementById('subsystem-info-alert').style.display = 'none';
-        
-        // Cacher toutes les sections
-        document.querySelectorAll('.section-content').forEach(section => {
-            section.style.display = 'none';
-        });
+        document.getElementById('dashboard-section').style.display = 'none';
     }
 }
 
@@ -2106,8 +2059,7 @@ function showSubsystemSelectionPopup() {
 // Sélectionner un sous-système
 function selectSubsystem(subsystemId) {
     localStorage.setItem('selectedSubsystemId', subsystemId);
-    const modal = document.querySelector('.modal.active');
-    if (modal) modal.remove();
+    document.querySelector('.modal.active').remove();
     window.location.href = `subsystem-admin.html?subsystem_id=${subsystemId}`;
 }
 
@@ -2118,54 +2070,37 @@ function showSection(sectionId) {
         return;
     }
     
-    // Cacher toutes les sections
     document.querySelectorAll('.section-content').forEach(section => {
         section.style.display = 'none';
     });
     
-    // Afficher la section sélectionnée
     const section = document.getElementById(`${sectionId}-section`);
     if (section) {
         section.style.display = 'block';
-        
-        // Mettre à jour le titre de la page
-        const navItem = document.querySelector(`.nav-item[data-section="${sectionId}"] .nav-label`);
-        if (navItem) {
-            document.getElementById('page-title').textContent = navItem.textContent;
-        }
-        
-        // Mettre à jour la navigation active
-        document.querySelectorAll('.nav-item').forEach(nav => {
-            nav.classList.remove('active');
-        });
-        const activeNav = document.querySelector(`.nav-item[data-section="${sectionId}"]`);
-        if (activeNav) {
-            activeNav.classList.add('active');
-        }
+        document.getElementById('page-title').textContent = 
+            document.querySelector(`.nav-item[data-section="${sectionId}"] .nav-label`).textContent;
     }
 }
 
 // Configurer les événements
 function setupEventListeners() {
-    // Navigation principale
+    // Navigation
     document.querySelectorAll('.nav-item').forEach(item => {
         item.addEventListener('click', function(e) {
             e.preventDefault();
             
-            const section = this.getAttribute('data-section');
             if (!currentSubsystem) {
                 showNotification('Veuillez d\'abord sélectionner un sous-système', 'warning');
                 showSubsystemSelectionPopup();
                 return;
             }
             
-            // Mettre à jour la navigation active
             document.querySelectorAll('.nav-item').forEach(nav => {
                 nav.classList.remove('active');
             });
             this.classList.add('active');
             
-            // Afficher la section
+            const section = this.getAttribute('data-section');
             showSection(section);
         });
     });
@@ -2195,113 +2130,95 @@ function setupEventListeners() {
     });
     
     // Modal d'ajout d'utilisateur
-    const addUserBtn = document.getElementById('add-user-btn');
-    if (addUserBtn) {
-        addUserBtn.addEventListener('click', () => {
-            if (!currentSubsystem) {
-                showNotification('Veuillez d\'abord sélectionner un sous-système', 'warning');
-                return;
-            }
-            document.getElementById('add-user-modal').classList.add('active');
-        });
-    }
+    document.getElementById('add-user-btn').addEventListener('click', () => {
+        if (!currentSubsystem) {
+            showNotification('Veuillez d\'abord sélectionner un sous-système', 'warning');
+            return;
+        }
+        document.getElementById('add-user-modal').classList.add('active');
+    });
     
-    const closeAddUserBtn = document.getElementById('close-add-user');
-    if (closeAddUserBtn) {
-        closeAddUserBtn.addEventListener('click', () => {
-            document.getElementById('add-user-modal').classList.remove('active');
-        });
-    }
+    document.getElementById('close-add-user').addEventListener('click', () => {
+        document.getElementById('add-user-modal').classList.remove('active');
+    });
     
-    const cancelAddUserBtn = document.getElementById('cancel-add-user');
-    if (cancelAddUserBtn) {
-        cancelAddUserBtn.addEventListener('click', () => {
-            document.getElementById('add-user-modal').classList.remove('active');
-        });
-    }
+    document.getElementById('cancel-add-user').addEventListener('click', () => {
+        document.getElementById('add-user-modal').classList.remove('active');
+    });
     
     // Gérer le changement de type d'utilisateur
-    const userTypeSelect = document.getElementById('user-type-select');
-    if (userTypeSelect) {
-        userTypeSelect.addEventListener('change', function() {
-            const type = this.value;
-            
-            const supervisorContainer = document.getElementById('supervisor-level-container');
-            const agentContainer = document.getElementById('agent-supervisor-container');
-            
-            if (supervisorContainer) supervisorContainer.style.display = 'none';
-            if (agentContainer) agentContainer.style.display = 'none';
-            
-            if (type === 'supervisor2') {
-                if (supervisorContainer) supervisorContainer.style.display = 'block';
-            } else if (type === 'agent') {
-                if (agentContainer) agentContainer.style.display = 'block';
-            }
-        });
-    }
+    document.getElementById('user-type-select').addEventListener('change', function() {
+        const type = this.value;
+        
+        document.getElementById('supervisor-level-container').style.display = 'none';
+        document.getElementById('agent-supervisor-container').style.display = 'none';
+        
+        if (type === 'supervisor2') {
+            document.getElementById('supervisor-level-container').style.display = 'block';
+        } else if (type === 'agent') {
+            document.getElementById('agent-supervisor-container').style.display = 'block';
+        }
+    });
     
     // Formulaire d'ajout d'utilisateur
-    const addUserForm = document.getElementById('add-user-form');
-    if (addUserForm) {
-        addUserForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            
-            const userType = document.getElementById('user-type-select').value;
-            const fullName = document.getElementById('user-fullname').value;
-            const username = document.getElementById('user-username').value;
-            const password = document.getElementById('user-password').value;
-            
-            if (!userType || !fullName || !username || !password) {
-                showNotification('Veuillez remplir tous les champs obligatoires', 'error');
-                return;
+    document.getElementById('add-user-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const userType = document.getElementById('user-type-select').value;
+        const fullName = document.getElementById('user-fullname').value;
+        const username = document.getElementById('user-username').value;
+        const password = document.getElementById('user-password').value;
+        
+        if (!userType || !fullName || !username || !password) {
+            showNotification('Veuillez remplir tous les champs obligatoires', 'error');
+            return;
+        }
+        
+        try {
+            // Déterminer le rôle et le niveau
+            let role, level;
+            if (userType === 'supervisor1') {
+                role = 'supervisor';
+                level = 1;
+            } else if (userType === 'supervisor2') {
+                role = 'supervisor';
+                level = 2;
+            } else {
+                role = 'agent';
+                level = 1;
             }
             
-            try {
-                // Déterminer le rôle et le niveau
-                let role, level;
-                if (userType === 'supervisor1') {
-                    role = 'supervisor';
-                    level = 1;
-                } else if (userType === 'supervisor2') {
-                    role = 'supervisor';
-                    level = 2;
-                } else {
-                    role = 'agent';
-                    level = 1;
-                }
+            const userData = {
+                name: fullName,
+                username: username,
+                password: password,
+                role: role,
+                level: level,
+                subsystem_id: currentSubsystem.id,
+                is_active: document.getElementById('user-active').checked
+            };
+            
+            // Appel API pour créer l'utilisateur
+            const response = await apiFetch('/api/subsystems/users/create', {
+                method: 'POST',
+                body: JSON.stringify(userData)
+            });
+            
+            if (response.success) {
+                showNotification(`${role === 'agent' ? 'Agent' : 'Superviseur'} créé avec succès`, 'success');
+                document.getElementById('add-user-modal').classList.remove('active');
+                e.target.reset();
                 
-                const userData = {
-                    name: fullName,
-                    username: username,
-                    password: password,
-                    role: role,
-                    level: level,
-                    subsystem_id: currentSubsystem.id,
-                    is_active: document.getElementById('user-active').checked
-                };
-                
-                // Appel API pour créer l'utilisateur
-                const response = await apiFetch('/api/subsystems/users/create', {
-                    method: 'POST',
-                    body: JSON.stringify(userData)
-                });
-                
-                if (response.success) {
-                    showNotification(`${role === 'agent' ? 'Agent' : 'Superviseur'} créé avec succès`, 'success');
-                    document.getElementById('add-user-modal').classList.remove('active');
-                    e.target.reset();
-                    
-                    // Notifier les autres administrateurs
-                    showConnectionNotification(fullName, role === 'agent' ? 'Agent' : 'Superviseur', true);
-                } else {
-                    showNotification(response.error || 'Erreur lors de la création', 'error');
-                }
-            } catch (error) {
-                console.error('Erreur création utilisateur:', error);
-                showNotification('Erreur de connexion au serveur', 'error');
+                // Notifier les autres administrateurs
+                showConnectionNotification(fullName, role === 'agent' ? 'Agent' : 'Superviseur', true);
+            } else {
+                showNotification(response.error || 'Erreur lors de la création', 'error');
             }
-        });
-    }
+        } catch (error) {
+            console.error('Erreur création utilisateur:', error);
+            showNotification('Erreur de connexion au serveur', 'error');
+        }
+    });
     
     // Tabs utilisateurs
     document.querySelectorAll('[data-user-tab]').forEach(tab => {
@@ -2316,8 +2233,7 @@ function setupEventListeners() {
             document.querySelectorAll('.tab-content').forEach(content => {
                 content.classList.remove('active');
             });
-            const tabContent = document.getElementById(`${tabId}-tab`);
-            if (tabContent) tabContent.classList.add('active');
+            document.getElementById(`${tabId}-tab`).classList.add('active');
         });
     });
     
@@ -2334,8 +2250,7 @@ function setupEventListeners() {
             document.querySelectorAll('.tab-content').forEach(content => {
                 content.classList.remove('active');
             });
-            const tabContent = document.getElementById(`${tabId}-tab`);
-            if (tabContent) tabContent.classList.add('active');
+            document.getElementById(`${tabId}-tab`).classList.add('active');
         });
     });
     
@@ -2352,8 +2267,7 @@ function setupEventListeners() {
             document.querySelectorAll('.tab-content').forEach(content => {
                 content.classList.remove('active');
             });
-            const tabContent = document.getElementById(`${tabId}-tab`);
-            if (tabContent) tabContent.classList.add('active');
+            document.getElementById(`${tabId}-tab`).classList.add('active');
         });
     });
     
@@ -2370,8 +2284,7 @@ function setupEventListeners() {
             document.querySelectorAll('.tab-content').forEach(content => {
                 content.classList.remove('active');
             });
-            const tabContent = document.getElementById(`${tabId}-tab`);
-            if (tabContent) tabContent.classList.add('active');
+            document.getElementById(`${tabId}-tab`).classList.add('active');
         });
     });
 }
@@ -2380,10 +2293,12 @@ function setupEventListeners() {
 document.addEventListener('DOMContentLoaded', async function() {
     console.log('🚀 Subsystem Admin initialisé');
     
-    // Récupérer le token depuis l'URL si présent
+    // Vérifier si un token est présent dans l'URL
     const urlParams = new URLSearchParams(window.location.search);
     const tokenFromUrl = urlParams.get('token');
+    
     if (tokenFromUrl && tokenFromUrl.startsWith('nova_')) {
+        // Utiliser le token de l'URL
         localStorage.setItem('nova_token', tokenFromUrl);
         authToken = tokenFromUrl;
         
@@ -2392,24 +2307,20 @@ document.addEventListener('DOMContentLoaded', async function() {
         window.history.replaceState({}, document.title, cleanUrl);
     }
     
-    // Vérifier l'authentification avec le serveur
-    await checkAuthWithServer();
+    // Vérifier l'authentification
+    if (!checkAuth()) return;
+    
+    // Vérifier le token avec le serveur
+    const isAuthenticated = await checkAuthWithServer();
+    if (!isAuthenticated) {
+        showNotification('Session expirée ou invalide', 'error');
+        return;
+    }
     
     // Initialiser l'interface utilisateur de base
-    const userAvatar = document.getElementById('user-avatar');
-    if (userAvatar) {
-        userAvatar.textContent = currentUser.name?.charAt(0)?.toUpperCase() || 'A';
-    }
-    
-    const userName = document.getElementById('user-name');
-    if (userName) {
-        userName.textContent = currentUser.name || 'Administrateur';
-    }
-    
-    const userRole = document.getElementById('user-role');
-    if (userRole) {
-        userRole.textContent = 'Admin Sous-Système';
-    }
+    document.getElementById('user-avatar').textContent = currentUser.name?.charAt(0)?.toUpperCase() || 'A';
+    document.getElementById('user-name').textContent = currentUser.name || 'Administrateur';
+    document.getElementById('user-role').textContent = 'Admin Sous-Système';
     
     // Charger les sous-systèmes
     userSubsystems = await getUserSubsystems();
@@ -2440,12 +2351,7 @@ window.contactMaster = function() {
     showNotification("Pour créer un nouveau sous-système, contactez l'administrateur Master.", 'info');
 };
 
-window.selectSubsystem = function(subsystemId) {
-    localStorage.setItem('selectedSubsystemId', subsystemId);
-    const modal = document.querySelector('.modal.active');
-    if (modal) modal.remove();
-    window.location.href = `subsystem-admin.html?subsystem_id=${subsystemId}`;
-};
+window.selectSubsystem = selectSubsystem;
     </script>
 </body>
 </html>

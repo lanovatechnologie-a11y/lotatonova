@@ -1,3 +1,14 @@
+// Debug immédiat
+console.log('🔍 DEBUG lotato.js');
+console.log('🌐 URL Actuelle:', window.location.href);
+console.log('🔑 Token présent:', !!localStorage.getItem('nova_token'));
+console.log('👤 Current Admin:', currentAdmin);
+
+// Test direct de l'API
+fetch('https://lotatonova-fv0b.onrender.com/api/health')
+    .then(r => r.json())
+    .then(data => console.log('🩺 API Health:', data))
+    .catch(err => console.error('💀 API Health Error:', err));
 // Configuration de base avec APP_CONFIG
 const API_BASE_URL = 'https://lotatonova-fv0b.onrender.com';
 // Configuration API Backend

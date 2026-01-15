@@ -402,7 +402,7 @@ app.post('/api/history', vérifierToken, async (req, res) => {
     console.error('Erreur enregistrement historique:', error);
     res.status(500).json({
       success: false,
-      error: 'Erreur lors de l'enregistrement de l'historique'
+      error: 'Erreur lors de l\\'enregistrement de l\\'historique'
     });
   }
 });
@@ -450,7 +450,7 @@ app.get('/api/history', vérifierToken, async (req, res) => {
     console.error('Erreur récupération historique:', error);
     res.status(500).json({
       success: false,
-      error: 'Erreur lors de la récupération de l'historique'
+      error: 'Erreur lors de la récupération de l\\'historique'
     });
   }
 });
@@ -789,7 +789,7 @@ app.get('/api/company-info', vérifierToken, async (req, res) => {
     console.error('Erreur chargement info entreprise:', error);
     res.status(500).json({
       success: false,
-      error: 'Erreur lors du chargement des informations de l'entreprise'
+      error: 'Erreur lors du chargement des informations de l\\'entreprise'
     });
   }
 });
@@ -1146,7 +1146,7 @@ app.post('/api/agents/create', vérifierToken, async (req, res) => {
         await newAgent.save();
         res.json({ success: true, message: 'Agent créé avec succès' });
     } catch (error) {
-        res.status(500).json({ success: false, error: 'Erreur lors de la création de l'agent' });
+        res.status(500).json({ success: false, error: 'Erreur lors de la création de l\\'agent' });
     }
 });
 
@@ -1209,7 +1209,7 @@ app.post('/api/master/subsystems', vérifierToken, async (req, res) => {
     if (!name || !subdomain || !contact_email) {
       return res.status(400).json({
         success: false,
-        error: 'Le nom, le sous-domaine et l'email de contact sont obligatoires'
+        error: 'Le nom, le sous-domaine et l\\'email de contact sont obligatoires'
       });
     }
 
@@ -1506,7 +1506,7 @@ app.put('/api/master/subsystems/:id/activate', vérifierToken, async (req, res) 
     console.error('Erreur activation sous-système:', error);
     res.status(500).json({
       success: false,
-      error: 'Erreur serveur lors de l'activation du sous-système'
+      error: 'Erreur serveur lors de l\\'activation du sous-système'
     });
   }
 });
@@ -1780,7 +1780,7 @@ app.post('/api/subsystems/users/create', vérifierToken, async (req, res) => {
     if (existingUser) {
       return res.status(400).json({
         success: false,
-        error: 'Ce nom d'utilisateur est déjà utilisé'
+        error: 'Ce nom d\\'utilisateur est déjà utilisé'
       });
     }
 
@@ -1795,7 +1795,7 @@ app.post('/api/subsystems/users/create', vérifierToken, async (req, res) => {
       if (userCount >= subsystem.max_users) {
         return res.status(400).json({
           success: false,
-          error: `Limite d'utilisateurs atteinte (${subsystem.max_users} maximum)`
+          error: `Limite d\\'utilisateurs atteinte (${subsystem.max_users} maximum)`
         });
       }
     }
@@ -1845,7 +1845,7 @@ app.post('/api/subsystems/users/create', vérifierToken, async (req, res) => {
     console.error('Erreur création utilisateur:', error);
     res.status(500).json({
       success: false,
-      error: 'Erreur lors de la création de l'utilisateur'
+      error: 'Erreur lors de la création de l\\'utilisateur'
     });
   }
 });
@@ -2298,7 +2298,7 @@ app.listen(PORT, () => {
   console.log('📋 Routes API LOTATO disponibles:');
   console.log('  POST   /api/history                     - Enregistrer historique');
   console.log('  GET    /api/history                     - Récupérer historique');
-  console.log('  GET    /api/tickets                     - Récupérer tickets de l'agent');
+  console.log('  GET    /api/tickets                     - Récupérer tickets de l\'agent');
   console.log('  POST   /api/tickets                     - Sauvegarder ticket');
   console.log('  GET    /api/tickets/pending             - Tickets en attente');
   console.log('  POST   /api/tickets/pending             - Sauvegarder ticket en attente');
@@ -2312,7 +2312,7 @@ app.listen(PORT, () => {
   console.log('  GET    /api/auth/check                  - Vérifier session');
   console.log('');
   console.log('📋 Routes API SOUS-SYSTÈMES disponibles:');
-  console.log('  GET    /api/subsystems/mine             - Sous-systèmes de l'utilisateur');
+  console.log('  GET    /api/subsystems/mine             - Sous-systèmes de l\'utilisateur');
   console.log('  POST   /api/subsystems/users/create     - Créer utilisateur dans sous-système');
   console.log('  GET    /api/subsystems/:id/users        - Lister utilisateurs du sous-système');
   console.log('  GET    /api/subsystems/:id/users/status - Statut des utilisateurs');

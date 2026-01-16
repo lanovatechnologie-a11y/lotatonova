@@ -1,24 +1,22 @@
 // Configuration de base avec APP_CONFIG
-const API_BASE_URL = window.location.origin; // Utilise l'origine actuelle
-// Ou
-const API_BASE_URL = ''; // Utilise les chemins relatifs
-
+const API_BASE_URL = 'https://lotatonova-fv0b.onrender.com';
 // Configuration API Backend
 const APP_CONFIG = {
-    health: `/api/health`,
-    login: `/api/auth/login`,
+    health: `${API_BASE_URL}/api/health`,
+    login: `${API_BASE_URL}/api/auth/login`,
     // Endpoints pour les résultats
-    results: `/api/results`,
-    checkWinners: `/api/check-winners`,
+    results: `${API_BASE_URL}/api/results`,
+    checkWinners: `${API_BASE_URL}/api/check-winners`,
     // Endpoints pour les tickets
-    tickets: `/api/tickets`,
-    ticketsPending: `/api/tickets/pending`,
-    winningTickets: `/api/tickets/winning`,
-    history: `/api/history`,
-    multiDrawTickets: `/api/tickets/multi-draw`,
-    companyInfo: `/api/company-info`,
-    logo: `/api/logo`
+    tickets: `${API_BASE_URL}/api/tickets`,
+    ticketsPending: `${API_BASE_URL}/api/tickets/pending`,
+    winningTickets: `${API_BASE_URL}/api/tickets/winning`,
+    history: `${API_BASE_URL}/api/history`,
+    multiDrawTickets: `${API_BASE_URL}/api/tickets/multi-draw`,
+    companyInfo: `${API_BASE_URL}/api/company-info`,
+    logo: `${API_BASE_URL}/api/logo`
 };
+
 const FIVE_MINUTES = 5 * 60 * 1000; // 5 minutes en millisecondes
 
 // Base de données simulée pour les résultats (sera remplacée par l'API)

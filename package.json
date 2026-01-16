@@ -1,7 +1,7 @@
 {
-  "name": "nova-lotto-server",
+  "name": "nova-lotto",
   "version": "1.0.0",
-  "description": "Serveur backend simple pour Nova Lotto",
+  "description": "Application Nova Lotto",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",

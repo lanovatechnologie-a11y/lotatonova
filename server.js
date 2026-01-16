@@ -1,14 +1,43 @@
 const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
+const path = require('path');
+const fs = require('fs');
 
 const app = express();
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.PORT || 10000;
 
 // Middleware
 app.use(cors());
 app.use(bodyParser.json());
-app.use(express.static('public'));
+
+// Servir les fichiers statiques depuis la racine
+app.use(express.static(path.join(__dirname, '.')));
+
+// Servir les fichiers spécifiques nécessaires
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'index.html'));
+});
+
+app.get('/lotato.js', (req, res) => {
+    res.sendFile(path.join(__dirname, 'lotato.js'), {
+        headers: {
+            'Content-Type': 'application/javascript'
+        }
+    });
+});
+
+app.get('/styles.css', (req, res) => {
+    res.sendFile(path.join(__dirname, 'styles.css'), {
+        headers: {
+            'Content-Type': 'text/css'
+        }
+    });
+});
+
+app.get('/logo-borlette.jpg', (req, res) => {
+    res.sendFile(path.join(__dirname, 'logo-borlette.jpg'));
+});
 
 // Base de données en mémoire
 let users = [
@@ -116,13 +145,22 @@ let companyInfo = {
 
 // Middleware d'authentification simple
 const authenticate = (req, res, next) => {
-    const userId = req.headers['x-user-id'] || req.query.userId;
+    const authHeader = req.headers['authorization'];
     
-    if (!userId) {
+    if (!authHeader) {
         return res.status(401).json({ error: 'Utilisateur non authentifié' });
     }
     
+    // Format: "Bearer simple-token-1"
+    const token = authHeader.replace('Bearer ', '');
+    
+    if (!token.startsWith('simple-token-')) {
+        return res.status(401).json({ error: 'Token invalide' });
+    }
+    
+    const userId = parseInt(token.replace('simple-token-', ''));
     const user = users.find(u => u.id == userId);
+    
     if (!user) {
         return res.status(401).json({ error: 'Utilisateur non trouvé' });
     }
@@ -131,7 +169,7 @@ const authenticate = (req, res, next) => {
     next();
 };
 
-// Routes
+// Routes API
 app.get('/api/health', (req, res) => {
     res.json({ status: 'OK', timestamp: new Date().toISOString() });
 });
@@ -182,11 +220,11 @@ app.post('/api/results', authenticate, (req, res) => {
     }
 });
 
-// Tickets - GET (avec filtrage par agent)
+// Tickets
 app.get('/api/tickets', authenticate, (req, res) => {
     const userTickets = tickets.filter(t => t.agentId == req.user.id);
     const nextTicketNumber = userTickets.length > 0 ? 
-        Math.max(...userTickets.map(t => t.number)) + 1 : 1;
+        Math.max(...userTickets.map(t => t.number || 0)) + 1 : 1;
     
     res.json({ 
         tickets: userTickets,
@@ -194,7 +232,6 @@ app.get('/api/tickets', authenticate, (req, res) => {
     });
 });
 
-// Tickets - POST
 app.post('/api/tickets', authenticate, (req, res) => {
     try {
         const ticket = req.body;
@@ -216,9 +253,9 @@ app.post('/api/tickets', authenticate, (req, res) => {
         ticket.date = ticket.date || new Date().toISOString();
         
         // S'assurer que le numéro de ticket est unique
-        const existingNumbers = tickets.map(t => t.number);
-        if (existingNumbers.includes(ticket.number)) {
-            ticket.number = Math.max(...existingNumbers, 0) + 1;
+        const existingNumbers = tickets.map(t => t.number || 0);
+        if (ticket.number === undefined || ticket.number === null) {
+            ticket.number = existingNumbers.length > 0 ? Math.max(...existingNumbers) + 1 : 1;
         }
         
         tickets.push(ticket);
@@ -466,9 +503,9 @@ app.post('/api/reset', (req, res) => {
 
 // Fonction utilitaire pour vérifier les gains
 function checkBetWin(bet, result) {
-    const lot1 = result.lot1;
-    const lot2 = result.lot2;
-    const lot3 = result.lot3;
+    const lot1 = result.lot1 || '000';
+    const lot2 = result.lot2 || '00';
+    const lot3 = result.lot3 || '00';
     const lot1Last2 = lot1.substring(1);
     
     switch(bet.type) {
@@ -600,20 +637,14 @@ function checkBetWin(bet, result) {
     return 0;
 }
 
-// Route pour servir les fichiers statiques
+// Gestion des erreurs 404 pour l'API
+app.use('/api/*', (req, res) => {
+    res.status(404).json({ error: 'Route API non trouvée' });
+});
+
+// Route catch-all pour servir l'application frontend
 app.get('*', (req, res) => {
-    res.sendFile(__dirname + '/public/index.html');
-});
-
-// Gestion des erreurs 404
-app.use((req, res) => {
-    res.status(404).json({ error: 'Route non trouvée' });
-});
-
-// Gestion des erreurs globales
-app.use((err, req, res, next) => {
-    console.error('Erreur serveur:', err);
-    res.status(500).json({ error: 'Erreur interne du serveur' });
+    res.sendFile(path.join(__dirname, 'index.html'));
 });
 
 app.listen(PORT, () => {

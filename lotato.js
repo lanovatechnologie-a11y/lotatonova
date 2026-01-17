@@ -257,49 +257,38 @@ let winningTickets = [];
 // Gestion du token
 let authToken = null;
 
-// ==========================================
-// 1. Fonction de communication API (Corrigée)
-// ==========================================
-async function apiCall(url, method = 'GET', body = null) {
+// Fonctions API
+async function apiCall(endpoint, method = 'GET', data = null) {
+    const url = endpoint.startsWith('http') ? endpoint : `${API_BASE_URL}${endpoint}`;
     const headers = {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
     };
-
-    // CORRECTION ICI : On utilise 'x-auth-token' au lieu de 'Authorization: Bearer'
-    // pour correspondre à ce que server.js attend (ligne 225 de server.js)
+    
+    // Ajouter le token d'authentification si disponible
     if (authToken) {
-        headers['x-auth-token'] = authToken;
+        headers['Authorization'] = `Bearer ${authToken}`;
     }
-
+    
     const options = {
         method,
-        headers
+        headers,
     };
-
-    if (body) {
-        options.body = JSON.stringify(body);
+    
+    if (data && (method === 'POST' || method === 'PUT' || method === 'PATCH')) {
+        options.body = JSON.stringify(data);
     }
-
+    
     try {
         const response = await fetch(url, options);
-
-        if (response.status === 401) {
-            // Token invalide ou expiré
-            handleLogout();
-            return null;
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
         }
-
-        // Gérer les réponses vides ou non-JSON
-        const contentType = response.headers.get("content-type");
-        if (contentType && contentType.indexOf("application/json") !== -1) {
-            return await response.json();
-        } else {
-            return { success: response.ok };
-        }
+        
+        return await response.json();
     } catch (error) {
-        console.error('Erreur API:', error);
-        // Si erreur réseau et qu'on essaie de sauvegarder, on ne bloque pas tout
-        return null;
+        console.error('API call error:', error);
+        throw error;
     }
 }
 
@@ -362,53 +351,27 @@ async function loadDataFromAPI() {
     }
 }
 
-// ==========================================
-// 3. Correction dans la fonction saveTicket()
-// ==========================================
-
-// Cherchez la partie où l'objet ticket est créé :
-const ticket = {
-    subsystem_id: currentUser.subsystem_id, // Si disponible
-    agent_id: currentUser.id,
-    agent_name: currentUser.username,
-    number: ticketNumber,
-    date: new Date().toISOString(),
-    draw: currentDraw,       // Ex: 'miami'
-    
-    // CORRECTION ICI : "draw_time" (snake_case) au lieu de "drawTime" (camelCase)
-    // server.js valide "draw_time" à la ligne 475
-    draw_time: currentDrawTime, 
-    
-    bets: currentCart.map(item => ({
-        type: item.type,
-        numbers: item.numbers,
-        amount: item.amount,
-        option: item.option || null
-    })),
-    total: currentTotal,
-    status: 'active',
-    syncStatus: navigator.onLine ? 'synced' : 'pending'
-};
-
-
-// ==========================================
-// 2. Fonction sauvegarde Pending (Corrigée)
-// ==========================================
-async function savePendingTicketAPI(ticket) {
-    if (!navigator.onLine) return null;
-    
+// Sauvegarder un ticket via API
+async function saveTicketAPI(ticket) {
     try {
-        console.log("Tentative sauvegarde pending ticket:", ticket.number);
-        // CORRECTION ICI : On enveloppe le ticket dans un objet { ticket: ... }
-        // car server.js attend "const { ticket } = req.body" (ligne 555)
-        const response = await apiCall(APP_CONFIG.ticketsPending, 'POST', { ticket: ticket });
+        const response = await apiCall(APP_CONFIG.tickets, 'POST', ticket);
         return response;
-    } catch (e) {
-        console.error("Erreur savePendingTicketAPI:", e);
-        return null;
+    } catch (error) {
+        console.error('Erreur lors de la sauvegarde du ticket:', error);
+        throw error;
     }
 }
 
+// Sauvegarder un ticket en attente via API
+async function savePendingTicketAPI(ticket) {
+    try {
+        const response = await apiCall(APP_CONFIG.ticketsPending, 'POST', ticket);
+        return response;
+    } catch (error) {
+        console.error('Erreur lors de la sauvegarde du ticket en attente:', error);
+        throw error;
+    }
+}
 
 // Sauvegarder une fiche multi-tirages via API
 async function saveMultiDrawTicketAPI(ticket) {

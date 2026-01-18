@@ -253,6 +253,26 @@
             background-color: #c0392b;
         }
         
+        /* Welcome Message */
+        .welcome-message {
+            background: linear-gradient(90deg, #3498db, #2c3e50);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        
+        .welcome-message h2 {
+            margin-bottom: 10px;
+            font-size: 1.5rem;
+        }
+        
+        .welcome-message p {
+            opacity: 0.9;
+            margin-bottom: 5px;
+        }
+        
         /* Stats Cards */
         .stats-cards {
             display: grid;
@@ -794,10 +814,6 @@
                 <div class="nav-icon"><i class="fas fa-ticket-alt"></i></div>
                 <div class="nav-label">Tickets & Ventes</div>
             </div>
-            <div class="nav-item" data-section="reports">
-                <div class="nav-icon"><i class="fas fa-chart-bar"></i></div>
-                <div class="nav-label">Rapports</div>
-            </div>
             <div class="nav-item" data-section="settings">
                 <div class="nav-icon"><i class="fas fa-cog"></i></div>
                 <div class="nav-label">Paramètres</div>
@@ -824,6 +840,14 @@
                     <i class="fas fa-sign-out-alt"></i> Déconnexion
                 </button>
             </div>
+        </div>
+        
+        <!-- Welcome Message -->
+        <div class="welcome-message" id="welcome-message" style="display: none;">
+            <h2>Bienvenue sur votre tableau de bord</h2>
+            <p>Vous êtes connecté au sous-système: <strong id="connected-subsystem">Chargement...</strong></p>
+            <p>URL d'accès: <code id="subsystem-url">Chargement...</code></p>
+            <p>Utilisateurs: <span id="user-stats">0/0</span> | Abonnement expire le: <span id="subscription-expiry">Chargement...</span></p>
         </div>
         
         <!-- Dashboard Section -->
@@ -910,7 +934,7 @@
         <div id="agents-section" class="section-content" style="display: none;">
             <div class="table-container">
                 <div class="table-header">
-                    <div class="table-title">Tous les agents</div>
+                    <div class="table-title">Agents de votre sous-système</div>
                     <div class="search-box">
                         <input type="text" class="search-input" placeholder="Rechercher un agent..." id="search-agents">
                         <button class="btn btn-primary" id="search-agents-btn">
@@ -937,6 +961,7 @@
                             <th>Statut</th>
                             <th>Tickets vendus</th>
                             <th>Ventes (HTG)</th>
+                            <th>Gains (HTG)</th>
                             <th>Dernière activité</th>
                             <th>Actions</th>
                         </tr>
@@ -1037,7 +1062,7 @@
         <div id="tickets-section" class="section-content" style="display: none;">
             <div class="table-container">
                 <div class="table-header">
-                    <div class="table-title">Tickets & Ventes</div>
+                    <div class="table-title">Tickets & Ventes de votre sous-système</div>
                     <div class="search-box">
                         <select class="form-control" id="filter-ticket-period" style="width: 180px;">
                             <option value="today">Aujourd'hui</option>
@@ -1070,34 +1095,6 @@
                         <!-- Rempli dynamiquement -->
                     </tbody>
                 </table>
-            </div>
-        </div>
-        
-        <!-- Reports Section -->
-        <div id="reports-section" class="section-content" style="display: none;">
-            <div class="table-container">
-                <div class="table-header">
-                    <div class="table-title">Rapports du sous-système</div>
-                    <div class="search-box">
-                        <select class="form-control" id="report-period" style="width: 150px;">
-                            <option value="daily">Quotidien</option>
-                            <option value="weekly">Hebdomadaire</option>
-                            <option value="monthly" selected>Mensuel</option>
-                        </select>
-                        <button class="btn btn-success" id="generate-report-btn">
-                            <i class="fas fa-chart-bar"></i> Générer
-                        </button>
-                    </div>
-                </div>
-                
-                <div class="loading" id="reports-loading">
-                    <div class="loading-spinner"></div>
-                    <p>Génération du rapport...</p>
-                </div>
-                
-                <div id="report-results" style="display: none;">
-                    <!-- Rapport généré ici -->
-                </div>
             </div>
         </div>
         
@@ -1187,7 +1184,7 @@
                     </div>
                     
                     <div class="form-group">
-                        <label class="form-label">Email *</label>
+                        <label class="form-label">Identifiant (Email) *</label>
                         <input type="email" class="form-control" id="user-email" placeholder="exemple@email.com" required>
                         <small style="color: #6c757d; display: block; margin-top: 5px;">
                             Sera utilisé comme identifiant de connexion
@@ -1371,6 +1368,9 @@
                     
                     // Mettre à jour l'interface
                     updateUserInfo();
+                    
+                    // Afficher le message de bienvenue
+                    document.getElementById('welcome-message').style.display = 'block';
                 } else {
                     redirectToLogin();
                 }
@@ -1399,6 +1399,7 @@
                 if (data.success && data.subsystems.length > 0) {
                     currentSubsystem = data.subsystems[0];
                     updateSubsystemInfo();
+                    updateWelcomeMessage();
                 } else {
                     showNotification('Sous-système non trouvé', 'error');
                 }
@@ -1438,11 +1439,42 @@
             }
         }
         
+        // Mettre à jour le message de bienvenue
+        function updateWelcomeMessage() {
+            if (currentSubsystem) {
+                document.getElementById('connected-subsystem').textContent = currentSubsystem.name;
+                document.getElementById('subsystem-url').textContent = 
+                    `${currentSubsystem.subdomain}.${window.location.hostname.replace('master.', '') || 'novalotto.com'}`;
+                
+                // Mettre à jour les statistiques utilisateurs
+                document.getElementById('user-stats').textContent = 
+                    `${currentSubsystem.stats?.active_users || 0}/${currentSubsystem.max_users}`;
+                
+                // Mettre à jour la date d'expiration
+                if (currentSubsystem.subscription_expires) {
+                    const expireDate = new Date(currentSubsystem.subscription_expires);
+                    const now = new Date();
+                    const daysLeft = Math.ceil((expireDate - now) / (1000 * 60 * 60 * 24));
+                    
+                    let expirationText = expireDate.toLocaleDateString('fr-FR');
+                    if (daysLeft > 0) {
+                        expirationText += ` (dans ${daysLeft} jour(s))`;
+                    } else {
+                        expirationText += ` (expiré)`;
+                    }
+                    
+                    document.getElementById('subscription-expiry').textContent = expirationText;
+                } else {
+                    document.getElementById('subscription-expiry').textContent = 'Non spécifié';
+                }
+            }
+        }
+        
         // Charger les données du tableau de bord
         async function loadDashboardData() {
             try {
-                // Charger les statistiques
-                const statsResponse = await fetch('/api/statistics', {
+                // Charger les statistiques du sous-système
+                const statsResponse = await fetch('/api/subsystem/stats', {
                     headers: {
                         'x-auth-token': currentToken
                     }
@@ -1451,15 +1483,19 @@
                 const statsData = await statsResponse.json();
                 
                 if (statsData.success) {
-                    // Mettre à jour les cartes de statistiques (à adapter selon votre API)
-                    document.getElementById('total-agents').textContent = 
-                        statsData.statistics.active_agents || 0;
+                    const stats = statsData.stats;
+                    
+                    // Mettre à jour les cartes de statistiques
+                    document.getElementById('total-agents').textContent = stats.active_users || 0;
                     document.getElementById('today-sales').textContent = 
-                        (statsData.statistics.today_sales || 0).toLocaleString() + ' HTG';
-                    document.getElementById('today-tickets').textContent = 
-                        statsData.statistics.today_tickets || 0;
+                        (stats.today_sales || 0).toLocaleString() + ' HTG';
+                    document.getElementById('today-tickets').textContent = stats.today_tickets || 0;
                     document.getElementById('monthly-profit').textContent = 
-                        (statsData.statistics.total_profit || 0).toLocaleString() + ' HTG';
+                        (stats.monthly_profit || 0).toLocaleString() + ' HTG';
+                    
+                    // Mettre à jour le message de bienvenue avec les stats utilisateurs
+                    document.getElementById('user-stats').textContent = 
+                        `${stats.active_users || 0}/${stats.max_users || 0}`;
                 }
                 
                 // Charger les activités récentes
@@ -1483,7 +1519,7 @@
             empty.style.display = 'none';
             
             try {
-                const response = await fetch('/api/activities/recent', {
+                const response = await fetch('/api/subsystem/activities', {
                     headers: {
                         'x-auth-token': currentToken
                     }
@@ -1525,7 +1561,7 @@
             }
         }
         
-        // Charger tous les agents
+        // Charger tous les agents du sous-système
         async function loadAgents() {
             const loading = document.getElementById('agents-loading');
             const table = document.getElementById('agents-table');
@@ -1537,7 +1573,7 @@
             empty.style.display = 'none';
             
             try {
-                const response = await fetch('/api/agents', {
+                const response = await fetch('/api/subsystem/users?role=agent', {
                     headers: {
                         'x-auth-token': currentToken
                     }
@@ -1546,7 +1582,7 @@
                 const data = await response.json();
                 
                 if (data.success) {
-                    users = data.agents || [];
+                    users = data.users || [];
                     const agents = users.filter(user => user.role === 'agent');
                     
                     if (agents.length === 0) {
@@ -1574,7 +1610,7 @@
                             </td>
                             <td>
                                 <span id="supervisor-${agent._id}">
-                                    ${agent.supervisor || 'Non assigné'}
+                                    ${agent.supervisor_name || 'Non assigné'}
                                 </span>
                             </td>
                             <td>
@@ -1584,6 +1620,7 @@
                             </td>
                             <td>${agent.total_tickets || 0}</td>
                             <td>${(agent.total_sales || 0).toLocaleString()} HTG</td>
+                            <td>${(agent.total_winnings || 0).toLocaleString()} HTG</td>
                             <td>${lastActive}</td>
                             <td>
                                 <div class="action-buttons">
@@ -1617,7 +1654,7 @@
             }
         }
         
-        // Charger les superviseurs niveau 1
+        // Charger les superviseurs niveau 1 du sous-système
         async function loadSupervisors1() {
             const loading = document.getElementById('supervisor1-loading');
             const table = document.getElementById('supervisor1-table');
@@ -1627,7 +1664,7 @@
             table.style.display = 'none';
             
             try {
-                const response = await fetch('/api/supervisors', {
+                const response = await fetch('/api/subsystem/users?role=supervisor1', {
                     headers: {
                         'x-auth-token': currentToken
                     }
@@ -1636,7 +1673,7 @@
                 const data = await response.json();
                 
                 if (data.success) {
-                    supervisors1 = data.supervisors.filter(s => s.level === 1) || [];
+                    supervisors1 = data.users || [];
                     
                     // Vider le tableau
                     tbody.innerHTML = '';
@@ -1654,7 +1691,7 @@
                             <td>${supervisor.agents_count || 0}</td>
                             <td>
                                 <span id="supervisor2-${supervisor._id}">
-                                    ${supervisor.supervisor2 || 'Non assigné'}
+                                    ${supervisor.supervisor2_name || 'Non assigné'}
                                 </span>
                             </td>
                             <td>
@@ -1699,7 +1736,7 @@
             }
         }
         
-        // Charger les superviseurs niveau 2
+        // Charger les superviseurs niveau 2 du sous-système
         async function loadSupervisors2() {
             const loading = document.getElementById('supervisor2-loading');
             const table = document.getElementById('supervisor2-table');
@@ -1709,7 +1746,7 @@
             table.style.display = 'none';
             
             try {
-                const response = await fetch('/api/supervisors', {
+                const response = await fetch('/api/subsystem/users?role=supervisor2', {
                     headers: {
                         'x-auth-token': currentToken
                     }
@@ -1718,7 +1755,7 @@
                 const data = await response.json();
                 
                 if (data.success) {
-                    supervisors2 = data.supervisors.filter(s => s.level === 2) || [];
+                    supervisors2 = data.users || [];
                     
                     // Vider le tableau
                     tbody.innerHTML = '';
@@ -1836,9 +1873,6 @@
             document.getElementById('search-agents').addEventListener('input', filterAgents);
             document.getElementById('search-agents-btn').addEventListener('click', loadAgents);
             document.getElementById('filter-agent-status').addEventListener('change', loadAgents);
-            
-            // Génération de rapport
-            document.getElementById('generate-report-btn').addEventListener('click', generateReport);
         }
         
         // Afficher une section
@@ -1868,9 +1902,6 @@
                         break;
                     case 'tickets':
                         loadTickets();
-                        break;
-                    case 'reports':
-                        loadReports();
                         break;
                     case 'settings':
                         loadSettings();
@@ -1919,7 +1950,7 @@
             const select = document.getElementById('assign-supervisor1');
             
             try {
-                const response = await fetch('/api/supervisors', {
+                const response = await fetch('/api/subsystem/users?role=supervisor1&status=active', {
                     headers: {
                         'x-auth-token': currentToken
                     }
@@ -1928,7 +1959,7 @@
                 const data = await response.json();
                 
                 if (data.success) {
-                    const supervisors = data.supervisors.filter(s => s.level === 1 && s.is_active);
+                    const supervisors = data.users || [];
                     
                     // Vider les options
                     select.innerHTML = '<option value="">Aucun (assigner plus tard)</option>';
@@ -1951,7 +1982,7 @@
             const select = document.getElementById('assign-supervisor2');
             
             try {
-                const response = await fetch('/api/supervisors', {
+                const response = await fetch('/api/subsystem/users?role=supervisor2&status=active', {
                     headers: {
                         'x-auth-token': currentToken
                     }
@@ -1960,7 +1991,7 @@
                 const data = await response.json();
                 
                 if (data.success) {
-                    const supervisors = data.supervisors.filter(s => s.level === 2 && s.is_active);
+                    const supervisors = data.users || [];
                     
                     // Vider les options
                     select.innerHTML = '<option value="">Aucun (assigner plus tard)</option>';
@@ -1988,8 +2019,6 @@
             const password = document.getElementById('user-password').value;
             const confirmPassword = document.getElementById('user-confirm-password').value;
             const level = document.getElementById('user-level').value;
-            const supervisor1Id = document.getElementById('assign-supervisor1').value;
-            const supervisor2Id = document.getElementById('assign-supervisor2').value;
             
             // Validation
             if (!role || !fullname || !email || !password) {
@@ -2002,18 +2031,6 @@
                 return;
             }
             
-            // Déterminer le rôle et le niveau pour l'API
-            let apiRole = 'agent';
-            let apiLevel = 1;
-            
-            if (role === 'supervisor1') {
-                apiRole = 'supervisor';
-                apiLevel = 1;
-            } else if (role === 'supervisor2') {
-                apiRole = 'supervisor';
-                apiLevel = 2;
-            }
-            
             try {
                 // Désactiver le bouton
                 const submitBtn = e.target.querySelector('button[type="submit"]');
@@ -2021,7 +2038,7 @@
                 submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Création...';
                 submitBtn.disabled = true;
                 
-                const response = await fetch('/api/agents/create', {
+                const response = await fetch('/api/subsystem/users/create', {
                     method: 'POST',
                     headers: {
                         'x-auth-token': currentToken,
@@ -2029,11 +2046,10 @@
                     },
                     body: JSON.stringify({
                         name: fullname,
-                        email: email,
-                        level: apiLevel,
+                        username: email,
                         password: password,
-                        role: apiRole,
-                        subsystem_id: currentSubsystem.id
+                        role: role,
+                        level: parseInt(level)
                     })
                 });
                 
@@ -2048,6 +2064,9 @@
                     if (activeSection === 'agents' || activeSection === 'supervisors') {
                         showSection(activeSection);
                     }
+                    
+                    // Recharger le dashboard pour mettre à jour les stats
+                    loadDashboardData();
                 } else {
                     showNotification(data.error || 'Erreur lors de la création', 'error');
                 }
@@ -2141,7 +2160,7 @@ Ventes totales: ${(user.total_sales || 0).toLocaleString()} HTG`);
                 }
                 
                 try {
-                    const response = await fetch(`/api/agents/${userId}`, {
+                    const response = await fetch(`/api/subsystem/users/${userId}`, {
                         method: 'PUT',
                         headers: {
                             'x-auth-token': currentToken,
@@ -2149,7 +2168,6 @@ Ventes totales: ${(user.total_sales || 0).toLocaleString()} HTG`);
                         },
                         body: JSON.stringify({
                             name: fullname,
-                            email: email,
                             level: level,
                             password: password || undefined
                         })
@@ -2181,7 +2199,7 @@ Ventes totales: ${(user.total_sales || 0).toLocaleString()} HTG`);
             }
             
             try {
-                const response = await fetch(`/api/agents/${userId}/status`, {
+                const response = await fetch(`/api/subsystem/users/${userId}/status`, {
                     method: 'PUT',
                     headers: {
                         'x-auth-token': currentToken,
@@ -2200,6 +2218,9 @@ Ventes totales: ${(user.total_sales || 0).toLocaleString()} HTG`);
                     // Recharger les données
                     const activeSection = document.querySelector('.nav-item.active').getAttribute('data-section');
                     showSection(activeSection);
+                    
+                    // Recharger le dashboard pour mettre à jour les stats
+                    loadDashboardData();
                 } else {
                     showNotification(data.error || 'Erreur lors du changement de statut', 'error');
                 }
@@ -2237,7 +2258,7 @@ Ventes totales: ${(user.total_sales || 0).toLocaleString()} HTG`);
             const select = document.getElementById('select-supervisor1');
             
             try {
-                const response = await fetch('/api/supervisors', {
+                const response = await fetch('/api/subsystem/users?role=supervisor1&status=active', {
                     headers: {
                         'x-auth-token': currentToken
                     }
@@ -2246,7 +2267,7 @@ Ventes totales: ${(user.total_sales || 0).toLocaleString()} HTG`);
                 const data = await response.json();
                 
                 if (data.success) {
-                    const supervisors = data.supervisors.filter(s => s.level === 1 && s.is_active);
+                    const supervisors = data.users || [];
                     
                     // Vider les options
                     select.innerHTML = '<option value="">Aucun</option>';
@@ -2269,7 +2290,7 @@ Ventes totales: ${(user.total_sales || 0).toLocaleString()} HTG`);
             const select = document.getElementById('select-supervisor2');
             
             try {
-                const response = await fetch('/api/supervisors', {
+                const response = await fetch('/api/subsystem/users?role=supervisor2&status=active', {
                     headers: {
                         'x-auth-token': currentToken
                     }
@@ -2278,7 +2299,7 @@ Ventes totales: ${(user.total_sales || 0).toLocaleString()} HTG`);
                 const data = await response.json();
                 
                 if (data.success) {
-                    const supervisors = data.supervisors.filter(s => s.level === 2 && s.is_active);
+                    const supervisors = data.users || [];
                     
                     // Vider les options
                     select.innerHTML = '<option value="">Aucun</option>';
@@ -2304,45 +2325,41 @@ Ventes totales: ${(user.total_sales || 0).toLocaleString()} HTG`);
             const supervisor2Id = document.getElementById('select-supervisor2').value;
             
             try {
-                let response;
+                let supervisorId = null;
+                let supervisorType = null;
                 
                 if (userRole === 'agent') {
-                    response = await fetch(`/api/agents/${userId}/assign`, {
-                        method: 'PUT',
-                        headers: {
-                            'x-auth-token': currentToken,
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({
-                            supervisor_id: supervisor1Id
-                        })
-                    });
+                    supervisorId = supervisor1Id;
+                    supervisorType = 'supervisor1';
                 } else if (userRole === 'supervisor1') {
-                    response = await fetch(`/api/supervisors/${userId}/assign`, {
-                        method: 'PUT',
-                        headers: {
-                            'x-auth-token': currentToken,
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({
-                            supervisor2_id: supervisor2Id
-                        })
-                    });
+                    supervisorId = supervisor2Id;
+                    supervisorType = 'supervisor2';
                 }
                 
-                if (response) {
-                    const data = await response.json();
+                const response = await fetch('/api/subsystem/assign', {
+                    method: 'POST',
+                    headers: {
+                        'x-auth-token': currentToken,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        userId: userId,
+                        supervisorId: supervisorId,
+                        supervisorType: supervisorType
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    showNotification('Assignation sauvegardée avec succès', 'success');
+                    hideAssignModal();
                     
-                    if (data.success) {
-                        showNotification('Assignation sauvegardée avec succès', 'success');
-                        hideAssignModal();
-                        
-                        // Recharger les données
-                        const activeSection = document.querySelector('.nav-item.active').getAttribute('data-section');
-                        showSection(activeSection);
-                    } else {
-                        showNotification(data.error || 'Erreur lors de l\'assignation', 'error');
-                    }
+                    // Recharger les données
+                    const activeSection = document.querySelector('.nav-item.active').getAttribute('data-section');
+                    showSection(activeSection);
+                } else {
+                    showNotification(data.error || 'Erreur lors de l\'assignation', 'error');
                 }
             } catch (error) {
                 console.error('Erreur assignation:', error);
@@ -2388,7 +2405,7 @@ Ventes totales: ${(user.total_sales || 0).toLocaleString()} HTG`);
             });
         }
         
-        // Charger les tickets
+        // Charger les tickets du sous-système
         async function loadTickets() {
             const loading = document.getElementById('tickets-loading');
             const table = document.getElementById('tickets-table');
@@ -2398,7 +2415,8 @@ Ventes totales: ${(user.total_sales || 0).toLocaleString()} HTG`);
             table.style.display = 'none';
             
             try {
-                const response = await fetch('/api/tickets', {
+                const period = document.getElementById('filter-ticket-period').value;
+                const response = await fetch(`/api/subsystem/tickets?period=${period}`, {
                     headers: {
                         'x-auth-token': currentToken
                     }
@@ -2439,77 +2457,6 @@ Ventes totales: ${(user.total_sales || 0).toLocaleString()} HTG`);
                 loading.style.display = 'none';
                 showNotification('Erreur lors du chargement des tickets', 'error');
             }
-        }
-        
-        // Générer un rapport
-        async function generateReport() {
-            const loading = document.getElementById('reports-loading');
-            const results = document.getElementById('report-results');
-            
-            loading.style.display = 'flex';
-            results.style.display = 'none';
-            
-            try {
-                const period = document.getElementById('report-period').value;
-                
-                const response = await fetch(`/api/reports/generate?period=${period}`, {
-                    headers: {
-                        'x-auth-token': currentToken
-                    }
-                });
-                
-                const data = await response.json();
-                
-                if (data.success) {
-                    const report = data.report;
-                    
-                    // Générer le HTML du rapport
-                    let html = `
-                        <div style="margin-bottom: 25px;">
-                            <h3 style="color: #2c3e50; margin-bottom: 15px;">Rapport du sous-système</h3>
-                            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 20px;">
-                                <div style="background-color: #f8f9fa; padding: 15px; border-radius: 8px;">
-                                    <div style="font-size: 0.9rem; color: #6c757d; margin-bottom: 5px;">Période</div>
-                                    <div style="font-weight: bold; color: #2c3e50;">${period === 'daily' ? 'Quotidien' : period === 'weekly' ? 'Hebdomadaire' : 'Mensuel'}</div>
-                                </div>
-                                <div style="background-color: #f8f9fa; padding: 15px; border-radius: 8px;">
-                                    <div style="font-size: 0.9rem; color: #6c757d; margin-bottom: 5px;">Agents actifs</div>
-                                    <div style="font-weight: bold; color: #2c3e50;">${report.activeAgents || 0}</div>
-                                </div>
-                                <div style="background-color: #f8f9fa; padding: 15px; border-radius: 8px;">
-                                    <div style="font-size: 0.9rem; color: #6c757d; margin-bottom: 5px;">Performance</div>
-                                    <div style="font-weight: bold; color: #2c3e50;">${report.monthlyPerformance || 0}%</div>
-                                </div>
-                                <div style="background-color: #f8f9fa; padding: 15px; border-radius: 8px;">
-                                    <div style="font-size: 0.9rem; color: #6c757d; margin-bottom: 5px;">Tickets résolus</div>
-                                    <div style="font-weight: bold; color: #2c3e50;">${report.ticketResolution || 0}%</div>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div style="margin-top: 25px; padding-top: 15px; border-top: 1px solid #dee2e6; font-size: 0.9rem; color: #6c757d;">
-                            Rapport généré le ${new Date().toLocaleString('fr-FR')}
-                        </div>
-                    `;
-                    
-                    results.innerHTML = html;
-                    loading.style.display = 'none';
-                    results.style.display = 'block';
-                } else {
-                    showNotification(data.error || 'Erreur lors de la génération du rapport', 'error');
-                    loading.style.display = 'none';
-                }
-            } catch (error) {
-                console.error('Erreur génération rapport:', error);
-                showNotification('Erreur de connexion au serveur', 'error');
-                loading.style.display = 'none';
-            }
-        }
-        
-        // Charger les rapports
-        function loadReports() {
-            // Initialiser le formulaire de rapport
-            generateReport();
         }
         
         // Charger les paramètres

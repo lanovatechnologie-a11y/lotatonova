@@ -988,6 +988,614 @@ app.post('/api/check-winners', vérifierToken, async (req, res) => {
     });
   }
 });
+// =================== ROUTES POUR LES ADMINISTRATEURS DE SOUS-SYSTÈMES ===================
+
+// Route pour créer un utilisateur (agent/superviseur) dans le sous-système
+app.post('/api/subsystem/users/create', vérifierToken, async (req, res) => {
+  try {
+    if (!req.tokenInfo) {
+      return res.status(401).json({
+        success: false,
+        error: 'Non authentifié'
+      });
+    }
+
+    const user = await User.findById(req.tokenInfo.userId);
+    if (!user || user.role !== 'subsystem') {
+      return res.status(403).json({
+        success: false,
+        error: 'Accès refusé. Rôle subsystem requis.'
+      });
+    }
+
+    const { name, username, password, role, level } = req.body;
+    
+    if (!name || !username || !password || !role) {
+      return res.status(400).json({
+        success: false,
+        error: 'Tous les champs obligatoires sont requis'
+      });
+    }
+
+    // Vérifier si l'utilisateur existe déjà
+    const existingUser = await User.findOne({ username });
+    if (existingUser) {
+      return res.status(400).json({
+        success: false,
+        error: 'Cet identifiant est déjà utilisé'
+      });
+    }
+
+    // Récupérer le sous-système de l'admin
+    const subsystem = await Subsystem.findOne({ admin_user: user._id });
+    if (!subsystem) {
+      return res.status(404).json({
+        success: false,
+        error: 'Sous-système non trouvé'
+      });
+    }
+
+    // Vérifier la limite d'utilisateurs
+    const userCount = await User.countDocuments({ 
+      subsystem_id: subsystem._id,
+      role: { $in: ['agent', 'supervisor'] }
+    });
+    
+    if (userCount >= subsystem.max_users) {
+      return res.status(400).json({
+        success: false,
+        error: `Limite d'utilisateurs atteinte (${subsystem.max_users} maximum)`
+      });
+    }
+
+    // Déterminer le rôle API
+    let apiRole = role;
+    if (role === 'supervisor1' || role === 'supervisor2') {
+      apiRole = 'supervisor';
+    }
+
+    const newUser = new User({
+      username,
+      password,
+      name,
+      role: apiRole,
+      level: level || (role === 'supervisor2' ? 2 : 1),
+      subsystem_id: subsystem._id,
+      is_active: true
+    });
+
+    await newUser.save();
+
+    // Mettre à jour les statistiques du sous-système
+    await Subsystem.findByIdAndUpdate(subsystem._id, {
+      $inc: { 'stats.active_users': 1 }
+    });
+
+    res.json({
+      success: true,
+      message: 'Utilisateur créé avec succès',
+      user: {
+        id: newUser._id,
+        name: newUser.name,
+        username: newUser.username,
+        role: newUser.role,
+        level: newUser.level
+      }
+    });
+
+  } catch (error) {
+    console.error('Erreur création utilisateur:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Erreur serveur lors de la création de l\'utilisateur'
+    });
+  }
+});
+
+// Route pour lister les utilisateurs du sous-système
+app.get('/api/subsystem/users', vérifierToken, async (req, res) => {
+  try {
+    if (!req.tokenInfo) {
+      return res.status(401).json({
+        success: false,
+        error: 'Non authentifié'
+      });
+    }
+
+    const user = await User.findById(req.tokenInfo.userId);
+    if (!user || user.role !== 'subsystem') {
+      return res.status(403).json({
+        success: false,
+        error: 'Accès refusé. Rôle subsystem requis.'
+      });
+    }
+
+    // Récupérer le sous-système de l'admin
+    const subsystem = await Subsystem.findOne({ admin_user: user._id });
+    if (!subsystem) {
+      return res.status(404).json({
+        success: false,
+        error: 'Sous-système non trouvé'
+      });
+    }
+
+    const { role, status } = req.query;
+    let query = { subsystem_id: subsystem._id };
+
+    // Filtrer par rôle si spécifié
+    if (role) {
+      if (role === 'supervisor1') {
+        query.role = 'supervisor';
+        query.level = 1;
+      } else if (role === 'supervisor2') {
+        query.role = 'supervisor';
+        query.level = 2;
+      } else {
+        query.role = role;
+      }
+    }
+
+    // Filtrer par statut si spécifié
+    if (status) {
+      query.is_active = status === 'active';
+    }
+
+    const users = await User.find(query)
+      .select('-password')
+      .sort({ dateCreation: -1 });
+
+    // Ajouter des statistiques pour chaque utilisateur
+    const usersWithStats = await Promise.all(users.map(async (user) => {
+      // Statistiques pour les agents
+      if (user.role === 'agent') {
+        const tickets = await Ticket.find({ agent_id: user._id });
+        const total_sales = tickets.reduce((sum, ticket) => sum + ticket.total, 0);
+        const total_tickets = tickets.length;
+        
+        // Chercher les gagnants pour calculer les gains
+        const winners = await Winner.find({ agent_id: user._id });
+        const total_winnings = winners.reduce((sum, winner) => sum + winner.total_winnings, 0);
+
+        return {
+          ...user.toObject(),
+          total_sales,
+          total_tickets,
+          total_winnings,
+          is_online: Math.random() > 0.3 // Simulation d'état en ligne
+        };
+      }
+
+      // Statistiques pour les superviseurs
+      if (user.role === 'supervisor') {
+        const agents = await User.find({ 
+          subsystem_id: subsystem._id,
+          role: 'agent',
+          $or: [
+            { supervisor_id: user._id },
+            { supervisor2_id: user._id }
+          ]
+        });
+
+        const agentIds = agents.map(a => a._id);
+        const tickets = await Ticket.find({ agent_id: { $in: agentIds } });
+        const total_sales = tickets.reduce((sum, ticket) => sum + ticket.total, 0);
+
+        return {
+          ...user.toObject(),
+          agents_count: agents.length,
+          total_sales,
+          is_online: Math.random() > 0.3
+        };
+      }
+
+      return user.toObject();
+    }));
+
+    res.json({
+      success: true,
+      users: usersWithStats
+    });
+
+  } catch (error) {
+    console.error('Erreur récupération utilisateurs:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Erreur serveur lors de la récupération des utilisateurs'
+    });
+  }
+});
+
+// Route pour activer/désactiver un utilisateur
+app.put('/api/subsystem/users/:id/status', vérifierToken, async (req, res) => {
+  try {
+    if (!req.tokenInfo) {
+      return res.status(401).json({
+        success: false,
+        error: 'Non authentifié'
+      });
+    }
+
+    const admin = await User.findById(req.tokenInfo.userId);
+    if (!admin || admin.role !== 'subsystem') {
+      return res.status(403).json({
+        success: false,
+        error: 'Accès refusé. Rôle subsystem requis.'
+      });
+    }
+
+    const userId = req.params.id;
+    const { is_active } = req.body;
+
+    // Vérifier que l'utilisateur appartient au même sous-système
+    const subsystem = await Subsystem.findOne({ admin_user: admin._id });
+    const user = await User.findOne({
+      _id: userId,
+      subsystem_id: subsystem._id
+    });
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        error: 'Utilisateur non trouvé dans votre sous-système'
+      });
+    }
+
+    user.is_active = is_active;
+    await user.save();
+
+    // Mettre à jour les statistiques du sous-système
+    if (is_active) {
+      await Subsystem.findByIdAndUpdate(subsystem._id, {
+        $inc: { 'stats.active_users': 1 }
+      });
+    } else {
+      await Subsystem.findByIdAndUpdate(subsystem._id, {
+        $inc: { 'stats.active_users': -1 }
+      });
+    }
+
+    res.json({
+      success: true,
+      message: `Utilisateur ${is_active ? 'activé' : 'désactivé'} avec succès`
+    });
+
+  } catch (error) {
+    console.error('Erreur changement statut:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Erreur serveur lors du changement de statut'
+    });
+  }
+});
+
+// Route pour modifier un utilisateur
+app.put('/api/subsystem/users/:id', vérifierToken, async (req, res) => {
+  try {
+    if (!req.tokenInfo) {
+      return res.status(401).json({
+        success: false,
+        error: 'Non authentifié'
+      });
+    }
+
+    const admin = await User.findById(req.tokenInfo.userId);
+    if (!admin || admin.role !== 'subsystem') {
+      return res.status(403).json({
+        success: false,
+        error: 'Accès refusé. Rôle subsystem requis.'
+      });
+    }
+
+    const userId = req.params.id;
+    const { name, level, password } = req.body;
+
+    // Vérifier que l'utilisateur appartient au même sous-système
+    const subsystem = await Subsystem.findOne({ admin_user: admin._id });
+    const user = await User.findOne({
+      _id: userId,
+      subsystem_id: subsystem._id
+    });
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        error: 'Utilisateur non trouvé dans votre sous-système'
+      });
+    }
+
+    // Mettre à jour les champs
+    if (name) user.name = name;
+    if (level) user.level = level;
+    if (password) user.password = password;
+
+    await user.save();
+
+    res.json({
+      success: true,
+      message: 'Utilisateur modifié avec succès',
+      user: {
+        id: user._id,
+        name: user.name,
+        username: user.username,
+        role: user.role,
+        level: user.level
+      }
+    });
+
+  } catch (error) {
+    console.error('Erreur modification utilisateur:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Erreur serveur lors de la modification de l\'utilisateur'
+    });
+  }
+});
+
+// Route pour assigner un superviseur à un agent
+app.post('/api/subsystem/assign', vérifierToken, async (req, res) => {
+  try {
+    if (!req.tokenInfo) {
+      return res.status(401).json({
+        success: false,
+        error: 'Non authentifié'
+      });
+    }
+
+    const admin = await User.findById(req.tokenInfo.userId);
+    if (!admin || admin.role !== 'subsystem') {
+      return res.status(403).json({
+        success: false,
+        error: 'Accès refusé. Rôle subsystem requis.'
+      });
+    }
+
+    const { userId, supervisorId, supervisorType } = req.body;
+
+    // Vérifier que tous les utilisateurs appartiennent au même sous-système
+    const subsystem = await Subsystem.findOne({ admin_user: admin._id });
+    
+    const user = await User.findOne({
+      _id: userId,
+      subsystem_id: subsystem._id
+    });
+
+    const supervisor = await User.findOne({
+      _id: supervisorId,
+      subsystem_id: subsystem._id
+    });
+
+    if (!user || !supervisor) {
+      return res.status(404).json({
+        success: false,
+        error: 'Utilisateur ou superviseur non trouvé dans votre sous-système'
+      });
+    }
+
+    // Assigner selon le type
+    if (supervisorType === 'supervisor1') {
+      user.supervisor_id = supervisorId;
+    } else if (supervisorType === 'supervisor2') {
+      user.supervisor2_id = supervisorId;
+    }
+
+    await user.save();
+
+    res.json({
+      success: true,
+      message: 'Assignation réussie'
+    });
+
+  } catch (error) {
+    console.error('Erreur assignation:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Erreur serveur lors de l\'assignation'
+    });
+  }
+});
+
+// Route pour les statistiques du sous-système
+app.get('/api/subsystem/stats', vérifierToken, async (req, res) => {
+  try {
+    if (!req.tokenInfo) {
+      return res.status(401).json({
+        success: false,
+        error: 'Non authentifié'
+      });
+    }
+
+    const admin = await User.findById(req.tokenInfo.userId);
+    if (!admin || admin.role !== 'subsystem') {
+      return res.status(403).json({
+        success: false,
+        error: 'Accès refusé. Rôle subsystem requis.'
+      });
+    }
+
+    // Récupérer le sous-système
+    const subsystem = await Subsystem.findOne({ admin_user: admin._id });
+    if (!subsystem) {
+      return res.status(404).json({
+        success: false,
+        error: 'Sous-système non trouvé'
+      });
+    }
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    // Statistiques d'aujourd'hui
+    const todayTickets = await Ticket.find({
+      subsystem_id: subsystem._id,
+      date: { $gte: today }
+    });
+
+    const todaySales = todayTickets.reduce((sum, ticket) => sum + ticket.total, 0);
+
+    // Statistiques du mois
+    const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+    const monthlyTickets = await Ticket.find({
+      subsystem_id: subsystem._id,
+      date: { $gte: firstDayOfMonth }
+    });
+
+    const monthlySales = monthlyTickets.reduce((sum, ticket) => sum + ticket.total, 0);
+
+    // Compter les utilisateurs
+    const totalUsers = await User.countDocuments({ subsystem_id: subsystem._id });
+    const activeUsers = await User.countDocuments({ 
+      subsystem_id: subsystem._id,
+      is_active: true 
+    });
+
+    // Calculer le profit (estimation: 30% des ventes)
+    const monthlyProfit = monthlySales * 0.3;
+
+    res.json({
+      success: true,
+      stats: {
+        today_tickets: todayTickets.length,
+        today_sales: todaySales,
+        monthly_tickets: monthlyTickets.length,
+        monthly_sales: monthlySales,
+        monthly_profit: monthlyProfit,
+        total_users: totalUsers,
+        active_users: activeUsers,
+        max_users: subsystem.max_users,
+        usage_percentage: Math.round((activeUsers / subsystem.max_users) * 100)
+      }
+    });
+
+  } catch (error) {
+    console.error('Erreur statistiques sous-système:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Erreur serveur lors de la récupération des statistiques'
+    });
+  }
+});
+
+// Route pour les activités du sous-système
+app.get('/api/subsystem/activities', vérifierToken, async (req, res) => {
+  try {
+    if (!req.tokenInfo) {
+      return res.status(401).json({
+        success: false,
+        error: 'Non authentifié'
+      });
+    }
+
+    const admin = await User.findById(req.tokenInfo.userId);
+    if (!admin || admin.role !== 'subsystem') {
+      return res.status(403).json({
+        success: false,
+        error: 'Accès refusé. Rôle subsystem requis.'
+      });
+    }
+
+    const subsystem = await Subsystem.findOne({ admin_user: admin._id });
+    if (!subsystem) {
+      return res.status(404).json({
+        success: false,
+        error: 'Sous-système non trouvé'
+      });
+    }
+
+    // Récupérer les tickets récents (comme activité)
+    const recentTickets = await Ticket.find({ subsystem_id: subsystem._id })
+      .sort({ date: -1 })
+      .limit(10)
+      .populate('agent_id', 'name');
+
+    const activities = recentTickets.map(ticket => ({
+      timestamp: ticket.date,
+      user: ticket.agent_name,
+      action: 'Vente de ticket',
+      details: `Ticket #${ticket.number} - ${ticket.total.toLocaleString()} HTG`
+    }));
+
+    res.json({
+      success: true,
+      activities
+    });
+
+  } catch (error) {
+    console.error('Erreur activités sous-système:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Erreur serveur lors de la récupération des activités'
+    });
+  }
+});
+
+// Route pour les tickets du sous-système
+app.get('/api/subsystem/tickets', vérifierToken, async (req, res) => {
+  try {
+    if (!req.tokenInfo) {
+      return res.status(401).json({
+        success: false,
+        error: 'Non authentifié'
+      });
+    }
+
+    const admin = await User.findById(req.tokenInfo.userId);
+    if (!admin || admin.role !== 'subsystem') {
+      return res.status(403).json({
+        success: false,
+        error: 'Accès refusé. Rôle subsystem requis.'
+      });
+    }
+
+    const subsystem = await Subsystem.findOne({ admin_user: admin._id });
+    if (!subsystem) {
+      return res.status(404).json({
+        success: false,
+        error: 'Sous-système non trouvé'
+      });
+    }
+
+    const { period } = req.query;
+    let startDate = new Date();
+
+    if (period === 'week') {
+      startDate.setDate(startDate.getDate() - 7);
+    } else if (period === 'month') {
+      startDate.setMonth(startDate.getMonth() - 1);
+    } else {
+      // Aujourd'hui par défaut
+      startDate.setHours(0, 0, 0, 0);
+    }
+
+    const tickets = await Ticket.find({
+      subsystem_id: subsystem._id,
+      date: { $gte: startDate }
+    })
+      .sort({ date: -1 })
+      .limit(100)
+      .populate('agent_id', 'name');
+
+    res.json({
+      success: true,
+      tickets: tickets.map(ticket => ({
+        id: ticket._id,
+        number: ticket.number,
+        date: ticket.date,
+        agent_name: ticket.agent_name,
+        draw: ticket.draw,
+        draw_time: ticket.draw_time,
+        total: ticket.total,
+        is_synced: ticket.is_synced
+      }))
+    });
+
+  } catch (error) {
+    console.error('Erreur tickets sous-système:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Erreur serveur lors de la récupération des tickets'
+    });
+  }
+});
 
 // =================== ROUTES API EXISTANTES ===================
 

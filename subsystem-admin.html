@@ -1311,14 +1311,13 @@
     <div id="notification-container"></div>
     
     <script>
-         // Variables globales
+        // Variables globales
         let currentUser = null;
         let currentSubsystem = null;
         let currentToken = null;
         let users = [];
         let supervisors1 = [];
         let supervisors2 = [];
-        let agents = [];
         
         // Initialisation
         document.addEventListener('DOMContentLoaded', function() {
@@ -1412,10 +1411,12 @@
         // Mettre à jour les infos utilisateur
         function updateUserInfo() {
             if (currentUser) {
-                const firstLetter = currentUser.name?.charAt(0) || currentUser.username?.charAt(0) || 'A';
-                document.getElementById('user-avatar').textContent = firstLetter.toUpperCase();
-                document.getElementById('user-name').textContent = currentUser.name || 'Administrateur';
-                document.getElementById('user-email').textContent = currentUser.username || 'admin@example.com';
+                document.getElementById('user-avatar').textContent = 
+                    currentUser.name?.charAt(0) || currentUser.username?.charAt(0) || 'A';
+                document.getElementById('user-name').textContent = 
+                    currentUser.name || 'Administrateur';
+                document.getElementById('user-email').textContent = 
+                    currentUser.username || 'admin@example.com';
             }
         }
         
@@ -1440,8 +1441,8 @@
         // Charger les données du tableau de bord
         async function loadDashboardData() {
             try {
-                // Charger les statistiques spécifiques au sous-système
-                const statsResponse = await fetch('/api/subsystem/stats', {
+                // Charger les statistiques
+                const statsResponse = await fetch('/api/statistics', {
                     headers: {
                         'x-auth-token': currentToken
                     }
@@ -1450,20 +1451,15 @@
                 const statsData = await statsResponse.json();
                 
                 if (statsData.success) {
+                    // Mettre à jour les cartes de statistiques (à adapter selon votre API)
                     document.getElementById('total-agents').textContent = 
-                        statsData.stats.active_users || 0;
+                        statsData.statistics.active_agents || 0;
                     document.getElementById('today-sales').textContent = 
-                        (statsData.stats.today_sales || 0).toLocaleString() + ' HTG';
+                        (statsData.statistics.today_sales || 0).toLocaleString() + ' HTG';
                     document.getElementById('today-tickets').textContent = 
-                        statsData.stats.today_tickets || 0;
+                        statsData.statistics.today_tickets || 0;
                     document.getElementById('monthly-profit').textContent = 
-                        (statsData.stats.monthly_profit || 0).toLocaleString() + ' HTG';
-                } else {
-                    // Valeurs par défaut si erreur
-                    document.getElementById('total-agents').textContent = '0';
-                    document.getElementById('today-sales').textContent = '0 HTG';
-                    document.getElementById('today-tickets').textContent = '0';
-                    document.getElementById('monthly-profit').textContent = '0 HTG';
+                        (statsData.statistics.total_profit || 0).toLocaleString() + ' HTG';
                 }
                 
                 // Charger les activités récentes
@@ -1487,7 +1483,7 @@
             empty.style.display = 'none';
             
             try {
-                const response = await fetch('/api/subsystem/activities', {
+                const response = await fetch('/api/activities/recent', {
                     headers: {
                         'x-auth-token': currentToken
                     }
@@ -1541,7 +1537,7 @@
             empty.style.display = 'none';
             
             try {
-                const response = await fetch('/api/subsystem/users?role=agent', {
+                const response = await fetch('/api/agents', {
                     headers: {
                         'x-auth-token': currentToken
                     }
@@ -1550,7 +1546,8 @@
                 const data = await response.json();
                 
                 if (data.success) {
-                    agents = data.users || [];
+                    users = data.agents || [];
+                    const agents = users.filter(user => user.role === 'agent');
                     
                     if (agents.length === 0) {
                         loading.style.display = 'none';
@@ -1563,7 +1560,9 @@
                     
                     // Ajouter chaque agent
                     agents.forEach(agent => {
-                        const supervisorName = agent.supervisor_id ? 'Assigné' : 'Non assigné';
+                        const lastActive = agent.last_active ? 
+                            new Date(agent.last_active).toLocaleString('fr-FR') : 
+                            'Jamais';
                         
                         const row = document.createElement('tr');
                         row.innerHTML = `
@@ -1575,7 +1574,7 @@
                             </td>
                             <td>
                                 <span id="supervisor-${agent._id}">
-                                    ${supervisorName}
+                                    ${agent.supervisor || 'Non assigné'}
                                 </span>
                             </td>
                             <td>
@@ -1585,7 +1584,7 @@
                             </td>
                             <td>${agent.total_tickets || 0}</td>
                             <td>${(agent.total_sales || 0).toLocaleString()} HTG</td>
-                            <td>${agent.last_active ? new Date(agent.last_active).toLocaleString('fr-FR') : 'Jamais'}</td>
+                            <td>${lastActive}</td>
                             <td>
                                 <div class="action-buttons">
                                     <button class="action-btn view" onclick="viewUser('${agent._id}')" title="Voir">
@@ -1628,7 +1627,7 @@
             table.style.display = 'none';
             
             try {
-                const response = await fetch('/api/subsystem/users?role=supervisor1', {
+                const response = await fetch('/api/supervisors', {
                     headers: {
                         'x-auth-token': currentToken
                     }
@@ -1637,7 +1636,7 @@
                 const data = await response.json();
                 
                 if (data.success) {
-                    supervisors1 = data.users || [];
+                    supervisors1 = data.supervisors.filter(s => s.level === 1) || [];
                     
                     // Vider le tableau
                     tbody.innerHTML = '';
@@ -1655,7 +1654,7 @@
                             <td>${supervisor.agents_count || 0}</td>
                             <td>
                                 <span id="supervisor2-${supervisor._id}">
-                                    ${supervisor.supervisor2_id ? 'Assigné' : 'Non assigné'}
+                                    ${supervisor.supervisor2 || 'Non assigné'}
                                 </span>
                             </td>
                             <td>
@@ -1664,8 +1663,8 @@
                                 </span>
                             </td>
                             <td>
-                                <div style="background-color: #e9ecef; height: 10px; border-radius: 5px; overflow: hidden;">
-                                    <div style="background-color: #3498db; height: 100%; width: ${Math.min(supervisor.performance || 0, 100)}%"></div>
+                                <div class="progress-bar" style="height: 10px;">
+                                    <div class="progress-fill" style="width: ${Math.min(supervisor.performance || 0, 100)}%"></div>
                                 </div>
                                 ${supervisor.performance || 0}%
                             </td>
@@ -1710,7 +1709,7 @@
             table.style.display = 'none';
             
             try {
-                const response = await fetch('/api/subsystem/users?role=supervisor2', {
+                const response = await fetch('/api/supervisors', {
                     headers: {
                         'x-auth-token': currentToken
                     }
@@ -1719,7 +1718,7 @@
                 const data = await response.json();
                 
                 if (data.success) {
-                    supervisors2 = data.users || [];
+                    supervisors2 = data.supervisors.filter(s => s.level === 2) || [];
                     
                     // Vider le tableau
                     tbody.innerHTML = '';
@@ -1741,8 +1740,8 @@
                                 </span>
                             </td>
                             <td>
-                                <div style="background-color: #e9ecef; height: 10px; border-radius: 5px; overflow: hidden;">
-                                    <div style="background-color: #3498db; height: 100%; width: ${Math.min(supervisor.global_performance || 0, 100)}%"></div>
+                                <div class="progress-bar" style="height: 10px;">
+                                    <div class="progress-fill" style="width: ${Math.min(supervisor.global_performance || 0, 100)}%"></div>
                                 </div>
                                 ${supervisor.global_performance || 0}%
                             </td>
@@ -1836,7 +1835,7 @@
             // Recherche agents
             document.getElementById('search-agents').addEventListener('input', filterAgents);
             document.getElementById('search-agents-btn').addEventListener('click', loadAgents);
-            document.getElementById('filter-agent-status').addEventListener('change', filterAgents);
+            document.getElementById('filter-agent-status').addEventListener('change', loadAgents);
             
             // Génération de rapport
             document.getElementById('generate-report-btn').addEventListener('click', generateReport);
@@ -1920,7 +1919,7 @@
             const select = document.getElementById('assign-supervisor1');
             
             try {
-                const response = await fetch('/api/subsystem/users?role=supervisor1', {
+                const response = await fetch('/api/supervisors', {
                     headers: {
                         'x-auth-token': currentToken
                     }
@@ -1929,7 +1928,7 @@
                 const data = await response.json();
                 
                 if (data.success) {
-                    const supervisors = data.users.filter(s => s.is_active);
+                    const supervisors = data.supervisors.filter(s => s.level === 1 && s.is_active);
                     
                     // Vider les options
                     select.innerHTML = '<option value="">Aucun (assigner plus tard)</option>';
@@ -1938,7 +1937,7 @@
                     supervisors.forEach(supervisor => {
                         const option = document.createElement('option');
                         option.value = supervisor._id;
-                        option.textContent = `${supervisor.name || supervisor.username}`;
+                        option.textContent = `${supervisor.name || supervisor.username} (${supervisor.agents_count || 0} agents)`;
                         select.appendChild(option);
                     });
                 }
@@ -1952,7 +1951,7 @@
             const select = document.getElementById('assign-supervisor2');
             
             try {
-                const response = await fetch('/api/subsystem/users?role=supervisor2', {
+                const response = await fetch('/api/supervisors', {
                     headers: {
                         'x-auth-token': currentToken
                     }
@@ -1961,7 +1960,7 @@
                 const data = await response.json();
                 
                 if (data.success) {
-                    const supervisors = data.users.filter(s => s.is_active);
+                    const supervisors = data.supervisors.filter(s => s.level === 2 && s.is_active);
                     
                     // Vider les options
                     select.innerHTML = '<option value="">Aucun (assigner plus tard)</option>';
@@ -1970,7 +1969,7 @@
                     supervisors.forEach(supervisor => {
                         const option = document.createElement('option');
                         option.value = supervisor._id;
-                        option.textContent = `${supervisor.name || supervisor.username}`;
+                        option.textContent = `${supervisor.name || supervisor.username} (${supervisor.supervisors_count || 0} superviseurs)`;
                         select.appendChild(option);
                     });
                 }
@@ -2004,8 +2003,8 @@
             }
             
             // Déterminer le rôle et le niveau pour l'API
-            let apiRole = role;
-            let apiLevel = parseInt(level) || 1;
+            let apiRole = 'agent';
+            let apiLevel = 1;
             
             if (role === 'supervisor1') {
                 apiRole = 'supervisor';
@@ -2022,7 +2021,7 @@
                 submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Création...';
                 submitBtn.disabled = true;
                 
-                const response = await fetch('/api/subsystem/users/create', {
+                const response = await fetch('/api/agents/create', {
                     method: 'POST',
                     headers: {
                         'x-auth-token': currentToken,
@@ -2030,10 +2029,11 @@
                     },
                     body: JSON.stringify({
                         name: fullname,
-                        username: email,
+                        email: email,
+                        level: apiLevel,
                         password: password,
                         role: apiRole,
-                        level: apiLevel
+                        subsystem_id: currentSubsystem.id
                     })
                 });
                 
@@ -2064,11 +2064,7 @@
         
         // Voir les détails d'un utilisateur
         window.viewUser = async function(userId) {
-            // Trouver l'utilisateur dans les tableaux existants
-            let user = agents.find(u => u._id === userId) || 
-                      supervisors1.find(u => u._id === userId) || 
-                      supervisors2.find(u => u._id === userId);
-            
+            const user = users.find(u => u._id === userId);
             if (user) {
                 alert(`Détails de l'utilisateur:
                 
@@ -2077,21 +2073,15 @@ Email: ${user.username}
 Rôle: ${user.role}
 Niveau: ${user.level || 1}
 Statut: ${user.is_active ? 'Actif' : 'Inactif'}
-Date création: ${user.dateCreation ? new Date(user.dateCreation).toLocaleDateString('fr-FR') : 'Non disponible'}
+Date création: ${new Date(user.dateCreation).toLocaleDateString('fr-FR')}
 Tickets vendus: ${user.total_tickets || 0}
 Ventes totales: ${(user.total_sales || 0).toLocaleString()} HTG`);
-            } else {
-                showNotification('Utilisateur non trouvé', 'error');
             }
         };
         
         // Modifier un utilisateur
         window.editUser = async function(userId) {
-            // Trouver l'utilisateur
-            let user = agents.find(u => u._id === userId) || 
-                      supervisors1.find(u => u._id === userId) || 
-                      supervisors2.find(u => u._id === userId);
-            
+            const user = users.find(u => u._id === userId);
             if (!user) {
                 showNotification('Utilisateur non trouvé', 'error');
                 return;
@@ -2121,15 +2111,14 @@ Ventes totales: ${(user.total_sales || 0).toLocaleString()} HTG`);
                     <input type="password" class="form-control" id="edit-confirm-password" placeholder="••••••••">
                 </div>
                 
-                ${user.role === 'supervisor' ? `
                 <div class="form-group">
-                    <label class="form-label">Niveau</label>
+                    <label class="form-label">Niveau d'accès</label>
                     <select class="form-control" id="edit-level">
-                        <option value="1" ${user.level === 1 ? 'selected' : ''}>Niveau 1</option>
-                        <option value="2" ${user.level === 2 ? 'selected' : ''}>Niveau 2</option>
+                        <option value="1" ${user.level === 1 ? 'selected' : ''}>Niveau 1 (Basique)</option>
+                        <option value="2" ${user.level === 2 ? 'selected' : ''}>Niveau 2 (Avancé)</option>
+                        <option value="3" ${user.level === 3 ? 'selected' : ''}>Niveau 3 (Administrateur)</option>
                     </select>
                 </div>
-                ` : ''}
                 
                 <input type="hidden" id="edit-user-id" value="${userId}">
             `;
@@ -2144,33 +2133,26 @@ Ventes totales: ${(user.total_sales || 0).toLocaleString()} HTG`);
                 const email = document.getElementById('edit-email').value.trim();
                 const password = document.getElementById('edit-password').value;
                 const confirmPassword = document.getElementById('edit-confirm-password').value;
-                const level = user.role === 'supervisor' ? document.getElementById('edit-level').value : null;
+                const level = document.getElementById('edit-level').value;
                 
                 if (password && password !== confirmPassword) {
                     showNotification('Les mots de passe ne correspondent pas', 'warning');
                     return;
                 }
                 
-                const updateData = {
-                    name: fullname
-                };
-                
-                if (password) {
-                    updateData.password = password;
-                }
-                
-                if (level) {
-                    updateData.level = parseInt(level);
-                }
-                
                 try {
-                    const response = await fetch(`/api/subsystem/users/${userId}`, {
+                    const response = await fetch(`/api/agents/${userId}`, {
                         method: 'PUT',
                         headers: {
                             'x-auth-token': currentToken,
                             'Content-Type': 'application/json'
                         },
-                        body: JSON.stringify(updateData)
+                        body: JSON.stringify({
+                            name: fullname,
+                            email: email,
+                            level: level,
+                            password: password || undefined
+                        })
                     });
                     
                     const data = await response.json();
@@ -2199,7 +2181,7 @@ Ventes totales: ${(user.total_sales || 0).toLocaleString()} HTG`);
             }
             
             try {
-                const response = await fetch(`/api/subsystem/users/${userId}/status`, {
+                const response = await fetch(`/api/agents/${userId}/status`, {
                     method: 'PUT',
                     headers: {
                         'x-auth-token': currentToken,
@@ -2229,7 +2211,7 @@ Ventes totales: ${(user.total_sales || 0).toLocaleString()} HTG`);
         
         // Assigner un superviseur à un agent
         window.assignSupervisor = function(userId) {
-            const user = agents.find(u => u._id === userId);
+            const user = users.find(u => u._id === userId);
             if (!user) return;
             
             document.getElementById('assign-modal').classList.add('active');
@@ -2255,7 +2237,7 @@ Ventes totales: ${(user.total_sales || 0).toLocaleString()} HTG`);
             const select = document.getElementById('select-supervisor1');
             
             try {
-                const response = await fetch('/api/subsystem/users?role=supervisor1', {
+                const response = await fetch('/api/supervisors', {
                     headers: {
                         'x-auth-token': currentToken
                     }
@@ -2264,7 +2246,7 @@ Ventes totales: ${(user.total_sales || 0).toLocaleString()} HTG`);
                 const data = await response.json();
                 
                 if (data.success) {
-                    const supervisors = data.users.filter(s => s.is_active);
+                    const supervisors = data.supervisors.filter(s => s.level === 1 && s.is_active);
                     
                     // Vider les options
                     select.innerHTML = '<option value="">Aucun</option>';
@@ -2287,7 +2269,7 @@ Ventes totales: ${(user.total_sales || 0).toLocaleString()} HTG`);
             const select = document.getElementById('select-supervisor2');
             
             try {
-                const response = await fetch('/api/subsystem/users?role=supervisor2', {
+                const response = await fetch('/api/supervisors', {
                     headers: {
                         'x-auth-token': currentToken
                     }
@@ -2296,7 +2278,7 @@ Ventes totales: ${(user.total_sales || 0).toLocaleString()} HTG`);
                 const data = await response.json();
                 
                 if (data.success) {
-                    const supervisors = data.users.filter(s => s.is_active);
+                    const supervisors = data.supervisors.filter(s => s.level === 2 && s.is_active);
                     
                     // Vider les options
                     select.innerHTML = '<option value="">Aucun</option>';
@@ -2321,41 +2303,46 @@ Ventes totales: ${(user.total_sales || 0).toLocaleString()} HTG`);
             const supervisor1Id = document.getElementById('select-supervisor1').value;
             const supervisor2Id = document.getElementById('select-supervisor2').value;
             
-            let supervisorType, supervisorId;
-            
-            if (userRole === 'agent') {
-                supervisorType = 'supervisor1';
-                supervisorId = supervisor1Id;
-            } else if (userRole === 'supervisor1') {
-                supervisorType = 'supervisor2';
-                supervisorId = supervisor2Id;
-            }
-            
             try {
-                const response = await fetch('/api/subsystem/assign', {
-                    method: 'POST',
-                    headers: {
-                        'x-auth-token': currentToken,
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        userId: userId,
-                        supervisorId: supervisorId || null,
-                        supervisorType: supervisorType
-                    })
-                });
+                let response;
                 
-                const data = await response.json();
+                if (userRole === 'agent') {
+                    response = await fetch(`/api/agents/${userId}/assign`, {
+                        method: 'PUT',
+                        headers: {
+                            'x-auth-token': currentToken,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            supervisor_id: supervisor1Id
+                        })
+                    });
+                } else if (userRole === 'supervisor1') {
+                    response = await fetch(`/api/supervisors/${userId}/assign`, {
+                        method: 'PUT',
+                        headers: {
+                            'x-auth-token': currentToken,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            supervisor2_id: supervisor2Id
+                        })
+                    });
+                }
                 
-                if (data.success) {
-                    showNotification('Assignation sauvegardée avec succès', 'success');
-                    hideAssignModal();
+                if (response) {
+                    const data = await response.json();
                     
-                    // Recharger les données
-                    const activeSection = document.querySelector('.nav-item.active').getAttribute('data-section');
-                    showSection(activeSection);
-                } else {
-                    showNotification(data.error || 'Erreur lors de l\'assignation', 'error');
+                    if (data.success) {
+                        showNotification('Assignation sauvegardée avec succès', 'success');
+                        hideAssignModal();
+                        
+                        // Recharger les données
+                        const activeSection = document.querySelector('.nav-item.active').getAttribute('data-section');
+                        showSection(activeSection);
+                    } else {
+                        showNotification(data.error || 'Erreur lors de l\'assignation', 'error');
+                    }
                 }
             } catch (error) {
                 console.error('Erreur assignation:', error);
@@ -2411,8 +2398,7 @@ Ventes totales: ${(user.total_sales || 0).toLocaleString()} HTG`);
             table.style.display = 'none';
             
             try {
-                const period = document.getElementById('filter-ticket-period').value;
-                const response = await fetch(`/api/subsystem/tickets?period=${period}`, {
+                const response = await fetch('/api/tickets', {
                     headers: {
                         'x-auth-token': currentToken
                     }
@@ -2488,15 +2474,15 @@ Ventes totales: ${(user.total_sales || 0).toLocaleString()} HTG`);
                                 </div>
                                 <div style="background-color: #f8f9fa; padding: 15px; border-radius: 8px;">
                                     <div style="font-size: 0.9rem; color: #6c757d; margin-bottom: 5px;">Agents actifs</div>
-                                    <div style="font-weight: bold; color: #2c3e50;">${report.active_agents || 0}</div>
+                                    <div style="font-weight: bold; color: #2c3e50;">${report.activeAgents || 0}</div>
                                 </div>
                                 <div style="background-color: #f8f9fa; padding: 15px; border-radius: 8px;">
-                                    <div style="font-size: 0.9rem; color: #6c757d; margin-bottom: 5px;">Ventes totales</div>
-                                    <div style="font-weight: bold; color: #2c3e50;">${(report.total_sales || 0).toLocaleString()} HTG</div>
+                                    <div style="font-size: 0.9rem; color: #6c757d; margin-bottom: 5px;">Performance</div>
+                                    <div style="font-weight: bold; color: #2c3e50;">${report.monthlyPerformance || 0}%</div>
                                 </div>
                                 <div style="background-color: #f8f9fa; padding: 15px; border-radius: 8px;">
-                                    <div style="font-size: 0.9rem; color: #6c757d; margin-bottom: 5px;">Profit</div>
-                                    <div style="font-weight: bold; color: #2c3e50;">${(report.total_profit || 0).toLocaleString()} HTG</div>
+                                    <div style="font-size: 0.9rem; color: #6c757d; margin-bottom: 5px;">Tickets résolus</div>
+                                    <div style="font-weight: bold; color: #2c3e50;">${report.ticketResolution || 0}%</div>
                                 </div>
                             </div>
                         </div>

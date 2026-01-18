@@ -55,6 +55,7 @@ const userSchema = new mongoose.Schema({
   username: { type: String, required: true, unique: true },
   password: { type: String, required: true },
   name: { type: String },
+  email: { type: String },
   role: {
     type: String,
     enum: ['master', 'subsystem', 'supervisor', 'agent'],
@@ -62,6 +63,9 @@ const userSchema = new mongoose.Schema({
   },
   level: { type: Number, default: 1 },
   subsystem_id: { type: mongoose.Schema.Types.ObjectId, ref: 'Subsystem' },
+  supervisor_id: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  supervisor2_id: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  is_active: { type: Boolean, default: true },
   dateCreation: { type: Date, default: Date.now }
 });
 
@@ -249,6 +253,14 @@ function vérifierToken(req, res, next) {
     token = req.headers['x-auth-token'];
   }
   
+  // Ajoutez cette partie pour gérer Bearer token
+  if (!token && req.headers.authorization) {
+    const authHeader = req.headers.authorization;
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      token = authHeader.substring(7); // Enlever "Bearer "
+    }
+  }
+  
   if (!token || !token.startsWith('nova_')) {
     if (req.path.startsWith('/api/')) {
       return res.status(401).json({ 
@@ -273,7 +285,144 @@ function vérifierToken(req, res, next) {
   next();
 }
 
-// =================== ROUTES DE CONNEXION ===================
+// =================== ROUTES POUR LE MASTER DASHBOARD ===================
+
+// Route d'initialisation master
+app.post('/api/master/init', async (req, res) => {
+  try {
+    const { masterUsername, masterPassword, companyName, masterEmail } = req.body;
+    
+    // Vérifier si un master existe déjà
+    const existingMaster = await User.findOne({ role: 'master' });
+    if (existingMaster) {
+      return res.status(400).json({
+        success: false,
+        error: 'Un compte master existe déjà'
+      });
+    }
+    
+    // Créer l'utilisateur master
+    const masterUser = new User({
+      username: masterUsername || 'master',
+      password: masterPassword || 'master123',
+      name: companyName || 'Master Admin',
+      email: masterEmail || 'master@novalotto.com',
+      role: 'master',
+      level: 1
+    });
+    
+    await masterUser.save();
+    
+    const token = `nova_${Date.now()}_${masterUser._id}_master_1`;
+    
+    res.json({
+      success: true,
+      token: token,
+      user: {
+        id: masterUser._id,
+        username: masterUser.username,
+        name: masterUser.name,
+        role: masterUser.role,
+        level: masterUser.level,
+        email: masterUser.email,
+        full_name: masterUser.name
+      }
+    });
+    
+  } catch (error) {
+    console.error('Erreur initialisation master:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Erreur lors de l\'initialisation'
+    });
+  }
+});
+
+// Route de connexion master
+app.post('/api/master/login', async (req, res) => {
+  try {
+    const { username, password } = req.body;
+    
+    const user = await User.findOne({ 
+      username: username,
+      password: password,
+      role: 'master'
+    });
+    
+    if (!user) {
+      return res.status(401).json({
+        success: false,
+        error: 'Identifiants master incorrects'
+      });
+    }
+    
+    const token = `nova_${Date.now()}_${user._id}_master_1`;
+    
+    res.json({
+      success: true,
+      token: token,
+      user: {
+        id: user._id,
+        username: user.username,
+        name: user.name,
+        role: user.role,
+        level: user.level,
+        email: user.email,
+        full_name: user.name
+      }
+    });
+    
+  } catch (error) {
+    console.error('Erreur connexion master:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Erreur lors de la connexion'
+    });
+  }
+});
+
+// Route pour vérifier la session master
+app.get('/api/master/check-session', vérifierToken, async (req, res) => {
+  try {
+    if (!req.tokenInfo || req.tokenInfo.role !== 'master') {
+      return res.status(403).json({
+        success: false,
+        error: 'Accès refusé. Rôle master requis.'
+      });
+    }
+    
+    const user = await User.findById(req.tokenInfo.userId);
+    
+    if (!user) {
+      return res.status(401).json({
+        success: false,
+        error: 'Utilisateur non trouvé'
+      });
+    }
+    
+    res.json({
+      success: true,
+      user: {
+        id: user._id,
+        username: user.username,
+        name: user.name,
+        role: user.role,
+        level: user.level,
+        email: user.email,
+        full_name: user.name
+      }
+    });
+    
+  } catch (error) {
+    console.error('Erreur vérification session master:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Erreur lors de la vérification de la session'
+    });
+  }
+});
+
+// =================== ROUTES DE CONNEXION GÉNÉRALES ===================
 
 app.post('/api/auth/login', async (req, res) => {
   try {
@@ -334,7 +483,8 @@ app.post('/api/auth/login', async (req, res) => {
         username: user.username,
         name: user.name,
         role: user.role,
-        level: user.level
+        level: user.level,
+        email: user.email
       }
     });
 
@@ -988,6 +1138,7 @@ app.post('/api/check-winners', vérifierToken, async (req, res) => {
     });
   }
 });
+
 // =================== ROUTES POUR LES ADMINISTRATEURS DE SOUS-SYSTÈMES ===================
 
 // Route pour créer un utilisateur (agent/superviseur) dans le sous-système
@@ -1634,17 +1785,25 @@ app.get('/api/auth/verify', (req, res) => {
 app.get('/api/statistics', vérifierToken, async (req, res) => {
   try {
     const totalUsers = await User.countDocuments();
-    const activeAgents = await User.countDocuments({ role: 'agent' });
-    const activeSupervisors = await User.countDocuments({ role: 'supervisor' });
-    const activeSubsystems = await User.countDocuments({ role: 'subsystem' });
+    const activeAgents = await User.countDocuments({ role: 'agent', is_active: true });
+    const activeSupervisors = await User.countDocuments({ role: 'supervisor', is_active: true });
+    const activeSubsystems = await User.countDocuments({ role: 'subsystem', is_active: true });
+    
+    // Calculer les ventes totales depuis les tickets
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    const todayTickets = await Ticket.find({ date: { $gte: today } });
+    const totalSales = todayTickets.reduce((sum, ticket) => sum + ticket.total, 0);
     
     const statistics = {
       active_agents: activeAgents,
       active_supervisors: activeSupervisors,
       active_subsystems: activeSubsystems,
-      total_sales: Math.floor(Math.random() * 10000000) + 5000000,
-      total_profit: Math.floor(Math.random() * 3000000) + 1000000,
-      total_users: totalUsers
+      total_sales: totalSales,
+      total_profit: Math.floor(totalSales * 0.3), // 30% de profit estimé
+      total_users: totalUsers,
+      today_tickets: todayTickets.length
     };
     
     res.json({
@@ -1652,6 +1811,7 @@ app.get('/api/statistics', vérifierToken, async (req, res) => {
       statistics: statistics
     });
   } catch (error) {
+    console.error('Erreur chargement statistiques:', error);
     res.status(500).json({
       success: false,
       error: 'Erreur lors du chargement des statistiques'
@@ -1662,14 +1822,27 @@ app.get('/api/statistics', vérifierToken, async (req, res) => {
 app.get('/api/agents', vérifierToken, async (req, res) => {
   try {
     const agents = await User.find({ 
-      role: 'agent'
+      role: 'agent',
+      is_active: true
     }).select('-password');
     
-    const agentsWithStats = agents.map(agent => {
-      const total_sales = Math.floor(Math.random() * 100000) + 10000;
-      const total_payout = Math.floor(total_sales * 0.6);
-      const total_tickets = Math.floor(Math.random() * 500) + 50;
-      const winning_tickets = Math.floor(total_tickets * 0.3);
+    const agentsWithStats = await Promise.all(agents.map(async (agent) => {
+      // Calculer les statistiques réelles depuis la base de données
+      const agentTickets = await Ticket.find({ agent_id: agent._id });
+      const total_sales = agentTickets.reduce((sum, ticket) => sum + ticket.total, 0);
+      const total_tickets = agentTickets.length;
+      
+      // Calculer les gains (pour la démo, on utilise un ratio)
+      const winningTickets = await Winner.find({ agent_id: agent._id });
+      const total_payout = winningTickets.reduce((sum, winner) => sum + winner.total_winnings, 0);
+      const winning_tickets = winningTickets.length;
+      
+      // Vérifier si l'agent est en ligne (dernière activité dans les 5 minutes)
+      const lastActive = agentTickets.length > 0 ? 
+        Math.max(...agentTickets.map(t => t.date.getTime())) : 
+        agent.dateCreation.getTime();
+      
+      const is_online = (Date.now() - lastActive) < (5 * 60 * 1000); // 5 minutes
       
       return {
         ...agent.toObject(),
@@ -1677,16 +1850,18 @@ app.get('/api/agents', vérifierToken, async (req, res) => {
         total_payout: total_payout,
         total_tickets: total_tickets,
         winning_tickets: winning_tickets,
-        is_online: Math.random() > 0.5,
-        last_active: new Date(Date.now() - Math.random() * 10000000000)
+        is_online: is_online,
+        last_active: new Date(lastActive),
+        subsystem_name: agent.subsystem_id ? 'Sous-système' : 'N/A'
       };
-    });
+    }));
     
     res.json({
       success: true,
       agents: agentsWithStats
     });
   } catch (error) {
+    console.error('Erreur chargement agents:', error);
     res.status(500).json({
       success: false,
       error: 'Erreur lors du chargement des agents'
@@ -1697,27 +1872,46 @@ app.get('/api/agents', vérifierToken, async (req, res) => {
 app.get('/api/supervisors', vérifierToken, async (req, res) => {
   try {
     const supervisors = await User.find({ 
-      role: 'supervisor'
+      role: 'supervisor',
+      is_active: true
     }).select('-password');
     
-    const supervisorsWithStats = supervisors.map(supervisor => {
-      const agents_count = Math.floor(Math.random() * 10) + 1;
-      const total_sales = Math.floor(Math.random() * 500000) + 50000;
-      const total_payout = Math.floor(total_sales * 0.65);
+    const supervisorsWithStats = await Promise.all(supervisors.map(async (supervisor) => {
+      // Compter les agents sous la supervision
+      const agents_count = await User.countDocuments({ 
+        role: 'agent',
+        subsystem_id: supervisor.subsystem_id
+      });
+      
+      // Calculer les ventes des agents de ce superviseur
+      const agentIds = await User.find({ 
+        role: 'agent',
+        subsystem_id: supervisor.subsystem_id
+      }).select('_id');
+      
+      const agentIdsArray = agentIds.map(a => a._id);
+      const agentTickets = await Ticket.find({ agent_id: { $in: agentIdsArray } });
+      const total_sales = agentTickets.reduce((sum, ticket) => sum + ticket.total, 0);
+      
+      // Calculer les paiements
+      const winningTickets = await Winner.find({ agent_id: { $in: agentIdsArray } });
+      const total_payout = winningTickets.reduce((sum, winner) => sum + winner.total_winnings, 0);
       
       return {
         ...supervisor.toObject(),
         agents_count: agents_count,
         total_sales: total_sales,
-        total_payout: total_payout
+        total_payout: total_payout,
+        subsystem_name: supervisor.subsystem_id ? 'Sous-système' : 'N/A'
       };
-    });
+    }));
     
     res.json({
       success: true,
       supervisors: supervisorsWithStats
     });
   } catch (error) {
+    console.error('Erreur chargement superviseurs:', error);
     res.status(500).json({
       success: false,
       error: 'Erreur lors du chargement des superviseurs'
@@ -1738,15 +1932,34 @@ app.post('/api/agents/create', vérifierToken, async (req, res) => {
         await newAgent.save();
         res.json({ success: true, message: 'Agent créé avec succès' });
     } catch (error) {
+        console.error('Erreur création agent:', error);
         res.status(500).json({ success: false, error: 'Erreur lors de la création de l\'agent' });
     }
 });
 
 app.get('/api/activities/recent', vérifierToken, async (req, res) => {
     try {
-        const activities = [];
+        // Récupérer les dernières activités (tickets, connexions, etc.)
+        const recentTickets = await Ticket.find()
+            .sort({ date: -1 })
+            .limit(20)
+            .populate('agent_id', 'name username');
+        
+        const activities = recentTickets.map(ticket => ({
+            type: 'ticket_created',
+            user: ticket.agent_name,
+            action: `Ticket #${ticket.number} créé`,
+            timestamp: ticket.date,
+            details: {
+                amount: ticket.total,
+                draw: ticket.draw,
+                draw_time: ticket.draw_time
+            }
+        }));
+        
         res.json({ success: true, activities });
     } catch (error) {
+        console.error('Erreur chargement activités:', error);
         res.status(500).json({ success: false, error: 'Erreur lors du chargement des activités' });
     }
 });
@@ -1754,23 +1967,85 @@ app.get('/api/activities/recent', vérifierToken, async (req, res) => {
 app.get('/api/reports/generate', vérifierToken, async (req, res) => {
     try {
         const { period } = req.query;
+        
+        let startDate = new Date();
+        let endDate = new Date();
+        
+        // Définir la période
+        switch(period) {
+            case 'today':
+                startDate.setHours(0, 0, 0, 0);
+                break;
+            case 'week':
+                startDate.setDate(startDate.getDate() - 7);
+                break;
+            case 'month':
+                startDate.setMonth(startDate.getMonth() - 1);
+                break;
+            case 'year':
+                startDate.setFullYear(startDate.getFullYear() - 1);
+                break;
+            default:
+                startDate.setDate(startDate.getDate() - 7); // Par défaut: semaine
+        }
+        
+        // Récupérer les tickets dans la période
+        const tickets = await Ticket.find({
+            date: { $gte: startDate, $lte: endDate }
+        });
+        
+        const totalSales = tickets.reduce((sum, ticket) => sum + ticket.total, 0);
+        const ticketCount = tickets.length;
+        
+        // Récupérer les gagnants dans la période
+        const winners = await Winner.find({
+            date: { $gte: startDate, $lte: endDate }
+        });
+        
+        const totalPayout = winners.reduce((sum, winner) => sum + winner.total_winnings, 0);
+        const profit = totalSales - totalPayout;
+        
         const report = {
             period: period,
-            monthlyPerformance: 85,
-            ticketResolution: 92,
-            activeAgents: await User.countDocuments({ role: 'agent' }),
-            pendingTickets: 5
+            start_date: startDate,
+            end_date: endDate,
+            total_tickets: ticketCount,
+            total_sales: totalSales,
+            total_payout: totalPayout,
+            total_profit: profit,
+            profit_margin: totalSales > 0 ? (profit / totalSales * 100).toFixed(2) + '%' : '0%',
+            active_agents: await User.countDocuments({ role: 'agent', is_active: true })
         };
+        
         res.json({ success: true, report });
     } catch (error) {
+        console.error('Erreur génération rapport:', error);
         res.status(500).json({ success: false, error: 'Erreur lors de la génération du rapport' });
     }
 });
 
 app.post('/api/system/settings', vérifierToken, async (req, res) => {
     try {
+        const settings = req.body;
+        
+        // Sauvegarder les paramètres dans la base de données
+        let config = await Config.findOne();
+        if (!config) {
+            config = new Config();
+        }
+        
+        if (settings.company_name) config.company_name = settings.company_name;
+        if (settings.company_phone) config.company_phone = settings.company_phone;
+        if (settings.company_address) config.company_address = settings.company_address;
+        if (settings.report_title) config.report_title = settings.report_title;
+        if (settings.report_phone) config.report_phone = settings.report_phone;
+        if (settings.logo_url) config.logo_url = settings.logo_url;
+        
+        await config.save();
+        
         res.json({ success: true, message: 'Paramètres sauvegardés avec succès' });
     } catch (error) {
+        console.error('Erreur sauvegarde paramètres:', error);
         res.status(500).json({ success: false, error: 'Erreur lors de la sauvegarde des paramètres' });
     }
 });
@@ -1805,7 +2080,7 @@ app.post('/api/master/subsystems', vérifierToken, async (req, res) => {
       });
     }
 
-    const existingSubsystem = await Subsystem.findOne({ subdomain: subdomain });
+    const existingSubsystem = await Subsystem.findOne({ subdomain: subdomain.toLowerCase() });
     if (existingSubsystem) {
       return res.status(400).json({
         success: false,
@@ -1822,6 +2097,7 @@ app.post('/api/master/subsystems', vérifierToken, async (req, res) => {
         username: contact_email,
         password: generatedPassword,
         name: name,
+        email: contact_email,
         role: 'subsystem',
         level: 1
       });
@@ -1849,7 +2125,13 @@ app.post('/api/master/subsystems', vérifierToken, async (req, res) => {
       subscription_months: subscription_months || 1,
       subscription_expires,
       admin_user: adminUser._id,
-      is_active: true
+      is_active: true,
+      stats: {
+        active_users: 0,
+        today_sales: 0,
+        today_tickets: 0,
+        usage_percentage: 0
+      }
     });
 
     await subsystem.save();
@@ -1857,14 +2139,35 @@ app.post('/api/master/subsystems', vérifierToken, async (req, res) => {
     adminUser.subsystem_id = subsystem._id;
     await adminUser.save();
 
-    const domain = process.env.DOMAIN || req.headers.host?.replace('master.', '') || 'novalotto.com';
-    const access_url = `https://${subdomain}.${domain}`;
+    // Obtenir le domaine de base
+    let domain = 'novalotto.com';
+    if (req.headers.host) {
+      const hostParts = req.headers.host.split('.');
+      if (hostParts.length > 2) {
+        domain = hostParts.slice(1).join('.');
+      } else {
+        domain = req.headers.host;
+      }
+    }
+    
+    // Retirer "master." du domaine si présent
+    domain = domain.replace('master.', '');
+    
+    const access_url = `https://${subdomain.toLowerCase()}.${domain}`;
 
     res.json({
       success: true,
       subsystem: {
         id: subsystem._id,
-        ...subsystem.toObject()
+        name: subsystem.name,
+        subdomain: subsystem.subdomain,
+        contact_email: subsystem.contact_email,
+        contact_phone: subsystem.contact_phone,
+        max_users: subsystem.max_users,
+        subscription_type: subsystem.subscription_type,
+        subscription_expires: subsystem.subscription_expires,
+        is_active: subsystem.is_active,
+        created_at: subsystem.created_at
       },
       admin_credentials: {
         username: contact_email,
@@ -1878,7 +2181,7 @@ app.post('/api/master/subsystems', vérifierToken, async (req, res) => {
     console.error('Erreur création sous-système:', error);
     res.status(500).json({
       success: false,
-      error: 'Erreur serveur lors de la création du sous-système'
+      error: 'Erreur serveur lors de la création du sous-système: ' + error.message
     });
   }
 });
@@ -1925,11 +2228,32 @@ app.get('/api/master/subsystems', vérifierToken, async (req, res) => {
     const subsystems = await Subsystem.find(query)
       .skip(skip)
       .limit(limit)
-      .sort({ created_at: -1 });
+      .sort({ created_at: -1 })
+      .populate('admin_user', 'username name email');
 
-    const formattedSubsystems = subsystems.map(subsystem => {
-      const usage_percentage = Math.floor((Math.random() * 100) + 1);
-
+    const formattedSubsystems = await Promise.all(subsystems.map(async (subsystem) => {
+      // Compter les utilisateurs actifs dans ce sous-système
+      const activeUsers = await User.countDocuments({ 
+        subsystem_id: subsystem._id,
+        is_active: true 
+      });
+      
+      // Calculer les ventes du jour pour ce sous-système
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      
+      const todayTickets = await Ticket.find({ 
+        subsystem_id: subsystem._id,
+        date: { $gte: today }
+      });
+      
+      const todaySales = todayTickets.reduce((sum, ticket) => sum + ticket.total, 0);
+      const todayTicketCount = todayTickets.length;
+      
+      // Calculer le pourcentage d'utilisation
+      const usage_percentage = subsystem.max_users > 0 ? 
+        Math.round((activeUsers / subsystem.max_users) * 100) : 0;
+      
       return {
         id: subsystem._id,
         name: subsystem.name,
@@ -1942,13 +2266,14 @@ app.get('/api/master/subsystems', vérifierToken, async (req, res) => {
         is_active: subsystem.is_active,
         created_at: subsystem.created_at,
         stats: {
-          active_users: Math.floor(Math.random() * subsystem.max_users),
-          today_sales: Math.floor(Math.random() * 10000) + 1000,
-          today_tickets: Math.floor(Math.random() * 100) + 10,
+          active_users: activeUsers,
+          today_sales: todaySales,
+          today_tickets: todayTicketCount,
           usage_percentage: usage_percentage
-        }
+        },
+        users: activeUsers
       };
-    });
+    }));
 
     res.json({
       success: true,
@@ -1981,7 +2306,7 @@ app.get('/api/master/subsystems/:id', vérifierToken, async (req, res) => {
 
     const subsystemId = req.params.id;
 
-    const subsystem = await Subsystem.findById(subsystemId);
+    const subsystem = await Subsystem.findById(subsystemId).populate('admin_user', 'username name email');
 
     if (!subsystem) {
       return res.status(404).json({
@@ -1990,12 +2315,38 @@ app.get('/api/master/subsystems/:id', vérifierToken, async (req, res) => {
       });
     }
 
-    const users = [
-      { role: 'owner', count: 1 },
-      { role: 'admin', count: Math.floor(Math.random() * 3) + 1 },
-      { role: 'supervisor', count: Math.floor(Math.random() * 5) + 1 },
-      { role: 'agent', count: Math.floor(Math.random() * subsystem.max_users) + 5 }
-    ];
+    // Compter les utilisateurs par rôle
+    const users = await User.find({ subsystem_id: subsystemId, is_active: true });
+    
+    const usersByRole = {
+      owner: 0,
+      admin: 0,
+      supervisor: 0,
+      agent: 0
+    };
+    
+    users.forEach(user => {
+      if (user.role === 'subsystem') usersByRole.owner++;
+      else if (user.role === 'supervisor') usersByRole.supervisor++;
+      else if (user.role === 'agent') usersByRole.agent++;
+    });
+
+    // Calculer les statistiques du jour
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    const todayTickets = await Ticket.find({ 
+      subsystem_id: subsystemId,
+      date: { $gte: today }
+    });
+    
+    const todaySales = todayTickets.reduce((sum, ticket) => sum + ticket.total, 0);
+    const todayTicketCount = todayTickets.length;
+    
+    // Calculer le pourcentage d'utilisation
+    const activeUsers = users.length;
+    const usage_percentage = subsystem.max_users > 0 ? 
+      Math.round((activeUsers / subsystem.max_users) * 100) : 0;
 
     res.json({
       success: true,
@@ -2011,12 +2362,13 @@ app.get('/api/master/subsystems/:id', vérifierToken, async (req, res) => {
         is_active: subsystem.is_active,
         created_at: subsystem.created_at,
         stats: {
-          active_users: Math.floor(Math.random() * subsystem.max_users),
-          today_sales: Math.floor(Math.random() * 10000) + 1000,
-          today_tickets: Math.floor(Math.random() * 100) + 10,
-          usage_percentage: Math.floor((Math.random() * 100) + 1)
+          active_users: activeUsers,
+          today_sales: todaySales,
+          today_tickets: todayTicketCount,
+          usage_percentage: usage_percentage
         },
-        users: users
+        users: users,
+        users_by_role: usersByRole
       }
     });
 
@@ -2051,6 +2403,12 @@ app.put('/api/master/subsystems/:id/deactivate', vérifierToken, async (req, res
 
     subsystem.is_active = false;
     await subsystem.save();
+
+    // Désactiver également tous les utilisateurs du sous-système
+    await User.updateMany(
+      { subsystem_id: subsystemId },
+      { $set: { is_active: false } }
+    );
 
     res.json({
       success: true,
@@ -2089,6 +2447,12 @@ app.put('/api/master/subsystems/:id/activate', vérifierToken, async (req, res) 
     subsystem.is_active = true;
     await subsystem.save();
 
+    // Réactiver l'administrateur du sous-système
+    await User.findByIdAndUpdate(
+      subsystem.admin_user,
+      { $set: { is_active: true } }
+    );
+
     res.json({
       success: true,
       message: 'Sous-système activé avec succès'
@@ -2114,11 +2478,30 @@ app.get('/api/master/subsystems/stats', vérifierToken, async (req, res) => {
 
     const subsystems = await Subsystem.find();
 
-    const subsystemsWithStats = subsystems.map(subsystem => {
-      const total_sales = Math.floor(Math.random() * 1000000) + 100000;
-      const total_payout = Math.floor(total_sales * 0.7);
+    const subsystemsWithStats = await Promise.all(subsystems.map(async (subsystem) => {
+      // Calculer les ventes totales pour ce sous-système
+      const tickets = await Ticket.find({ subsystem_id: subsystem._id });
+      const total_sales = tickets.reduce((sum, ticket) => sum + ticket.total, 0);
+      
+      // Calculer les paiements (gains)
+      const agentIds = await User.find({ 
+        subsystem_id: subsystem._id,
+        role: 'agent'
+      }).select('_id');
+      
+      const agentIdsArray = agentIds.map(a => a._id);
+      const winningTickets = await Winner.find({ agent_id: { $in: agentIdsArray } });
+      const total_payout = winningTickets.reduce((sum, winner) => sum + winner.total_winnings, 0);
+      
       const profit = total_sales - total_payout;
-      const active_agents = Math.floor(Math.random() * 20) + 1;
+      const active_agents = await User.countDocuments({ 
+        subsystem_id: subsystem._id,
+        role: 'agent',
+        is_active: true
+      });
+      
+      // Commission master (10% du profit)
+      const masterCommission = Math.round(profit * 0.1);
 
       return {
         id: subsystem._id,
@@ -2127,9 +2510,11 @@ app.get('/api/master/subsystems/stats', vérifierToken, async (req, res) => {
         total_sales: total_sales,
         total_payout: total_payout,
         profit: profit,
-        active_agents: active_agents
+        master_commission: masterCommission,
+        active_agents: active_agents,
+        profit_rate: total_sales > 0 ? Math.round((profit / total_sales) * 100) : 0
       };
-    });
+    }));
 
     res.json({
       success: true,
@@ -2156,50 +2541,104 @@ app.get('/api/master/consolidated-report', vérifierToken, async (req, res) => {
 
     const { start_date, end_date, group_by } = req.query;
 
+    // Convertir les dates
+    const startDate = start_date ? new Date(start_date) : new Date();
+    const endDate = end_date ? new Date(end_date) : new Date();
+    
+    if (start_date) startDate.setHours(0, 0, 0, 0);
+    if (end_date) endDate.setHours(23, 59, 59, 999);
+
+    // Récupérer tous les tickets dans la période
+    const tickets = await Ticket.find({
+      date: { $gte: startDate, $lte: endDate }
+    }).populate('subsystem_id', 'name subdomain');
+
+    // Récupérer tous les gagnants dans la période
+    const winners = await Winner.find({
+      date: { $gte: startDate, $lte: endDate }
+    });
+
+    // Calculer les totaux
+    const total_tickets = tickets.length;
+    const total_sales = tickets.reduce((sum, ticket) => sum + ticket.total, 0);
+    const total_payout = winners.reduce((sum, winner) => sum + winner.total_winnings, 0);
+    const total_profit = total_sales - total_payout;
+
+    // Regrouper par sous-système
+    const subsystemsMap = new Map();
+    
+    tickets.forEach(ticket => {
+      if (!ticket.subsystem_id) return;
+      
+      const subsystemId = ticket.subsystem_id._id.toString();
+      if (!subsystemsMap.has(subsystemId)) {
+        subsystemsMap.set(subsystemId, {
+          subsystem_id: subsystemId,
+          subsystem_name: ticket.subsystem_id.name,
+          tickets_count: 0,
+          total_sales: 0,
+          total_payout: 0,
+          profit: 0
+        });
+      }
+      
+      const subsystemData = subsystemsMap.get(subsystemId);
+      subsystemData.tickets_count++;
+      subsystemData.total_sales += ticket.total;
+    });
+
+    // Ajouter les paiements par sous-système
+    for (const winner of winners) {
+      const ticket = await Ticket.findById(winner.ticket_id).populate('subsystem_id');
+      if (!ticket || !ticket.subsystem_id) continue;
+      
+      const subsystemId = ticket.subsystem_id._id.toString();
+      if (subsystemsMap.has(subsystemId)) {
+        const subsystemData = subsystemsMap.get(subsystemId);
+        subsystemData.total_payout += winner.total_winnings;
+        subsystemData.profit = subsystemData.total_sales - subsystemData.total_payout;
+      }
+    }
+
+    const subsystems_detail = Array.from(subsystemsMap.values());
+
+    // Breakdown quotidien si group_by = 'day'
+    let daily_breakdown = [];
+    if (group_by === 'day') {
+      const dailyMap = new Map();
+      
+      tickets.forEach(ticket => {
+        const dateStr = ticket.date.toISOString().split('T')[0];
+        if (!dailyMap.has(dateStr)) {
+          dailyMap.set(dateStr, {
+            date: dateStr,
+            ticket_count: 0,
+            total_amount: 0
+          });
+        }
+        
+        const dayData = dailyMap.get(dateStr);
+        dayData.ticket_count++;
+        dayData.total_amount += ticket.total;
+      });
+      
+      daily_breakdown = Array.from(dailyMap.values()).sort((a, b) => a.date.localeCompare(b.date));
+    }
+
     const report = {
       period: {
-        start_date: start_date || new Date().toISOString().split('T')[0],
-        end_date: end_date || new Date().toISOString().split('T')[0]
+        start_date: startDate.toISOString().split('T')[0],
+        end_date: endDate.toISOString().split('T')[0]
       },
       summary: {
-        total_tickets: 1234,
-        total_sales: 5000000,
-        total_payout: 3500000,
-        total_profit: 1500000
+        total_tickets: total_tickets,
+        total_sales: total_sales,
+        total_payout: total_payout,
+        total_profit: total_profit,
+        profit_margin: total_sales > 0 ? Math.round((total_profit / total_sales) * 100) : 0
       },
-      subsystems_detail: [
-        {
-          subsystem_id: '1',
-          subsystem_name: 'Borlette Cap-Haïtien',
-          tickets_count: 500,
-          total_sales: 2000000,
-          total_payout: 1400000,
-          profit: 600000
-        },
-        {
-          subsystem_id: '2',
-          subsystem_name: 'Lotto Port-au-Prince',
-          tickets_count: 400,
-          total_sales: 1500000,
-          total_payout: 1050000,
-          profit: 450000
-        },
-        {
-          subsystem_id: '3',
-          subsystem_name: 'Grap Gonaïves',
-          tickets_count: 334,
-          total_sales: 1500000,
-          total_payout: 1050000,
-          profit: 450000
-        }
-      ],
-      daily_breakdown: [
-        {
-          date: new Date().toISOString().split('T')[0],
-          ticket_count: 100,
-          total_amount: 500000
-        }
-      ]
+      subsystems_detail: subsystems_detail,
+      daily_breakdown: daily_breakdown
     };
 
     res.json({
@@ -2304,7 +2743,8 @@ app.get('/api/auth/check', vérifierToken, async (req, res) => {
         username: user.username,
         name: user.name,
         role: user.role,
-        level: user.level
+        level: user.level,
+        email: user.email
       }
     });
   } catch (error) {
@@ -2345,6 +2785,7 @@ app.post('/api/init/master', async (req, res) => {
       message: 'Compte master créé avec succès'
     });
   } catch (error) {
+    console.error('Erreur création compte master:', error);
     res.status(500).json({
       success: false,
       error: 'Erreur lors de la création du compte master'
@@ -2379,6 +2820,7 @@ app.post('/api/init/subsystem', async (req, res) => {
       message: 'Compte subsystem créé avec succès'
     });
   } catch (error) {
+    console.error('Erreur création compte subsystem:', error);
     res.status(500).json({
       success: false,
       error: 'Erreur lors de la création du compte subsystem'
@@ -2490,9 +2932,41 @@ app.listen(PORT, () => {
   console.log('  POST   /api/check-winners               - Vérifier gagnants');
   console.log('  GET    /api/auth/check                  - Vérifier session');
   console.log('');
-  console.log('📋 Routes API SOUS-SYSTÈMES disponibles:');
-  console.log('  GET    /api/subsystems/mine             - Sous-systèmes de l\'utilisateur');
-  console.log('  POST   /api/master/subsystems           - Créer sous-système (master)');
-  console.log('  GET    /api/master/subsystems           - Lister sous-systèmes (master)');
-  console.log('  GET    /api/master/subsystems/:id       - Détails sous-système (master)');
+  console.log('📋 Routes API SOUS-SYSTÈMES (Admin) disponibles:');
+  console.log('  POST   /api/subsystem/users/create      - Créer utilisateur');
+  console.log('  GET    /api/subsystem/users             - Lister utilisateurs');
+  console.log('  PUT    /api/subsystem/users/:id/status  - Activer/désactiver utilisateur');
+  console.log('  PUT    /api/subsystem/users/:id         - Modifier utilisateur');
+  console.log('  POST   /api/subsystem/assign            - Assigner superviseur');
+  console.log('  GET    /api/subsystem/stats             - Statistiques sous-système');
+  console.log('  GET    /api/subsystem/activities        - Activités récentes');
+  console.log('  GET    /api/subsystem/tickets           - Tickets du sous-système');
+  console.log('');
+  console.log('📋 Routes API MASTER DASHBOARD disponibles:');
+  console.log('  POST   /api/master/init                 - Initialiser compte master');
+  console.log('  POST   /api/master/login                - Connexion master');
+  console.log('  GET    /api/master/check-session        - Vérifier session master');
+  console.log('  POST   /api/master/subsystems           - Créer sous-système');
+  console.log('  GET    /api/master/subsystems           - Lister sous-systèmes');
+  console.log('  GET    /api/master/subsystems/:id       - Détails sous-système');
+  console.log('  PUT    /api/master/subsystems/:id/deactivate - Désactiver sous-système');
+  console.log('  PUT    /api/master/subsystems/:id/activate   - Activer sous-système');
+  console.log('  GET    /api/master/subsystems/stats     - Statistiques sous-systèmes');
+  console.log('  GET    /api/master/consolidated-report  - Rapport consolidé');
+  console.log('');
+  console.log('📋 Routes API générales:');
+  console.log('  POST   /api/auth/login                  - Connexion générale');
+  console.log('  GET    /api/health                      - Santé du serveur');
+  console.log('  GET    /api/statistics                  - Statistiques globales');
+  console.log('  GET    /api/agents                      - Liste agents');
+  console.log('  GET    /api/supervisors                 - Liste superviseurs');
+  console.log('  POST   /api/agents/create               - Créer agent');
+  console.log('  GET    /api/activities/recent           - Activités récentes');
+  console.log('  GET    /api/reports/generate            - Générer rapport');
+  console.log('  POST   /api/system/settings             - Sauvegarder paramètres');
+  console.log('');
+  console.log('⚠️  IMPORTANT: Assurez-vous d\'avoir un compte master dans la base de données:');
+  console.log('   - username: master');
+  console.log('   - password: master123');
+  console.log('   - role: master');
 });

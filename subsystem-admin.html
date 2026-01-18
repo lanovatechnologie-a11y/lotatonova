@@ -149,7 +149,7 @@
             justify-content: space-between;
             align-items: center;
             padding: 15px 0;
-            margin-bottom: 25px;
+            margin-bottom: 15px;
             border-bottom: 1px solid #ddd;
         }
         
@@ -1032,6 +1032,35 @@
         .connection-offline {
             background-color: var(--warning-color);
         }
+        
+        /* Notification de sous-système */
+        .subsystem-connection-notice {
+            background: linear-gradient(135deg, #2c3e50, #3498db);
+            color: white;
+            padding: 12px 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            animation: slideDown 0.3s ease-out;
+        }
+        
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .subsystem-connection-notice i {
+            font-size: 1.2rem;
+        }
     </style>
 </head>
 <body>
@@ -1111,6 +1140,20 @@
                     <i class="fas fa-sign-out-alt"></i> Déconnexion
                 </button>
             </div>
+        </div>
+        
+        <!-- Notification de sous-système connecté -->
+        <div id="subsystem-connection-notice" class="subsystem-connection-notice" style="display: none;">
+            <i class="fas fa-check-circle"></i>
+            <div style="flex: 1;">
+                <div style="font-weight: bold;">Sous-système actif</div>
+                <div style="font-size: 0.9rem; opacity: 0.9;" id="subsystem-notice-text">
+                    Vous êtes connecté au sous-système: <strong id="active-subsystem-name">Chargement...</strong>
+                </div>
+            </div>
+            <button onclick="hideSubsystemNotice()" style="background: none; border: none; color: white; cursor: pointer;">
+                <i class="fas fa-times"></i>
+            </button>
         </div>
 
         <!-- Message quand aucun sous-système n'est disponible -->
@@ -1717,7 +1760,7 @@ async function apiFetchSimple(endpoint, options = {}) {
         return { success: false, error: 'Non authentifié' };
     }
     
-    const url = `${API_BASE_URL}${endpoint}`;
+    let url = `${API_BASE_URL}${endpoint}`;
     const headers = {
         'Content-Type': 'application/json',
         ...options.headers
@@ -1797,6 +1840,34 @@ function showConnectionNotification(userName, userType, isOnline) {
     }, 5000);
 }
 
+// Afficher la notification de sous-système connecté
+function showSubsystemConnectionNotice(subsystemName) {
+    const notice = document.getElementById('subsystem-connection-notice');
+    const nameElement = document.getElementById('active-subsystem-name');
+    const textElement = document.getElementById('subsystem-notice-text');
+    
+    if (notice && nameElement) {
+        nameElement.textContent = subsystemName;
+        textElement.innerHTML = `Vous êtes connecté au sous-système: <strong>${subsystemName}</strong>`;
+        notice.style.display = 'flex';
+        
+        // Masquer automatiquement après 10 secondes
+        setTimeout(() => {
+            if (notice.style.display !== 'none') {
+                notice.style.opacity = '0.7';
+            }
+        }, 8000);
+    }
+}
+
+// Masquer la notification de sous-système
+function hideSubsystemNotice() {
+    const notice = document.getElementById('subsystem-connection-notice');
+    if (notice) {
+        notice.style.display = 'none';
+    }
+}
+
 // Vérifier les changements d'état des utilisateurs (SIMULÉ)
 async function checkUserStatusChanges() {
     if (!currentSubsystem) return;
@@ -1851,9 +1922,16 @@ function updateUserInterface() {
         
         document.getElementById('system-status-dot').className = 'status-dot';
         document.getElementById('system-status-text').textContent = 'Système actif';
+        
+        // Afficher la notification de sous-système connecté
+        showSubsystemConnectionNotice(currentSubsystem.name);
+        
+        // Mettre à jour le titre de la page
+        document.getElementById('page-title').textContent = `Tableau de bord - ${currentSubsystem.name}`;
     } else {
         document.getElementById('no-subsystem-message').style.display = 'block';
         document.getElementById('subsystem-info-alert').style.display = 'none';
+        document.getElementById('subsystem-connection-notice').style.display = 'none';
         
         document.querySelectorAll('.section-content').forEach(section => {
             section.style.display = 'none';
@@ -1890,55 +1968,55 @@ async function getUserSubsystems() {
                 
                 console.log('Utilisateur trouvé:', currentUser);
                 
-                // Si l'utilisateur a un subsystem_id, on le récupère
+                // CORRECTION : Un admin sous-système n'a qu'UN SEUL sous-système
+                // On cherche d'abord par admin_id (ID de l'administrateur)
+                console.log('Recherche par admin_id:', currentUser.id);
+                const subsystemsByAdminResponse = await fetch(`${API_BASE_URL}/api/master/subsystems?admin_id=${currentUser.id}&token=${token}`);
+                
+                if (subsystemsByAdminResponse.ok) {
+                    const data = await subsystemsByAdminResponse.json();
+                    if (data.success && data.subsystems && data.subsystems.length > 0) {
+                        console.log('Sous-système trouvé par admin_id:', data.subsystems);
+                        return data.subsystems;
+                    }
+                }
+                
+                // Si pas trouvé par admin_id, on cherche par subsystem_id de l'utilisateur
                 if (currentUser.subsystem_id) {
-                    console.log('Recherche sous-système avec ID:', currentUser.subsystem_id);
+                    console.log('Recherche sous-système par ID:', currentUser.subsystem_id);
                     const subsystemResponse = await fetch(`${API_BASE_URL}/api/master/subsystems/${currentUser.subsystem_id}?token=${token}`);
                     
                     if (subsystemResponse.ok) {
                         const subsystemData = await subsystemResponse.json();
                         if (subsystemData.success && subsystemData.subsystem) {
-                            console.log('Sous-système trouvé:', subsystemData.subsystem);
+                            console.log('Sous-système trouvé par ID:', subsystemData.subsystem);
                             return [subsystemData.subsystem];
                         }
                     }
                 }
                 
-                // Sinon, on essaie de chercher par l'email/username
+                // Si toujours pas trouvé, on cherche par email/username
                 console.log('Recherche par email:', currentUser.username);
-                const subsystemsResponse = await fetch(`${API_BASE_URL}/api/master/subsystems?search=${currentUser.username}&token=${token}`);
+                const searchResponse = await fetch(`${API_BASE_URL}/api/master/subsystems?search=${currentUser.username}&token=${token}`);
                 
-                if (subsystemsResponse.ok) {
-                    const data = await subsystemsResponse.json();
+                if (searchResponse.ok) {
+                    const data = await searchResponse.json();
                     if (data.success && data.subsystems && data.subsystems.length > 0) {
                         console.log('Sous-systèmes trouvés par recherche:', data.subsystems);
                         return data.subsystems;
                     }
                 }
+                
+                console.warn('Aucun sous-système trouvé pour cet administrateur');
+                return [];
             }
         }
         
-        console.warn('Aucun sous-système trouvé, utilisation de données de démo');
-        // Données de démo pour le testing
-        return [{
-            id: currentUser.subsystem_id || 'demo123',
-            name: currentUser.name || 'Sous-Système Démo',
-            subdomain: 'demo',
-            contact_email: currentUser.username || 'demo@demo.com',
-            max_users: 50,
-            is_active: true
-        }];
+        console.error('Échec de vérification de l\'utilisateur');
+        return [];
     } catch (error) {
         console.error('Erreur chargement sous-systèmes:', error);
-        // Données de démo en cas d'erreur
-        return [{
-            id: 'demo123',
-            name: 'Sous-Système Démo',
-            subdomain: 'demo',
-            contact_email: 'demo@demo.com',
-            max_users: 50,
-            is_active: true
-        }];
+        return [];
     }
 }
 
@@ -1991,6 +2069,9 @@ async function initializeSubsystemData(subsystemId) {
             
             // Démarrer la surveillance des connexions
             startConnectionMonitoring();
+            
+            // Afficher notification de connexion réussie
+            showNotification(`Connecté au sous-système "${subsystem.name}"`, 'success');
             
             return true;
         } else {
@@ -2201,7 +2282,7 @@ function showSection(sectionId) {
         
         const navItem = document.querySelector(`.nav-item[data-section="${sectionId}"] .nav-label`);
         if (navItem) {
-            document.getElementById('page-title').textContent = navItem.textContent;
+            document.getElementById('page-title').textContent = `${navItem.textContent} - ${currentSubsystem.name}`;
         }
         
         document.querySelectorAll('.nav-item').forEach(nav => {
@@ -2514,6 +2595,13 @@ window.selectSubsystem = function(subsystemId) {
     const modal = document.querySelector('.modal.active');
     if (modal) modal.remove();
     window.location.href = `subsystem-admin.html?subsystem_id=${subsystemId}`;
+};
+
+window.hideSubsystemNotice = function() {
+    const notice = document.getElementById('subsystem-connection-notice');
+    if (notice) {
+        notice.style.display = 'none';
+    }
 };
     </script>
 </body>

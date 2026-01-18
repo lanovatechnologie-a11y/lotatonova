@@ -1,21 +1,20 @@
 // Configuration de base avec APP_CONFIG
+const API_BASE_URL = 'https://lotatonova-fv0b.onrender.com';
+// Configuration API Backend
 const APP_CONFIG = {
-    health: `/api/health`,
-    login: `/api/auth/login`,
+    health: `${API_BASE_URL}/api/health`,
+    login: `${API_BASE_URL}/api/auth/login`,
     // Endpoints pour les résultats
-    results: `/api/results`,
-    checkWinners: `/api/check-winners`,
+    results: `${API_BASE_URL}/api/results`,
+    checkWinners: `${API_BASE_URL}/api/check-winners`,
     // Endpoints pour les tickets
-    tickets: `/api/tickets`,
-    ticketsPending: `/api/tickets/pending`,
-    winningTickets: `/api/tickets/winning`,
-    history: `/api/history`,
-    multiDrawTickets: `/api/tickets/multi-draw`,
-    companyInfo: `/api/company-info`,
-    logo: `/api/logo`,
-    // Nouveaux endpoints pour vérification de session
-    authCheck: `/api/auth/check`,
-    authVerify: `/api/auth/verify`
+    tickets: `${API_BASE_URL}/api/tickets`,
+    ticketsPending: `${API_BASE_URL}/api/tickets/pending`,
+    winningTickets: `${API_BASE_URL}/api/tickets/winning`,
+    history: `${API_BASE_URL}/api/history`,
+    multiDrawTickets: `${API_BASE_URL}/api/tickets/multi-draw`,
+    companyInfo: `${API_BASE_URL}/api/company-info`,
+    logo: `${API_BASE_URL}/api/logo`
 };
 
 const FIVE_MINUTES = 5 * 60 * 1000; // 5 minutes en millisecondes
@@ -260,20 +259,19 @@ let authToken = null;
 
 // Fonctions API
 async function apiCall(endpoint, method = 'GET', data = null) {
+    const url = endpoint.startsWith('http') ? endpoint : `${API_BASE_URL}${endpoint}`;
     const headers = {
         'Content-Type': 'application/json',
     };
     
     // Ajouter le token d'authentification si disponible
-    const token = localStorage.getItem('nova_token');
-    if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
+    if (authToken) {
+        headers['Authorization'] = `Bearer ${authToken}`;
     }
     
     const options = {
         method,
         headers,
-        credentials: 'same-origin'
     };
     
     if (data && (method === 'POST' || method === 'PUT' || method === 'PATCH')) {
@@ -281,15 +279,7 @@ async function apiCall(endpoint, method = 'GET', data = null) {
     }
     
     try {
-        const response = await fetch(endpoint, options);
-        
-        // Vérifier si le token est expiré/invalide
-        if (response.status === 401 || response.status === 403) {
-            console.warn('Token invalide ou expiré, déconnexion...');
-            localStorage.removeItem('nova_token');
-            window.location.href = '/index.html';
-            throw new Error('Session expirée');
-        }
+        const response = await fetch(url, options);
         
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
@@ -298,160 +288,66 @@ async function apiCall(endpoint, method = 'GET', data = null) {
         return await response.json();
     } catch (error) {
         console.error('API call error:', error);
-        
-        // Ne pas rediriger si c'est juste une erreur réseau
-        if (error.message !== 'Session expirée') {
-            throw error;
-        }
+        throw error;
     }
 }
 
 // Vérifier l'authentification
 function checkAuth() {
-    // Récupérer le token depuis l'URL
-    const urlParams = new URLSearchParams(window.location.search);
-    const urlToken = urlParams.get('token');
+    const token = localStorage.getItem('nova_token');
     
-    // Récupérer le token du localStorage
-    const storedToken = localStorage.getItem('nova_token');
-    
-    // Priorité: token dans l'URL > token dans localStorage
-    if (urlToken) {
-        localStorage.setItem('nova_token', urlToken);
-        authToken = urlToken;
-        
-        // Nettoyer l'URL
-        const cleanUrl = window.location.pathname;
-        window.history.replaceState({}, document.title, cleanUrl);
-        
-        console.log('Token extrait de l\'URL et sauvegardé');
-        return true;
-    } else if (storedToken) {
-        authToken = storedToken;
-        return true;
+    if (!token) {
+        // Rediriger vers la page de connexion
+        window.location.href = '/index.html';
+        return false;
     }
     
-    // Aucun token trouvé, rediriger vers la connexion
-    console.log('Aucun token trouvé, redirection vers la connexion');
-    window.location.href = '/index.html';
-    return false;
-}
-
-// Vérifier la session avec le serveur
-async function verifySession() {
-    try {
-        const response = await apiCall(APP_CONFIG.authCheck);
-        if (response.success) {
-            currentAdmin = response.admin;
-            return true;
-        }
-    } catch (error) {
-        console.log('Session invalide:', error);
-    }
-    return false;
+    authToken = token;
+    return true;
 }
 
 // Charger les données depuis l'API
 async function loadDataFromAPI() {
     try {
-        // Vérifier d'abord la session
-        const sessionValid = await verifySession();
-        if (!sessionValid) {
-            showNotification("Session expirée, reconnexion nécessaire", "warning");
-            localStorage.removeItem('nova_token');
-            window.location.href = '/index.html';
-            return;
-        }
-        
-        console.log('Session valide, chargement des données...');
-        
         // Charger les tickets
         const ticketsData = await apiCall(APP_CONFIG.tickets);
-        if (ticketsData && ticketsData.success) {
-            savedTickets = ticketsData.tickets || [];
-            ticketNumber = ticketsData.nextTicketNumber || 1;
-        }
+        savedTickets = ticketsData.tickets || [];
+        ticketNumber = ticketsData.nextTicketNumber || 1;
         
         // Charger les tickets en attente
         const pendingData = await apiCall(APP_CONFIG.ticketsPending);
-        if (pendingData && pendingData.success) {
-            pendingSyncTickets = pendingData.tickets || [];
-        }
+        pendingSyncTickets = pendingData.tickets || [];
         
         // Charger les tickets gagnants
         const winningData = await apiCall(APP_CONFIG.winningTickets);
-        if (winningData && winningData.success) {
-            winningTickets = winningData.tickets || [];
-        }
+        winningTickets = winningData.tickets || [];
         
         // Charger les fiches multi-tirages
         const multiDrawData = await apiCall(APP_CONFIG.multiDrawTickets);
-        if (multiDrawData && multiDrawData.success) {
-            multiDrawTickets = multiDrawData.tickets || [];
-        }
+        multiDrawTickets = multiDrawData.tickets || [];
         
         // Charger les informations de l'entreprise
         const companyData = await apiCall(APP_CONFIG.companyInfo);
-        if (companyData && companyData.success) {
-            companyInfo = {
-                name: companyData.company_name || "Nova Lotto",
-                phone: companyData.company_phone || "+509 32 53 49 58",
-                address: companyData.company_address || "Cap Haïtien",
-                reportTitle: companyData.report_title || "Nova Lotto",
-                reportPhone: companyData.report_phone || "40104585"
-            };
+        if (companyData) {
+            companyInfo = companyData;
         }
         
         // Charger le logo
         const logoData = await apiCall(APP_CONFIG.logo);
-        if (logoData && logoData.success && logoData.logoUrl) {
+        if (logoData && logoData.logoUrl) {
             companyLogo = logoData.logoUrl;
-            updateLogoDisplay();
         }
         
-        console.log('✅ Données chargées depuis l\'API:', { 
+        console.log('Données chargées depuis l\'API:', { 
             tickets: savedTickets.length, 
             ticketNumber, 
             pending: pendingSyncTickets.length,
             winning: winningTickets.length,
-            multiDraw: multiDrawTickets.length,
-            admin: currentAdmin
+            multiDraw: multiDrawTickets.length
         });
-        
-        // Mettre à jour l'affichage de l'administrateur
-        if (currentAdmin) {
-            updateAdminDisplay();
-        }
-        
     } catch (error) {
         console.error('Erreur lors du chargement des données:', error);
-        
-        // Si c'est une erreur 401/403, on redirige déjà dans apiCall
-        // Sinon, afficher une notification générique
-        if (!error.message.includes('Session expirée')) {
-            showNotification("Erreur de chargement des données", "error");
-        }
-    }
-}
-
-// Mettre à jour l'affichage de l'administrateur
-function updateAdminDisplay() {
-    if (!currentAdmin) return;
-    
-    const adminNameElement = document.getElementById('admin-name');
-    if (adminNameElement) {
-        adminNameElement.textContent = currentAdmin.name || currentAdmin.username;
-    }
-    
-    const adminRoleElement = document.getElementById('admin-role');
-    if (adminRoleElement) {
-        adminRoleElement.textContent = currentAdmin.role || 'Agent';
-    }
-    
-    // Mettre à jour le nom dans le ticket
-    const agentNameElement = document.getElementById('agent-name');
-    if (agentNameElement) {
-        agentNameElement.textContent = currentAdmin.name || currentAdmin.username;
+        showNotification("Erreur de chargement des données", "error");
     }
 }
 
@@ -469,7 +365,7 @@ async function saveTicketAPI(ticket) {
 // Sauvegarder un ticket en attente via API
 async function savePendingTicketAPI(ticket) {
     try {
-        const response = await apiCall(APP_CONFIG.ticketsPending, 'POST', { ticket });
+        const response = await apiCall(APP_CONFIG.ticketsPending, 'POST', ticket);
         return response;
     } catch (error) {
         console.error('Erreur lors de la sauvegarde du ticket en attente:', error);
@@ -480,7 +376,7 @@ async function savePendingTicketAPI(ticket) {
 // Sauvegarder une fiche multi-tirages via API
 async function saveMultiDrawTicketAPI(ticket) {
     try {
-        const response = await apiCall(APP_CONFIG.multiDrawTickets, 'POST', { ticket });
+        const response = await apiCall(APP_CONFIG.multiDrawTickets, 'POST', ticket);
         return response;
     } catch (error) {
         console.error('Erreur lors de la sauvegarde de la fiche multi-tirages:', error);
@@ -500,7 +396,7 @@ async function saveHistoryAPI(historyRecord) {
 }
 
 // Initialisation
-document.addEventListener('DOMContentLoaded', async function() {
+document.addEventListener('DOMContentLoaded', function() {
     console.log("Document chargé, initialisation...");
     
     // Vérifier l'authentification
@@ -518,7 +414,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     updateCurrentTime();
     
     // Charger les données depuis l'API
-    await loadDataFromAPI();
+    loadDataFromAPI();
     
     // Configurer la détection de connexion
     setupConnectionDetection();
@@ -527,7 +423,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     updateLogoDisplay();
     
     // Charger les résultats depuis la base de données
-    await loadResultsFromDatabase();
+    loadResultsFromDatabase();
     
     // Ajouter les écouteurs d'événements pour les tirages
     document.querySelectorAll('.draw-card').forEach(card => {
@@ -636,6 +532,8 @@ document.addEventListener('DOMContentLoaded', async function() {
         document.querySelector('.container').style.display = 'block';
     });
     
+    // Connexion intégrée supprimée - utilisation de la page index.html
+    
     // Boutons de connexion
     document.getElementById('retry-connection').addEventListener('click', function() {
         console.log("Réessayer connexion");
@@ -713,7 +611,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     // Vérifier périodiquement les résultats
     setInterval(checkForNewResults, 300000); // Toutes les 5 minutes
     
-    console.log("✅ Initialisation terminée");
+    console.log("Initialisation terminée");
 });
 
 // Charger les fiches multi-tirages depuis l'API
@@ -962,31 +860,27 @@ async function saveAndPrintMultiDrawTicket() {
     
     try {
         // Sauvegarder via API
-        const response = await saveMultiDrawTicketAPI(ticket);
+        await saveMultiDrawTicketAPI(ticket);
         
-        if (response && response.success) {
-            // Imprimer
-            printMultiDrawTicket(ticket);
-            
-            // Réinitialiser la fiche actuelle
-            currentMultiDrawTicket = {
-                id: Date.now().toString(),
-                bets: [],
-                totalAmount: 0,
-                draws: new Set(),
-                createdAt: new Date().toISOString()
-            };
-            
-            // Mettre à jour l'affichage
-            updateMultiDrawTicketDisplay();
-            
-            // Recharger les fiches multi-tirages depuis l'API
-            await loadMultiDrawTickets();
-            
-            showNotification("Fiche multi-tirages anrejistre ak enprime avèk siksè!", "success");
-        } else {
-            showNotification("Erreur lors de la sauvegarde", "error");
-        }
+        // Imprimer
+        printMultiDrawTicket(ticket);
+        
+        // Réinitialiser la fiche actuelle
+        currentMultiDrawTicket = {
+            id: Date.now().toString(),
+            bets: [],
+            totalAmount: 0,
+            draws: new Set(),
+            createdAt: new Date().toISOString()
+        };
+        
+        // Mettre à jour l'affichage
+        updateMultiDrawTicketDisplay();
+        
+        // Recharger les fiches multi-tirages depuis l'API
+        await loadMultiDrawTickets();
+        
+        showNotification("Fiche multi-tirages anrejistre ak enprime avèk siksè!", "success");
     } catch (error) {
         showNotification("Erreur lors de la sauvegarde de la fiche multi-tirages", "error");
     }
@@ -1592,7 +1486,7 @@ async function loadResultsFromDatabase() {
     try {
         // Appel API pour les résultats
         const resultsData = await apiCall(APP_CONFIG.results);
-        if (resultsData && resultsData.success && resultsData.results) {
+        if (resultsData && resultsData.results) {
             resultsDatabase = resultsData.results;
         }
         
@@ -1618,7 +1512,7 @@ async function checkForNewResults() {
     
     try {
         const resultsData = await apiCall(APP_CONFIG.results);
-        if (resultsData && resultsData.success && resultsData.results) {
+        if (resultsData && resultsData.results) {
             resultsDatabase = resultsData.results;
             updateResultsDisplay();
             console.log("Résultats mis à jour");
@@ -3640,4 +3534,827 @@ async function checkConnectionBeforePrint() {
     connectionCheck.style.display = 'flex';
     
     // Pour l'impression seule, on est moins strict
-    document.getElementById('connection-message').textContent = 'Koneks
+    document.getElementById('connection-message').textContent = 'Koneksyon entènèt ok. Wap kontinye...';
+    
+    setTimeout(() => {
+        connectionCheck.style.display = 'none';
+        printTicket();
+    }, 1000);
+}
+
+// Réessayer la connexion
+function retryConnectionCheck() {
+    console.log("Réessayer connexion");
+    if (document.getElementById('save-print-ticket').disabled) {
+        checkConnectionBeforeSavePrint();
+    } else {
+        checkConnectionBeforePrint();
+    }
+}
+
+// Annuler l'impression
+function cancelPrint() {
+    console.log("Annuler impression");
+    document.getElementById('connection-check').style.display = 'none';
+}
+
+// Sauvegarder et imprimer la fiche
+async function saveAndPrintTicket() {
+    console.log("Sauvegarder et imprimer");
+    if (activeBets.length === 0) {
+        showNotification("Pa gen okenn parye pou sove nan fiche a", "warning");
+        return;
+    }
+    
+    await saveTicket();
+    
+    setTimeout(() => {
+        printTicket();
+    }, 100);
+}
+
+// Sauvegarder la fiche via API
+async function saveTicket() {
+    console.log("Sauvegarder fiche via API");
+    if (activeBets.length === 0) {
+        showNotification("Pa gen okenn parye pou sove nan fiche a", "warning");
+        return;
+    }
+    
+    const ticket = {
+        id: Date.now().toString(),
+        number: ticketNumber,
+        date: new Date().toISOString(),
+        draw: currentDraw,
+        drawTime: currentDrawTime,
+        bets: [...activeBets],
+        total: activeBets.reduce((sum, bet) => sum + bet.amount, 0),
+        agentName: currentAdmin ? currentAdmin.name : 'Agent',
+        agentId: currentAdmin ? currentAdmin.id : 1
+    };
+    
+    try {
+        // Sauvegarder via API
+        const response = await saveTicketAPI(ticket);
+        
+        // Ajouter aux tickets sauvegardés localement
+        savedTickets.push(ticket);
+        
+        // Incrémenter le numéro de ticket
+        ticketNumber++;
+        
+        showNotification("Fiche sove avèk siksè!", "success");
+        
+        // Réinitialiser les paris actifs
+        activeBets = [];
+        updateBetsList();
+        
+        return response;
+    } catch (error) {
+        console.error('Erreur lors de la sauvegarde du ticket:', error);
+        showNotification("Erreur lors de la sauvegarde du ticket", "error");
+        throw error;
+    }
+}
+
+// Imprimer la fiche
+function printTicket() {
+    console.log("Imprimer fiche");
+    const lastTicket = savedTickets[savedTickets.length - 1];
+    
+    if (!lastTicket) {
+        showNotification("Pa gen fiche ki sove pou enprime.", "warning");
+        return;
+    }
+
+    const printContent = document.createElement('div');
+    printContent.className = 'print-ticket';
+    
+    const groupedBets = groupBetsByType(lastTicket.bets);
+    
+    let betsHTML = '';
+    let total = 0;
+    
+    for (const [type, bets] of Object.entries(groupedBets)) {
+        betsHTML += `
+            <div style="margin-bottom: 15px;">
+                <div style="font-weight: bold; margin-bottom: 5px;">${type}</div>
+                <div style="display: flex; flex-wrap: wrap; gap: 5px;">
+        `;
+        
+        bets.forEach(bet => {
+            // Pour Lotto 4 et Lotto 5, afficher les options
+            let betInfo = bet.number;
+            if (bet.isLotto4 || bet.isLotto5) {
+                const options = [];
+                if (bet.options?.option1) options.push('O1');
+                if (bet.options?.option2) options.push('O2');
+                if (bet.options?.option3) options.push('O3');
+                if (options.length > 0) {
+                    betInfo += ` (${options.join(',')})`;
+                }
+            }
+            
+            betsHTML += `
+                <div style="background: #f0f0f0; padding: 5px 10px; border-radius: 4px; font-size: 0.9rem;">
+                    ${betInfo}<br>
+                    <strong>${bet.amount} G</strong>
+                </div>
+            `;
+            total += bet.amount;
+        });
+        
+        betsHTML += `
+                </div>
+            </div>
+        `;
+    }
+    
+    printContent.innerHTML = `
+        <div style="text-align: center; padding: 20px; border: 2px solid #000; font-family: Arial, sans-serif;">
+            <div style="margin-bottom: 15px;">
+                <img src="${companyLogo}" alt="Logo Nova Lotto" class="ticket-logo" style="max-width: 80px; height: auto;">
+            </div>
+            <h2>${companyInfo.name}</h2>
+            <p>Fiche Parye</p>
+            <p><strong>Nimewo:</strong> #${String(lastTicket.number).padStart(6, '0')}</p>
+            <p><strong>Dat:</strong> ${new Date(lastTicket.date).toLocaleString('fr-FR')}</p>
+            <p><strong>Tiraj:</strong> ${draws[lastTicket.draw].name} (${lastTicket.drawTime === 'morning' ? 'Maten' : 'Swè'})</p>
+            <p><strong>Ajan:</strong> ${lastTicket.agentName}</p>
+            <hr>
+            <div style="margin: 15px 0;">
+                ${betsHTML}
+            </div>
+            <hr>
+            <div style="display: flex; justify-content: space-between; margin-top: 15px; font-weight: bold; font-size: 1.1rem;">
+                <span>Total:</span>
+                <span>${total} goud</span>
+            </div>
+            <p style="margin-top: 20px;">Mèsi pou konfyans ou!</p>
+            <p style="font-size: 0.8rem; color: #666; margin-top: 10px;">
+                Fiche kreye: ${new Date().toLocaleString('fr-FR')}
+            </p>
+        </div>
+    `;
+    
+    const printWindow = window.open('', '_blank');
+    printWindow.document.write(`
+        <html>
+            <head>
+                <title>Fiche ${companyInfo.name}</title>
+                <style>
+                    body { font-family: Arial, sans-serif; margin: 0; padding: 20px; }
+                    @media print {
+                        body { margin: 0; padding: 0; }
+                        @page { margin: 0; }
+                    }
+                </style>
+            </head>
+            <body>
+                ${printContent.innerHTML}
+            </body>
+        </html>
+    `);
+    printWindow.document.close();
+    printWindow.print();
+}
+
+// Grouper les paris par type
+function groupBetsByType(bets) {
+    const grouped = {};
+    
+    bets.forEach(bet => {
+        if (!grouped[bet.name]) {
+            grouped[bet.name] = [];
+        }
+        
+        if (bet.type === 'boulpe') {
+            const existingBet = grouped[bet.name].find(b => b.number === bet.number);
+            if (existingBet) {
+                existingBet.amount += bet.amount;
+            } else {
+                grouped[bet.name].push({...bet});
+            }
+        } else {
+            grouped[bet.name].push({...bet});
+        }
+    });
+    
+    return grouped;
+}
+
+// Mettre à jour l'écran des fiches gagnantes
+function updateWinningTicketsScreen() {
+    console.log("Mise à jour fiches gagnantes");
+    const winningTicketsList = document.getElementById('winning-tickets-list');
+    
+    // Afficher les tickets gagnants détectés
+    winningTicketsList.innerHTML = '';
+    
+    if (winningTickets.length === 0) {
+        winningTicketsList.innerHTML = '<p>Pa gen fiche gagnant pou montre.</p>';
+        return;
+    }
+    
+    winningTickets.forEach(ticket => {
+        const ticketItem = document.createElement('div');
+        ticketItem.className = 'history-item winning-ticket';
+        
+        let betsHTML = '';
+        ticket.winningBets.forEach(winBet => {
+            betsHTML += `
+                <div class="history-bet">
+                    <span>${winBet.name}: ${winBet.number}</span>
+                    <span style="color: var(--success-color); font-weight: bold;">+${winBet.winAmount} G (${winBet.winType})</span>
+                </div>
+            `;
+        });
+        
+        ticketItem.innerHTML = `
+            <div class="history-header">
+                <span class="history-draw">Fiche #${String(ticket.number).padStart(6, '0')}</span>
+                <span class="history-date">${new Date(ticket.date).toLocaleString()}</span>
+            </div>
+            <div class="history-bets">
+                ${betsHTML}
+            </div>
+            <div class="history-total">
+                <span>Total Gains:</span>
+                <span style="color: var(--success-color); font-weight: bold;">${ticket.totalWinnings} G</span>
+            </div>
+        `;
+        
+        winningTicketsList.appendChild(ticketItem);
+    });
+}
+
+// Rechercher dans l'historique
+function searchHistory() {
+    console.log("Recherche historique");
+    const searchTerm = document.getElementById('search-history').value.toLowerCase();
+    const historyItems = document.querySelectorAll('#history-list .history-item');
+    
+    historyItems.forEach(item => {
+        const text = item.textContent.toLowerCase();
+        if (text.includes(searchTerm)) {
+            item.style.display = 'block';
+        } else {
+            item.style.display = 'none';
+        }
+    });
+}
+
+// Rechercher dans les fiches gagnantes
+function searchWinningTickets() {
+    console.log("Recherche fiches gagnantes");
+    const searchTerm = document.getElementById('search-winning-tickets').value.toLowerCase();
+    const winningItems = document.querySelectorAll('#winning-tickets-list .history-item');
+    
+    winningItems.forEach(item => {
+        const text = item.textContent.toLowerCase();
+        if (text.includes(searchTerm)) {
+            item.style.display = 'block';
+        } else {
+            item.style.display = 'none';
+        }
+    });
+}
+
+// Mettre à jour l'écran historique
+function updateHistoryScreen() {
+    console.log("Mise à jour historique");
+    const reportsContainer = document.getElementById('reports-container');
+    const historyList = document.getElementById('history-list');
+    
+    reportsContainer.innerHTML = '';
+    
+    const generalBtn = document.createElement('button');
+    generalBtn.className = 'report-btn general';
+    generalBtn.textContent = 'Rapò Jeneral';
+    generalBtn.addEventListener('click', function() {
+        generateGeneralReport();
+    });
+    reportsContainer.appendChild(generalBtn);
+    
+    for (const [drawId, draw] of Object.entries(draws)) {
+        const morningBtn = document.createElement('button');
+        morningBtn.className = 'report-btn';
+        morningBtn.textContent = `${draw.name} Midi`;
+        morningBtn.addEventListener('click', function() {
+            generateDrawReport(drawId, 'morning');
+        });
+        reportsContainer.appendChild(morningBtn);
+        
+        const eveningBtn = document.createElement('button');
+        eveningBtn.className = 'report-btn';
+        eveningBtn.textContent = `${draw.name} Swè`;
+        eveningBtn.addEventListener('click', function() {
+            generateDrawReport(drawId, 'evening');
+        });
+        reportsContainer.appendChild(eveningBtn);
+    }
+    
+    historyList.innerHTML = '';
+    
+    if (savedTickets.length === 0) {
+        historyList.innerHTML = '<p>Pa gen fiche ki sove.</p>';
+        return;
+    }
+    
+    const sortedTickets = [...savedTickets].sort((a, b) => new Date(b.date) - new Date(a.date));
+    
+    sortedTickets.forEach(ticket => {
+        const historyItem = document.createElement('div');
+        historyItem.className = 'history-item';
+        
+        const ticketDate = new Date(ticket.date);
+        const now = new Date();
+        const timeDiff = now - ticketDate;
+        const canEdit = timeDiff <= FIVE_MINUTES;
+        
+        const groupedBets = groupBetsByType(ticket.bets);
+        let betsHTML = '';
+        
+        for (const [type, bets] of Object.entries(groupedBets)) {
+            betsHTML += `<div style="margin-bottom: 8px;"><strong>${type}:</strong> `;
+            const betStrings = bets.map(bet => {
+                let betInfo = bet.number;
+                if (bet.isLotto4 || bet.isLotto5) {
+                    const options = [];
+                    if (bet.options?.option1) options.push('O1');
+                    if (bet.options?.option2) options.push('O2');
+                    if (bet.options?.option3) options.push('O3');
+                    if (options.length > 0) {
+                        betInfo += ` (${options.join(',')})`;
+                    }
+                }
+                return `${betInfo} (${bet.amount} G)`;
+            });
+            betsHTML += betStrings.join(', ') + '</div>';
+        }
+        
+        historyItem.innerHTML = `
+            <div class="history-header">
+                <span class="history-draw">${draws[ticket.draw].name} (${ticket.drawTime === 'morning' ? 'Maten' : 'Swè'})</span>
+                <span class="history-date">${ticketDate.toLocaleString()}</span>
+            </div>
+            <div class="history-bets">
+                ${betsHTML}
+            </div>
+            <div class="history-total">
+                <span>Total:</span>
+                <span>${ticket.total} G</span>
+            </div>
+            ${canEdit ? `
+                <div style="display: flex; gap: 10px; margin-top: 10px;">
+                    <button class="edit-btn" onclick="loadTicketForEdit('${ticket.id}')">
+                        <i class="fas fa-edit"></i> Modifye
+                    </button>
+                    <button class="delete-btn" onclick="deleteTicket('${ticket.id}')">
+                        <i class="fas fa-trash"></i> Efase
+                    </button>
+                </div>
+            ` : ''}
+        `;
+        
+        historyList.appendChild(historyItem);
+    });
+}
+
+// Mettre à jour l'écran de gestion des fiches
+function updateTicketManagementScreen() {
+    console.log("Mise à jour écran gestion fiches");
+    const ticketList = document.getElementById('ticket-management-list');
+    
+    if (savedTickets.length === 0 && pendingSyncTickets.length === 0) {
+        ticketList.innerHTML = `
+            <div style="text-align: center; padding: 40px; color: #7f8c8d;">
+                <i class="fas fa-file-invoice" style="font-size: 3rem; margin-bottom: 15px;"></i>
+                <p>Pa gen fiche ki sove.</p>
+            </div>
+        `;
+        return;
+    }
+    
+    let html = '';
+    
+    // Combiner toutes les fiches
+    const allTickets = [...savedTickets, ...pendingSyncTickets];
+    
+    // Trier par date (plus récent d'abord)
+    const sortedTickets = [...allTickets].sort((a, b) => new Date(b.date) - new Date(a.date));
+    
+    sortedTickets.forEach(ticket => {
+        const ticketDate = new Date(ticket.date);
+        const now = new Date();
+        const timeDiff = now - ticketDate;
+        const canEdit = timeDiff <= FIVE_MINUTES;
+        
+        // Grouper les paris pour l'affichage
+        const groupedBets = groupBetsByType(ticket.bets);
+        let betsHTML = '';
+        
+        for (const [type, bets] of Object.entries(groupedBets)) {
+            const betCount = bets.length;
+            const totalAmount = bets.reduce((sum, bet) => sum + bet.amount, 0);
+            betsHTML += `<div style="margin-bottom: 5px;"><strong>${type}:</strong> ${betCount} parye (${totalAmount} G)</div>`;
+        }
+        
+        html += `
+            <div class="ticket-management">
+                <div class="ticket-management-header">
+                    <div>
+                        <strong>Fiche #${String(ticket.number).padStart(6, '0')}</strong>
+                        ${ticket.draw ? `<div style="font-size: 0.9rem; color: #7f8c8d;">${draws[ticket.draw]?.name || 'Tiraj'} (${ticket.drawTime === 'morning' ? 'Maten' : 'Swè'})</div>` : ''}
+                    </div>
+                    <div style="text-align: right;">
+                        <div>${ticketDate.toLocaleString()}</div>
+                        ${ticket.total ? `<div style="font-weight: bold;">${ticket.total} G</div>` : ''}
+                    </div>
+                </div>
+                <div class="ticket-details">
+                    ${betsHTML}
+                    ${ticket.agentName ? `<div><strong>Ajan:</strong> ${ticket.agentName}</div>` : ''}
+                </div>
+                ${canEdit ? `
+                    <div style="display: flex; gap: 10px; margin-top: 10px;">
+                        <button class="edit-btn" onclick="loadTicketForEdit('${ticket.id}')">
+                            <i class="fas fa-edit"></i> Modifye
+                        </button>
+                        <button class="delete-btn" onclick="deleteTicket('${ticket.id}')">
+                            <i class="fas fa-trash"></i> Efase
+                        </button>
+                    </div>
+                ` : `
+                    <div style="margin-top: 10px; color: #7f8c8d; font-size: 0.9rem;">
+                        <i class="fas fa-info-circle"></i> Fiche sa pa ka modifye ankò (5 minit deja pase)
+                    </div>
+                `}
+            </div>
+        `;
+    });
+    
+    ticketList.innerHTML = html;
+}
+
+// Charger un ticket pour modification
+window.loadTicketForEdit = function(ticketId) {
+    console.log("Charger ticket pour modification:", ticketId);
+    
+    // Trouver le ticket
+    const allTickets = [...savedTickets, ...pendingSyncTickets];
+    const ticketIndex = allTickets.findIndex(t => t.id === ticketId);
+    
+    if (ticketIndex === -1) {
+        showNotification("Fiche pa jwenn", "error");
+        return;
+    }
+    
+    const ticket = allTickets[ticketIndex];
+    
+    // Vérifier si on peut encore modifier (5 minutes)
+    const ticketDate = new Date(ticket.date);
+    const now = new Date();
+    const timeDiff = now - ticketDate;
+    
+    if (timeDiff > FIVE_MINUTES) {
+        showNotification("Fiche sa pa ka modifye ankò. 5 minit deja pase.", "warning");
+        return;
+    }
+    
+    // Demander confirmation
+    if (!confirm(`Èske ou vreman vle modifye fiche #${String(ticket.number).padStart(6, '0')}? Fiche sa pral efase epi parye yo pral mete nan panier aktif.`)) {
+        return;
+    }
+    
+    // Mettre les paris dans les paris actifs
+    activeBets = [...ticket.bets];
+    
+    // Mettre à jour le tiraj actuel
+    currentDraw = ticket.draw;
+    currentDrawTime = ticket.drawTime;
+    
+    // Supprimer le ticket des listes
+    const savedIndex = savedTickets.findIndex(t => t.id === ticketId);
+    if (savedIndex !== -1) {
+        savedTickets.splice(savedIndex, 1);
+    }
+    
+    const pendingIndex = pendingSyncTickets.findIndex(t => t.id === ticketId);
+    if (pendingIndex !== -1) {
+        pendingSyncTickets.splice(pendingIndex, 1);
+    }
+    
+    // Mettre à jour l'affichage
+    updateBetsList();
+    updateTicketManagementScreen();
+    
+    // Ouvrir l'écran de pari
+    openBettingScreen(ticket.draw, ticket.drawTime);
+    
+    showNotification(`Fiche #${String(ticket.number).padStart(6, '0')} chaje pou modification`, "success");
+};
+
+// Supprimer un ticket
+window.deleteTicket = function(ticketId) {
+    console.log("Supprimer ticket:", ticketId);
+    
+    // Trouver le ticket
+    const allTickets = [...savedTickets, ...pendingSyncTickets];
+    const ticket = allTickets.find(t => t.id === ticketId);
+    
+    if (!ticket) {
+        showNotification("Fiche pa jwenn", "error");
+        return;
+    }
+    
+    // Vérifier si on peut encore supprimer (5 minutes)
+    const ticketDate = new Date(ticket.date);
+    const now = new Date();
+    const timeDiff = now - ticketDate;
+    
+    if (timeDiff > FIVE_MINUTES) {
+        showNotification("Fiche sa pa ka efase ankò. 5 minit deja pase.", "warning");
+        return;
+    }
+    
+    // Demander confirmation
+    if (!confirm(`Èske ou vreman vle efase fiche #${String(ticket.number).padStart(6, '0')}? Aksyon sa a pa ka anile.`)) {
+        return;
+    }
+    
+    // Supprimer le ticket des listes
+    const savedIndex = savedTickets.findIndex(t => t.id === ticketId);
+    if (savedIndex !== -1) {
+        savedTickets.splice(savedIndex, 1);
+    }
+    
+    const pendingIndex = pendingSyncTickets.findIndex(t => t.id === ticketId);
+    if (pendingIndex !== -1) {
+        pendingSyncTickets.splice(pendingIndex, 1);
+    }
+    
+    // Mettre à jour l'affichage
+    updateTicketManagementScreen();
+    
+    showNotification(`Fiche #${String(ticket.number).padStart(6, '0')} efase avèk siksè`, "success");
+};
+
+// Rechercher un ticket
+function searchTicket() {
+    const searchTerm = document.getElementById('search-ticket-number').value.toLowerCase();
+    const ticketItems = document.querySelectorAll('#ticket-management-list .ticket-management');
+    
+    if (!searchTerm) {
+        // Si la recherche est vide, tout afficher
+        ticketItems.forEach(item => {
+            item.style.display = 'block';
+        });
+        return;
+    }
+    
+    ticketItems.forEach(item => {
+        const text = item.textContent.toLowerCase();
+        if (text.includes(searchTerm)) {
+            item.style.display = 'block';
+        } else {
+            item.style.display = 'none';
+        }
+    });
+}
+
+// Afficher toutes les fiches
+function showAllTickets() {
+    document.getElementById('search-ticket-number').value = '';
+    updateTicketManagementScreen();
+}
+
+// Afficher les fiches en attente
+function showPendingTickets() {
+    document.getElementById('search-ticket-number').value = '';
+    const ticketList = document.getElementById('ticket-management-list');
+    
+    if (pendingSyncTickets.length === 0) {
+        ticketList.innerHTML = `
+            <div style="text-align: center; padding: 40px; color: #7f8c8d;">
+                <i class="fas fa-hourglass-half" style="font-size: 3rem; margin-bottom: 15px;"></i>
+                <p>Pa gen fiche ki pokò ale nan santral.</p>
+            </div>
+        `;
+        return;
+    }
+    
+    let html = '<h3>Fiche Pokò ale nan santral</h3>';
+    
+    // Trier par date (plus récent d'abord)
+    const sortedTickets = [...pendingSyncTickets].sort((a, b) => new Date(b.date) - new Date(a.date));
+    
+    sortedTickets.forEach(ticket => {
+        const ticketDate = new Date(ticket.date);
+        const now = new Date();
+        const timeDiff = now - ticketDate;
+        const canEdit = timeDiff <= FIVE_MINUTES;
+        
+        html += `
+            <div class="ticket-management">
+                <div class="ticket-management-header">
+                    <div>
+                        <strong>Fiche #${String(ticket.number).padStart(6, '0')}</strong>
+                        ${ticket.draw ? `<div style="font-size: 0.9rem; color: #7f8c8d;">${draws[ticket.draw]?.name || 'Tiraj'} (${ticket.drawTime === 'morning' ? 'Maten' : 'Swè'})</div>` : ''}
+                    </div>
+                    <div style="text-align: right;">
+                        <div>${ticketDate.toLocaleString()}</div>
+                        <div style="font-weight: bold;">${ticket.total} G</div>
+                    </div>
+                </div>
+                <div class="ticket-details">
+                    <div><strong>${ticket.bets.length} parye</strong></div>
+                    ${ticket.agentName ? `<div><strong>Ajan:</strong> ${ticket.agentName}</div>` : ''}
+                </div>
+                ${canEdit ? `
+                    <div style="display: flex; gap: 10px; margin-top: 10px;">
+                        <button class="edit-btn" onclick="loadTicketForEdit('${ticket.id}')">
+                            <i class="fas fa-edit"></i> Modifye
+                        </button>
+                        <button class="delete-btn" onclick="deleteTicket('${ticket.id}')">
+                            <i class="fas fa-trash"></i> Efase
+                        </button>
+                    </div>
+                ` : ''}
+            </div>
+        `;
+    });
+    
+    ticketList.innerHTML = html;
+}
+
+function generateEndOfDrawReport() {
+    const reportScreen = document.getElementById('report-screen');
+    const reportContent = document.getElementById('report-content');
+    
+    // Calculer les totaux
+    let totalBets = savedTickets.length;
+    let totalAmount = savedTickets.reduce((sum, ticket) => sum + ticket.total, 0);
+    
+    reportContent.innerHTML = `
+        <div class="report-header">
+            <h3>${companyInfo.reportTitle}</h3>
+            <p>Rapò Fin Tiraj</p>
+            <p>${new Date().toLocaleString()}</p>
+        </div>
+        <div class="report-details">
+            <div class="report-row">
+                <span>Nimewo fiche:</span>
+                <span>${totalBets}</span>
+            </div>
+            <div class="report-row">
+                <span>Montan total:</span>
+                <span>${totalAmount} G</span>
+            </div>
+            <div class="report-row total">
+                <span>TOTAL GENERAL:</span>
+                <span>${totalAmount} G</span>
+            </div>
+        </div>
+        <p style="margin-top: 20px; text-align: center;">
+            <strong>Tel:</strong> ${companyInfo.reportPhone}<br>
+            <strong>Adrès:</strong> ${companyInfo.address}
+        </p>
+    `;
+    
+    document.querySelector('.container').style.display = 'none';
+    reportScreen.style.display = 'block';
+}
+
+function generateGeneralReport() {
+    const reportResults = document.getElementById('report-results');
+    reportResults.innerHTML = `
+        <div class="report-results">
+            <h3>Rapò Jeneral</h3>
+            <div class="report-item">
+                <span>Total fiche:</span>
+                <span>${savedTickets.length}</span>
+            </div>
+            <div class="report-item">
+                <span>Total montan:</span>
+                <span>${savedTickets.reduce((sum, ticket) => sum + ticket.total, 0)} G</span>
+            </div>
+        </div>
+    `;
+}
+
+function generateDrawReport(drawId, time) {
+    const reportResults = document.getElementById('report-results');
+    
+    const drawTickets = savedTickets.filter(ticket => 
+        ticket.draw === drawId && ticket.drawTime === time
+    );
+    
+    reportResults.innerHTML = `
+        <div class="report-results">
+            <h3>Rapò ${draws[drawId].name} (${time === 'morning' ? 'Maten' : 'Swè'})</h3>
+            <div class="report-item">
+                <span>Nimewo fiche:</span>
+                <span>${drawTickets.length}</span>
+            </div>
+            <div class="report-item">
+                <span>Total montan:</span>
+                <span>${drawTickets.reduce((sum, ticket) => sum + ticket.total, 0)} G</span>
+            </div>
+        </div>
+    `;
+}
+
+// Fonctions pour la gestion des tickets dans l'historique
+window.loadTicketForEditFromHistory = function(ticketId) {
+    console.log("Charger ticket pour édition depuis historique:", ticketId);
+    
+    // Trouver le ticket dans savedTickets
+    const ticketIndex = savedTickets.findIndex(t => t.id === ticketId);
+    
+    if (ticketIndex === -1) {
+        showNotification("Fiche pa jwenn", "error");
+        return;
+    }
+    
+    const ticket = savedTickets[ticketIndex];
+    
+    // Vérifier si on peut encore modifier (5 minutes)
+    const ticketDate = new Date(ticket.date);
+    const now = new Date();
+    const timeDiff = now - ticketDate;
+    
+    if (timeDiff > FIVE_MINUTES) {
+        showNotification("Fiche sa pa ka modifye ankò. 5 minit deja pase.", "warning");
+        return;
+    }
+    
+    // Demander confirmation
+    if (!confirm(`Èske ou vreman vle modifye fiche #${String(ticket.number).padStart(6, '0')}? Fiche sa pral efase epi parye yo pral mete nan panier aktif.`)) {
+        return;
+    }
+    
+    // Mettre les paris dans les paris actifs
+    activeBets = [...ticket.bets];
+    
+    // Mettre à jour le tiraj actuel
+    currentDraw = ticket.draw;
+    currentDrawTime = ticket.drawTime;
+    
+    // Supprimer le ticket
+    savedTickets.splice(ticketIndex, 1);
+    
+    // Mettre à jour l'affichage
+    updateBetsList();
+    updateHistoryScreen();
+    
+    // Ouvrir l'écran de pari
+    openBettingScreen(ticket.draw, ticket.drawTime);
+    
+    showNotification(`Fiche #${String(ticket.number).padStart(6, '0')} chaje pou modification`, "success");
+};
+
+window.deleteTicketFromHistory = function(ticketId) {
+    console.log("Supprimer ticket depuis historique:", ticketId);
+    
+    // Trouver le ticket
+    const ticketIndex = savedTickets.findIndex(t => t.id === ticketId);
+    
+    if (ticketIndex === -1) {
+        showNotification("Fiche pa jwenn", "error");
+        return;
+    }
+    
+    const ticket = savedTickets[ticketIndex];
+    
+    // Vérifier si on peut encore supprimer (5 minutes)
+    const ticketDate = new Date(ticket.date);
+    const now = new Date();
+    const timeDiff = now - ticketDate;
+    
+    if (timeDiff > FIVE_MINUTES) {
+        showNotification("Fiche sa pa ka efase ankò. 5 minit deja pase.", "warning");
+        return;
+    }
+    
+    // Demander confirmation
+    if (!confirm(`Èske ou vreman vle efase fiche #${String(ticket.number).padStart(6, '0')}? Aksyon sa a pa ka anile.`)) {
+        return;
+    }
+    
+    // Supprimer le ticket
+    savedTickets.splice(ticketIndex, 1);
+    
+    // Mettre à jour l'affichage
+    updateHistoryScreen();
+    
+    showNotification(`Fiche #${String(ticket.number).padStart(6, '0')} efase avèk siksè`, "success");
+};
+
+// Mettre à jour la notification du total pour les paris normaux
+function updateNormalBetTotalNotification() {
+    const total = activeBets.reduce((sum, bet) => sum + bet.amount, 0);
+    if (total > 0) {
+        showTotalNotification(total, 'normal');
+    }
+}

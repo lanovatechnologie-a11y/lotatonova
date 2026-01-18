@@ -1441,8 +1441,8 @@
         // Charger les données du tableau de bord
         async function loadDashboardData() {
             try {
-                // Charger les statistiques
-                const statsResponse = await fetch('/api/statistics', {
+                // Charger les statistiques du sous-système
+                const statsResponse = await fetch('/api/subsystem/stats', {
                     headers: {
                         'x-auth-token': currentToken
                     }
@@ -1451,15 +1451,15 @@
                 const statsData = await statsResponse.json();
                 
                 if (statsData.success) {
-                    // Mettre à jour les cartes de statistiques (à adapter selon votre API)
+                    // Mettre à jour les cartes de statistiques
                     document.getElementById('total-agents').textContent = 
-                        statsData.statistics.active_agents || 0;
+                        statsData.stats.active_users || 0;
                     document.getElementById('today-sales').textContent = 
-                        (statsData.statistics.today_sales || 0).toLocaleString() + ' HTG';
+                        (statsData.stats.today_sales || 0).toLocaleString() + ' HTG';
                     document.getElementById('today-tickets').textContent = 
-                        statsData.statistics.today_tickets || 0;
+                        statsData.stats.today_tickets || 0;
                     document.getElementById('monthly-profit').textContent = 
-                        (statsData.statistics.total_profit || 0).toLocaleString() + ' HTG';
+                        (statsData.stats.monthly_profit || 0).toLocaleString() + ' HTG';
                 }
                 
                 // Charger les activités récentes
@@ -1483,7 +1483,7 @@
             empty.style.display = 'none';
             
             try {
-                const response = await fetch('/api/activities/recent', {
+                const response = await fetch('/api/subsystem/activities', {
                     headers: {
                         'x-auth-token': currentToken
                     }
@@ -1537,7 +1537,7 @@
             empty.style.display = 'none';
             
             try {
-                const response = await fetch('/api/agents', {
+                const response = await fetch('/api/subsystem/users?role=agent', {
                     headers: {
                         'x-auth-token': currentToken
                     }
@@ -1546,8 +1546,8 @@
                 const data = await response.json();
                 
                 if (data.success) {
-                    users = data.agents || [];
-                    const agents = users.filter(user => user.role === 'agent');
+                    users = data.users || [];
+                    const agents = users.filter(user => user.role === 'agent' || user.role === 'Agent');
                     
                     if (agents.length === 0) {
                         loading.style.display = 'none';
@@ -1627,7 +1627,7 @@
             table.style.display = 'none';
             
             try {
-                const response = await fetch('/api/supervisors', {
+                const response = await fetch('/api/subsystem/users?role=supervisor1', {
                     headers: {
                         'x-auth-token': currentToken
                     }
@@ -1636,7 +1636,8 @@
                 const data = await response.json();
                 
                 if (data.success) {
-                    supervisors1 = data.supervisors.filter(s => s.level === 1) || [];
+                    users = data.users || [];
+                    supervisors1 = users.filter(s => s.level === 1) || [];
                     
                     // Vider le tableau
                     tbody.innerHTML = '';
@@ -1663,8 +1664,8 @@
                                 </span>
                             </td>
                             <td>
-                                <div class="progress-bar" style="height: 10px;">
-                                    <div class="progress-fill" style="width: ${Math.min(supervisor.performance || 0, 100)}%"></div>
+                                <div style="background: #f0f0f0; height: 10px; border-radius: 5px; margin: 5px 0;">
+                                    <div style="background: #3498db; height: 10px; border-radius: 5px; width: ${Math.min(supervisor.performance || 0, 100)}%"></div>
                                 </div>
                                 ${supervisor.performance || 0}%
                             </td>
@@ -1709,7 +1710,7 @@
             table.style.display = 'none';
             
             try {
-                const response = await fetch('/api/supervisors', {
+                const response = await fetch('/api/subsystem/users?role=supervisor2', {
                     headers: {
                         'x-auth-token': currentToken
                     }
@@ -1718,7 +1719,8 @@
                 const data = await response.json();
                 
                 if (data.success) {
-                    supervisors2 = data.supervisors.filter(s => s.level === 2) || [];
+                    users = data.users || [];
+                    supervisors2 = users.filter(s => s.level === 2) || [];
                     
                     // Vider le tableau
                     tbody.innerHTML = '';
@@ -1740,8 +1742,8 @@
                                 </span>
                             </td>
                             <td>
-                                <div class="progress-bar" style="height: 10px;">
-                                    <div class="progress-fill" style="width: ${Math.min(supervisor.global_performance || 0, 100)}%"></div>
+                                <div style="background: #f0f0f0; height: 10px; border-radius: 5px; margin: 5px 0;">
+                                    <div style="background: #3498db; height: 10px; border-radius: 5px; width: ${Math.min(supervisor.global_performance || 0, 100)}%"></div>
                                 </div>
                                 ${supervisor.global_performance || 0}%
                             </td>
@@ -1839,6 +1841,9 @@
             
             // Génération de rapport
             document.getElementById('generate-report-btn').addEventListener('click', generateReport);
+            
+            // Export tickets
+            document.getElementById('export-tickets-btn').addEventListener('click', exportTickets);
         }
         
         // Afficher une section
@@ -1919,7 +1924,7 @@
             const select = document.getElementById('assign-supervisor1');
             
             try {
-                const response = await fetch('/api/supervisors', {
+                const response = await fetch('/api/subsystem/supervisors/level1', {
                     headers: {
                         'x-auth-token': currentToken
                     }
@@ -1928,7 +1933,7 @@
                 const data = await response.json();
                 
                 if (data.success) {
-                    const supervisors = data.supervisors.filter(s => s.level === 1 && s.is_active);
+                    const supervisors = data.supervisors || [];
                     
                     // Vider les options
                     select.innerHTML = '<option value="">Aucun (assigner plus tard)</option>';
@@ -1937,12 +1942,13 @@
                     supervisors.forEach(supervisor => {
                         const option = document.createElement('option');
                         option.value = supervisor._id;
-                        option.textContent = `${supervisor.name || supervisor.username} (${supervisor.agents_count || 0} agents)`;
+                        option.textContent = `${supervisor.name || supervisor.username}`;
                         select.appendChild(option);
                     });
                 }
             } catch (error) {
                 console.error('Erreur chargement superviseurs 1:', error);
+                showNotification('Erreur lors du chargement des superviseurs', 'error');
             }
         }
         
@@ -1951,7 +1957,7 @@
             const select = document.getElementById('assign-supervisor2');
             
             try {
-                const response = await fetch('/api/supervisors', {
+                const response = await fetch('/api/subsystem/supervisors/level2', {
                     headers: {
                         'x-auth-token': currentToken
                     }
@@ -1960,7 +1966,7 @@
                 const data = await response.json();
                 
                 if (data.success) {
-                    const supervisors = data.supervisors.filter(s => s.level === 2 && s.is_active);
+                    const supervisors = data.supervisors || [];
                     
                     // Vider les options
                     select.innerHTML = '<option value="">Aucun (assigner plus tard)</option>';
@@ -1969,12 +1975,13 @@
                     supervisors.forEach(supervisor => {
                         const option = document.createElement('option');
                         option.value = supervisor._id;
-                        option.textContent = `${supervisor.name || supervisor.username} (${supervisor.supervisors_count || 0} superviseurs)`;
+                        option.textContent = `${supervisor.name || supervisor.username}`;
                         select.appendChild(option);
                     });
                 }
             } catch (error) {
                 console.error('Erreur chargement superviseurs 2:', error);
+                showNotification('Erreur lors du chargement des superviseurs', 'error');
             }
         }
         
@@ -2021,7 +2028,7 @@
                 submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Création...';
                 submitBtn.disabled = true;
                 
-                const response = await fetch('/api/agents/create', {
+                const response = await fetch('/api/subsystem/users/create', {
                     method: 'POST',
                     headers: {
                         'x-auth-token': currentToken,
@@ -2029,11 +2036,10 @@
                     },
                     body: JSON.stringify({
                         name: fullname,
-                        email: email,
-                        level: apiLevel,
+                        username: email,
                         password: password,
                         role: apiRole,
-                        subsystem_id: currentSubsystem.id
+                        level: apiLevel
                     })
                 });
                 
@@ -2073,7 +2079,7 @@ Email: ${user.username}
 Rôle: ${user.role}
 Niveau: ${user.level || 1}
 Statut: ${user.is_active ? 'Actif' : 'Inactif'}
-Date création: ${new Date(user.dateCreation).toLocaleDateString('fr-FR')}
+Date création: ${user.dateCreation ? new Date(user.dateCreation).toLocaleDateString('fr-FR') : 'Non disponible'}
 Tickets vendus: ${user.total_tickets || 0}
 Ventes totales: ${(user.total_sales || 0).toLocaleString()} HTG`);
             }
@@ -2141,7 +2147,7 @@ Ventes totales: ${(user.total_sales || 0).toLocaleString()} HTG`);
                 }
                 
                 try {
-                    const response = await fetch(`/api/agents/${userId}`, {
+                    const response = await fetch(`/api/subsystem/users/${userId}`, {
                         method: 'PUT',
                         headers: {
                             'x-auth-token': currentToken,
@@ -2149,7 +2155,6 @@ Ventes totales: ${(user.total_sales || 0).toLocaleString()} HTG`);
                         },
                         body: JSON.stringify({
                             name: fullname,
-                            email: email,
                             level: level,
                             password: password || undefined
                         })
@@ -2181,7 +2186,7 @@ Ventes totales: ${(user.total_sales || 0).toLocaleString()} HTG`);
             }
             
             try {
-                const response = await fetch(`/api/agents/${userId}/status`, {
+                const response = await fetch(`/api/subsystem/users/${userId}/status`, {
                     method: 'PUT',
                     headers: {
                         'x-auth-token': currentToken,
@@ -2237,7 +2242,7 @@ Ventes totales: ${(user.total_sales || 0).toLocaleString()} HTG`);
             const select = document.getElementById('select-supervisor1');
             
             try {
-                const response = await fetch('/api/supervisors', {
+                const response = await fetch('/api/subsystem/supervisors/level1', {
                     headers: {
                         'x-auth-token': currentToken
                     }
@@ -2246,7 +2251,7 @@ Ventes totales: ${(user.total_sales || 0).toLocaleString()} HTG`);
                 const data = await response.json();
                 
                 if (data.success) {
-                    const supervisors = data.supervisors.filter(s => s.level === 1 && s.is_active);
+                    const supervisors = data.supervisors || [];
                     
                     // Vider les options
                     select.innerHTML = '<option value="">Aucun</option>';
@@ -2269,7 +2274,7 @@ Ventes totales: ${(user.total_sales || 0).toLocaleString()} HTG`);
             const select = document.getElementById('select-supervisor2');
             
             try {
-                const response = await fetch('/api/supervisors', {
+                const response = await fetch('/api/subsystem/supervisors/level2', {
                     headers: {
                         'x-auth-token': currentToken
                     }
@@ -2278,7 +2283,7 @@ Ventes totales: ${(user.total_sales || 0).toLocaleString()} HTG`);
                 const data = await response.json();
                 
                 if (data.success) {
-                    const supervisors = data.supervisors.filter(s => s.level === 2 && s.is_active);
+                    const supervisors = data.supervisors || [];
                     
                     // Vider les options
                     select.innerHTML = '<option value="">Aucun</option>';
@@ -2307,25 +2312,29 @@ Ventes totales: ${(user.total_sales || 0).toLocaleString()} HTG`);
                 let response;
                 
                 if (userRole === 'agent') {
-                    response = await fetch(`/api/agents/${userId}/assign`, {
-                        method: 'PUT',
+                    response = await fetch('/api/subsystem/assign', {
+                        method: 'POST',
                         headers: {
                             'x-auth-token': currentToken,
                             'Content-Type': 'application/json'
                         },
                         body: JSON.stringify({
-                            supervisor_id: supervisor1Id
+                            userId: userId,
+                            supervisorId: supervisor1Id,
+                            supervisorType: 'supervisor1'
                         })
                     });
                 } else if (userRole === 'supervisor1') {
-                    response = await fetch(`/api/supervisors/${userId}/assign`, {
-                        method: 'PUT',
+                    response = await fetch('/api/subsystem/assign', {
+                        method: 'POST',
                         headers: {
                             'x-auth-token': currentToken,
                             'Content-Type': 'application/json'
                         },
                         body: JSON.stringify({
-                            supervisor2_id: supervisor2Id
+                            userId: userId,
+                            supervisorId: supervisor2Id,
+                            supervisorType: 'supervisor2'
                         })
                     });
                 }
@@ -2398,7 +2407,8 @@ Ventes totales: ${(user.total_sales || 0).toLocaleString()} HTG`);
             table.style.display = 'none';
             
             try {
-                const response = await fetch('/api/tickets', {
+                const period = document.getElementById('filter-ticket-period').value;
+                const response = await fetch(`/api/subsystem/tickets?period=${period}`, {
                     headers: {
                         'x-auth-token': currentToken
                     }
@@ -2441,6 +2451,37 @@ Ventes totales: ${(user.total_sales || 0).toLocaleString()} HTG`);
             }
         }
         
+        // Exporter les tickets
+        async function exportTickets() {
+            try {
+                const period = document.getElementById('filter-ticket-period').value;
+                const response = await fetch(`/api/subsystem/tickets/export?period=${period}`, {
+                    headers: {
+                        'x-auth-token': currentToken
+                    }
+                });
+                
+                if (response.ok) {
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `tickets-${new Date().toISOString().split('T')[0]}.csv`;
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                    document.body.removeChild(a);
+                    
+                    showNotification('Export des tickets réussi', 'success');
+                } else {
+                    showNotification('Erreur lors de l\'export des tickets', 'error');
+                }
+            } catch (error) {
+                console.error('Erreur export tickets:', error);
+                showNotification('Erreur de connexion au serveur', 'error');
+            }
+        }
+        
         // Générer un rapport
         async function generateReport() {
             const loading = document.getElementById('reports-loading');
@@ -2452,7 +2493,7 @@ Ventes totales: ${(user.total_sales || 0).toLocaleString()} HTG`);
             try {
                 const period = document.getElementById('report-period').value;
                 
-                const response = await fetch(`/api/reports/generate?period=${period}`, {
+                const response = await fetch(`/api/subsystem/stats`, {
                     headers: {
                         'x-auth-token': currentToken
                     }
@@ -2461,7 +2502,7 @@ Ventes totales: ${(user.total_sales || 0).toLocaleString()} HTG`);
                 const data = await response.json();
                 
                 if (data.success) {
-                    const report = data.report;
+                    const stats = data.stats;
                     
                     // Générer le HTML du rapport
                     let html = `
@@ -2474,15 +2515,15 @@ Ventes totales: ${(user.total_sales || 0).toLocaleString()} HTG`);
                                 </div>
                                 <div style="background-color: #f8f9fa; padding: 15px; border-radius: 8px;">
                                     <div style="font-size: 0.9rem; color: #6c757d; margin-bottom: 5px;">Agents actifs</div>
-                                    <div style="font-weight: bold; color: #2c3e50;">${report.activeAgents || 0}</div>
+                                    <div style="font-weight: bold; color: #2c3e50;">${stats.active_users || 0}</div>
                                 </div>
                                 <div style="background-color: #f8f9fa; padding: 15px; border-radius: 8px;">
-                                    <div style="font-size: 0.9rem; color: #6c757d; margin-bottom: 5px;">Performance</div>
-                                    <div style="font-weight: bold; color: #2c3e50;">${report.monthlyPerformance || 0}%</div>
+                                    <div style="font-size: 0.9rem; color: #6c757d; margin-bottom: 5px;">Ventes aujourd'hui</div>
+                                    <div style="font-weight: bold; color: #2c3e50;">${(stats.today_sales || 0).toLocaleString()} HTG</div>
                                 </div>
                                 <div style="background-color: #f8f9fa; padding: 15px; border-radius: 8px;">
-                                    <div style="font-size: 0.9rem; color: #6c757d; margin-bottom: 5px;">Tickets résolus</div>
-                                    <div style="font-weight: bold; color: #2c3e50;">${report.ticketResolution || 0}%</div>
+                                    <div style="font-size: 0.9rem; color: #6c757d; margin-bottom: 5px;">Profit du mois</div>
+                                    <div style="font-weight: bold; color: #2c3e50;">${(stats.monthly_profit || 0).toLocaleString()} HTG</div>
                                 </div>
                             </div>
                         </div>

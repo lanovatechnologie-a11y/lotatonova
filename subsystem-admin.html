@@ -1310,7 +1310,7 @@
     <!-- Notification Container -->
     <div id="notification-container"></div>
     
-    <script>
+            <script>
         // Variables globales
         let currentUser = null;
         let currentSubsystem = null;
@@ -1321,18 +1321,13 @@
         
         // Initialisation
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('🎯 Subsystem Admin initialisé');
-            
-            // Vérifier l'authentification
+            console.log('🎯 Subsystem Admin initialisé (Version Corrigée)');
             checkAuthentication();
-            
-            // Configurer les événements
             setupEventListeners();
         });
         
         // Vérifier l'authentification
         function checkAuthentication() {
-            // Récupérer le token de l'URL ou du localStorage
             const urlParams = new URLSearchParams(window.location.search);
             const tokenFromUrl = urlParams.get('token');
             const storedToken = localStorage.getItem('nova_token');
@@ -1344,7 +1339,6 @@
                 return;
             }
             
-            // Vérifier le token avec le serveur
             verifyToken();
         }
         
@@ -1352,24 +1346,18 @@
         async function verifyToken() {
             try {
                 const response = await fetch('/api/auth/check', {
-                    headers: {
-                        'x-auth-token': currentToken
-                    }
+                    headers: { 'x-auth-token': currentToken }
                 });
                 
                 const data = await response.json();
                 
                 if (data.success && data.admin.role === 'subsystem') {
-                    // Stocker les infos utilisateur
                     currentUser = data.admin;
                     localStorage.setItem('nova_token', currentToken);
                     localStorage.setItem('nova_user_data', JSON.stringify(currentUser));
                     
-                    // Charger les données
                     loadSubsystemData();
                     loadDashboardData();
-                    
-                    // Mettre à jour l'interface
                     updateUserInfo();
                 } else {
                     redirectToLogin();
@@ -1380,7 +1368,6 @@
             }
         }
         
-        // Rediriger vers la page de login
         function redirectToLogin() {
             window.location.href = '/';
         }
@@ -1389,9 +1376,7 @@
         async function loadSubsystemData() {
             try {
                 const response = await fetch('/api/subsystems/mine', {
-                    headers: {
-                        'x-auth-token': currentToken
-                    }
+                    headers: { 'x-auth-token': currentToken }
                 });
                 
                 const data = await response.json();
@@ -1404,11 +1389,9 @@
                 }
             } catch (error) {
                 console.error('Erreur chargement sous-système:', error);
-                showNotification('Erreur lors du chargement du sous-système', 'error');
             }
         }
         
-        // Mettre à jour les infos utilisateur
         function updateUserInfo() {
             if (currentUser) {
                 document.getElementById('user-avatar').textContent = 
@@ -1420,13 +1403,11 @@
             }
         }
         
-        // Mettre à jour les infos du sous-système
         function updateSubsystemInfo() {
             if (currentSubsystem) {
                 document.getElementById('subsystem-name').textContent = currentSubsystem.name;
                 document.getElementById('subsystem-domain').textContent = currentSubsystem.subdomain;
                 
-                // Mettre à jour les paramètres
                 document.getElementById('settings-name').value = currentSubsystem.name;
                 document.getElementById('settings-email').value = currentSubsystem.contact_email;
                 document.getElementById('settings-phone').value = currentSubsystem.contact_phone || '';
@@ -1438,40 +1419,33 @@
             }
         }
         
-        // Charger les données du tableau de bord
+        // --- DASHBOARD (CORRIGÉ) ---
+        // Utilise maintenant /api/subsystem/stats au lieu de /api/statistics global
         async function loadDashboardData() {
             try {
-                // Charger les statistiques du sous-système
                 const statsResponse = await fetch('/api/subsystem/stats', {
-                    headers: {
-                        'x-auth-token': currentToken
-                    }
+                    headers: { 'x-auth-token': currentToken }
                 });
                 
                 const statsData = await statsResponse.json();
                 
                 if (statsData.success) {
-                    // Mettre à jour les cartes de statistiques
-                    document.getElementById('total-agents').textContent = 
-                        statsData.stats.active_users || 0;
-                    document.getElementById('today-sales').textContent = 
-                        (statsData.stats.today_sales || 0).toLocaleString() + ' HTG';
-                    document.getElementById('today-tickets').textContent = 
-                        statsData.stats.today_tickets || 0;
-                    document.getElementById('monthly-profit').textContent = 
-                        (statsData.stats.monthly_profit || 0).toLocaleString() + ' HTG';
+                    const stats = statsData.stats;
+                    document.getElementById('total-agents').textContent = stats.active_users || 0;
+                    document.getElementById('today-sales').textContent = (stats.today_sales || 0).toLocaleString() + ' HTG';
+                    document.getElementById('today-tickets').textContent = stats.today_tickets || 0;
+                    document.getElementById('monthly-profit').textContent = (stats.monthly_profit || 0).toLocaleString() + ' HTG';
                 }
                 
-                // Charger les activités récentes
                 loadRecentActivities();
                 
             } catch (error) {
                 console.error('Erreur chargement dashboard:', error);
-                showNotification('Erreur lors du chargement des données', 'error');
             }
         }
         
-        // Charger les activités récentes
+        // --- ACTIVITÉS (CORRIGÉ) ---
+        // Utilise /api/subsystem/activities
         async function loadRecentActivities() {
             const loading = document.getElementById('activities-loading');
             const table = document.getElementById('activities-table');
@@ -1484,9 +1458,7 @@
             
             try {
                 const response = await fetch('/api/subsystem/activities', {
-                    headers: {
-                        'x-auth-token': currentToken
-                    }
+                    headers: { 'x-auth-token': currentToken }
                 });
                 
                 const data = await response.json();
@@ -1500,10 +1472,7 @@
                         return;
                     }
                     
-                    // Vider le tableau
                     tbody.innerHTML = '';
-                    
-                    // Ajouter chaque activité
                     activities.forEach(activity => {
                         const row = document.createElement('tr');
                         row.innerHTML = `
@@ -1519,13 +1488,14 @@
                     table.style.display = 'table';
                 }
             } catch (error) {
-                console.error('Erreur chargement activités:', error);
+                console.error('Erreur activités:', error);
                 loading.style.display = 'none';
                 empty.style.display = 'block';
             }
         }
         
-        // Charger tous les agents
+        // --- AGENTS (CORRIGÉ) ---
+        // Utilise /api/subsystem/users?role=agent
         async function loadAgents() {
             const loading = document.getElementById('agents-loading');
             const table = document.getElementById('agents-table');
@@ -1538,45 +1508,32 @@
             
             try {
                 const response = await fetch('/api/subsystem/users?role=agent', {
-                    headers: {
-                        'x-auth-token': currentToken
-                    }
+                    headers: { 'x-auth-token': currentToken }
                 });
                 
                 const data = await response.json();
                 
                 if (data.success) {
+                    // Note: API renvoie { users: [...] } et non { agents: [...] } pour cette route
                     users = data.users || [];
-                    const agents = users.filter(user => user.role === 'agent' || user.role === 'Agent');
                     
-                    if (agents.length === 0) {
+                    if (users.length === 0) {
                         loading.style.display = 'none';
                         empty.style.display = 'block';
                         return;
                     }
                     
-                    // Vider le tableau
                     tbody.innerHTML = '';
-                    
-                    // Ajouter chaque agent
-                    agents.forEach(agent => {
-                        const lastActive = agent.last_active ? 
-                            new Date(agent.last_active).toLocaleString('fr-FR') : 
-                            'Jamais';
+                    users.forEach(agent => {
+                        const lastActive = agent.is_online ? 'En ligne' : 'Hors ligne';
                         
                         const row = document.createElement('tr');
                         row.innerHTML = `
                             <td>
                                 <strong>${agent.name || agent.username}</strong>
-                                <div style="font-size: 0.8rem; color: #6c757d;">
-                                    ${agent.username}
-                                </div>
+                                <div style="font-size: 0.8rem; color: #6c757d;">${agent.username}</div>
                             </td>
-                            <td>
-                                <span id="supervisor-${agent._id}">
-                                    ${agent.supervisor || 'Non assigné'}
-                                </span>
-                            </td>
+                            <td>${agent.supervisor_id ? 'Assigné' : 'Non assigné'}</td>
                             <td>
                                 <span class="status-badge ${agent.is_active ? 'status-active' : 'status-inactive'}">
                                     ${agent.is_active ? 'Actif' : 'Inactif'}
@@ -1587,22 +1544,14 @@
                             <td>${lastActive}</td>
                             <td>
                                 <div class="action-buttons">
-                                    <button class="action-btn view" onclick="viewUser('${agent._id}')" title="Voir">
-                                        <i class="fas fa-eye"></i>
-                                    </button>
-                                    <button class="action-btn edit" onclick="editUser('${agent._id}')" title="Modifier">
-                                        <i class="fas fa-edit"></i>
-                                    </button>
-                                    <button class="action-btn delete" onclick="toggleUserStatus('${agent._id}', ${agent.is_active})" title="${agent.is_active ? 'Désactiver' : 'Activer'}">
+                                    <button class="action-btn edit" onclick="editUser('${agent._id}')"><i class="fas fa-edit"></i></button>
+                                    <button class="action-btn delete" onclick="toggleUserStatus('${agent._id}', ${agent.is_active})">
                                         <i class="fas ${agent.is_active ? 'fa-ban' : 'fa-check'}"></i>
                                     </button>
-                                    <button class="action-btn" onclick="assignSupervisor('${agent._id}')" title="Assigner superviseur">
-                                        <i class="fas fa-user-tie"></i>
-                                    </button>
+                                    <button class="action-btn" onclick="assignSupervisor('${agent._id}')"><i class="fas fa-user-tie"></i></button>
                                 </div>
                             </td>
                         `;
-                        
                         tbody.appendChild(row);
                     });
                     
@@ -1610,14 +1559,14 @@
                     table.style.display = 'table';
                 }
             } catch (error) {
-                console.error('Erreur chargement agents:', error);
+                console.error('Erreur agents:', error);
                 loading.style.display = 'none';
                 empty.style.display = 'block';
-                showNotification('Erreur lors du chargement des agents', 'error');
             }
         }
         
-        // Charger les superviseurs niveau 1
+        // --- SUPERVISEURS 1 (CORRIGÉ) ---
+        // Utilise /api/subsystem/users?role=supervisor1
         async function loadSupervisors1() {
             const loading = document.getElementById('supervisor1-loading');
             const table = document.getElementById('supervisor1-table');
@@ -1628,65 +1577,40 @@
             
             try {
                 const response = await fetch('/api/subsystem/users?role=supervisor1', {
-                    headers: {
-                        'x-auth-token': currentToken
-                    }
+                    headers: { 'x-auth-token': currentToken }
                 });
                 
                 const data = await response.json();
                 
                 if (data.success) {
-                    users = data.users || [];
-                    supervisors1 = users.filter(s => s.level === 1) || [];
-                    
-                    // Vider le tableau
+                    supervisors1 = data.users || [];
                     tbody.innerHTML = '';
                     
-                    // Ajouter chaque superviseur niveau 1
                     supervisors1.forEach(supervisor => {
                         const row = document.createElement('tr');
                         row.innerHTML = `
                             <td>
                                 <strong>${supervisor.name || supervisor.username}</strong>
-                                <div style="font-size: 0.8rem; color: #6c757d;">
-                                    ${supervisor.username}
-                                </div>
+                                <div style="font-size: 0.8rem; color: #6c757d;">${supervisor.username}</div>
                             </td>
                             <td>${supervisor.agents_count || 0}</td>
-                            <td>
-                                <span id="supervisor2-${supervisor._id}">
-                                    ${supervisor.supervisor2 || 'Non assigné'}
-                                </span>
-                            </td>
+                            <td>${supervisor.supervisor2_id ? 'Assigné' : 'Non assigné'}</td>
                             <td>
                                 <span class="status-badge ${supervisor.is_active ? 'status-active' : 'status-inactive'}">
                                     ${supervisor.is_active ? 'Actif' : 'Inactif'}
                                 </span>
                             </td>
-                            <td>
-                                <div style="background: #f0f0f0; height: 10px; border-radius: 5px; margin: 5px 0;">
-                                    <div style="background: #3498db; height: 10px; border-radius: 5px; width: ${Math.min(supervisor.performance || 0, 100)}%"></div>
-                                </div>
-                                ${supervisor.performance || 0}%
-                            </td>
+                            <td>N/A</td>
                             <td>
                                 <div class="action-buttons">
-                                    <button class="action-btn view" onclick="viewUser('${supervisor._id}')" title="Voir">
-                                        <i class="fas fa-eye"></i>
-                                    </button>
-                                    <button class="action-btn edit" onclick="editUser('${supervisor._id}')" title="Modifier">
-                                        <i class="fas fa-edit"></i>
-                                    </button>
-                                    <button class="action-btn delete" onclick="toggleUserStatus('${supervisor._id}', ${supervisor.is_active})" title="${supervisor.is_active ? 'Désactiver' : 'Activer'}">
+                                    <button class="action-btn edit" onclick="editUser('${supervisor._id}')"><i class="fas fa-edit"></i></button>
+                                    <button class="action-btn delete" onclick="toggleUserStatus('${supervisor._id}', ${supervisor.is_active})">
                                         <i class="fas ${supervisor.is_active ? 'fa-ban' : 'fa-check'}"></i>
                                     </button>
-                                    <button class="action-btn" onclick="assignSupervisor2('${supervisor._id}')" title="Assigner superviseur N2">
-                                        <i class="fas fa-user-tie"></i>
-                                    </button>
+                                    <button class="action-btn" onclick="assignSupervisor2('${supervisor._id}')"><i class="fas fa-user-tie"></i></button>
                                 </div>
                             </td>
                         `;
-                        
                         tbody.appendChild(row);
                     });
                     
@@ -1694,13 +1618,12 @@
                     table.style.display = 'table';
                 }
             } catch (error) {
-                console.error('Erreur chargement superviseurs 1:', error);
+                console.error('Erreur superviseurs 1:', error);
                 loading.style.display = 'none';
-                showNotification('Erreur lors du chargement des superviseurs', 'error');
             }
         }
-        
-        // Charger les superviseurs niveau 2
+
+        // --- SUPERVISEURS 2 (CORRIGÉ) ---
         async function loadSupervisors2() {
             const loading = document.getElementById('supervisor2-loading');
             const table = document.getElementById('supervisor2-table');
@@ -1711,57 +1634,38 @@
             
             try {
                 const response = await fetch('/api/subsystem/users?role=supervisor2', {
-                    headers: {
-                        'x-auth-token': currentToken
-                    }
+                    headers: { 'x-auth-token': currentToken }
                 });
                 
                 const data = await response.json();
                 
                 if (data.success) {
-                    users = data.users || [];
-                    supervisors2 = users.filter(s => s.level === 2) || [];
-                    
-                    // Vider le tableau
+                    supervisors2 = data.users || [];
                     tbody.innerHTML = '';
                     
-                    // Ajouter chaque superviseur niveau 2
                     supervisors2.forEach(supervisor => {
                         const row = document.createElement('tr');
                         row.innerHTML = `
                             <td>
                                 <strong>${supervisor.name || supervisor.username}</strong>
-                                <div style="font-size: 0.8rem; color: #6c757d;">
-                                    ${supervisor.username}
-                                </div>
+                                <div style="font-size: 0.8rem; color: #6c757d;">${supervisor.username}</div>
                             </td>
-                            <td>${supervisor.supervisors_count || 0}</td>
+                            <td>-</td>
                             <td>
                                 <span class="status-badge ${supervisor.is_active ? 'status-active' : 'status-inactive'}">
                                     ${supervisor.is_active ? 'Actif' : 'Inactif'}
                                 </span>
                             </td>
-                            <td>
-                                <div style="background: #f0f0f0; height: 10px; border-radius: 5px; margin: 5px 0;">
-                                    <div style="background: #3498db; height: 10px; border-radius: 5px; width: ${Math.min(supervisor.global_performance || 0, 100)}%"></div>
-                                </div>
-                                ${supervisor.global_performance || 0}%
-                            </td>
+                            <td>N/A</td>
                             <td>
                                 <div class="action-buttons">
-                                    <button class="action-btn view" onclick="viewUser('${supervisor._id}')" title="Voir">
-                                        <i class="fas fa-eye"></i>
-                                    </button>
-                                    <button class="action-btn edit" onclick="editUser('${supervisor._id}')" title="Modifier">
-                                        <i class="fas fa-edit"></i>
-                                    </button>
-                                    <button class="action-btn delete" onclick="toggleUserStatus('${supervisor._id}', ${supervisor.is_active})" title="${supervisor.is_active ? 'Désactiver' : 'Activer'}">
+                                    <button class="action-btn edit" onclick="editUser('${supervisor._id}')"><i class="fas fa-edit"></i></button>
+                                    <button class="action-btn delete" onclick="toggleUserStatus('${supervisor._id}', ${supervisor.is_active})">
                                         <i class="fas ${supervisor.is_active ? 'fa-ban' : 'fa-check'}"></i>
                                     </button>
                                 </div>
                             </td>
                         `;
-                        
                         tbody.appendChild(row);
                     });
                     
@@ -1769,635 +1673,13 @@
                     table.style.display = 'table';
                 }
             } catch (error) {
-                console.error('Erreur chargement superviseurs 2:', error);
+                console.error('Erreur superviseurs 2:', error);
                 loading.style.display = 'none';
-                showNotification('Erreur lors du chargement des superviseurs', 'error');
             }
         }
         
-        // Configurer les événements
-        function setupEventListeners() {
-            // Navigation
-            document.querySelectorAll('.nav-item').forEach(item => {
-                item.addEventListener('click', function() {
-                    // Mettre à jour la navigation active
-                    document.querySelectorAll('.nav-item').forEach(nav => {
-                        nav.classList.remove('active');
-                    });
-                    this.classList.add('active');
-                    
-                    // Afficher la section correspondante
-                    const section = this.getAttribute('data-section');
-                    showSection(section);
-                });
-            });
-            
-            // Boutons d'action
-            document.getElementById('refresh-btn').addEventListener('click', refreshData);
-            document.getElementById('add-user-btn').addEventListener('click', showAddUserModal);
-            document.getElementById('logout-btn').addEventListener('click', logout);
-            
-            // Tabs superviseurs
-            document.querySelectorAll('[data-supervisor-tab]').forEach(tab => {
-                tab.addEventListener('click', function() {
-                    const tabId = this.getAttribute('data-supervisor-tab');
-                    switchSupervisorTab(tabId);
-                });
-            });
-            
-            // Formulaire ajout utilisateur
-            document.getElementById('user-role').addEventListener('change', function() {
-                const role = this.value;
-                const supervisorAssignment = document.getElementById('supervisor-assignment');
-                const agentSupervisor = document.getElementById('agent-supervisor');
-                
-                supervisorAssignment.style.display = role === 'supervisor1' ? 'block' : 'none';
-                agentSupervisor.style.display = role === 'agent' ? 'block' : 'none';
-                
-                if (role === 'agent') {
-                    loadSupervisor1Options();
-                } else if (role === 'supervisor1') {
-                    loadSupervisor2Options();
-                }
-            });
-            
-            document.getElementById('add-user-form').addEventListener('submit', createUser);
-            document.getElementById('cancel-add').addEventListener('click', hideAddUserModal);
-            document.getElementById('close-add-modal').addEventListener('click', hideAddUserModal);
-            
-            // Formulaire édition utilisateur
-            document.getElementById('cancel-edit').addEventListener('click', hideEditUserModal);
-            document.getElementById('close-edit-modal').addEventListener('click', hideEditUserModal);
-            
-            // Modal assignation
-            document.getElementById('cancel-assign').addEventListener('click', hideAssignModal);
-            document.getElementById('close-assign-modal').addEventListener('click', hideAssignModal);
-            document.getElementById('save-assign').addEventListener('click', saveAssignment);
-            
-            // Recherche agents
-            document.getElementById('search-agents').addEventListener('input', filterAgents);
-            document.getElementById('search-agents-btn').addEventListener('click', loadAgents);
-            document.getElementById('filter-agent-status').addEventListener('change', loadAgents);
-            
-            // Génération de rapport
-            document.getElementById('generate-report-btn').addEventListener('click', generateReport);
-            
-            // Export tickets
-            document.getElementById('export-tickets-btn').addEventListener('click', exportTickets);
-        }
-        
-        // Afficher une section
-        function showSection(sectionId) {
-            // Cacher toutes les sections
-            document.querySelectorAll('.section-content').forEach(section => {
-                section.style.display = 'none';
-            });
-            
-            // Afficher la section demandée
-            const section = document.getElementById(`${sectionId}-section`);
-            if (section) {
-                section.style.display = 'block';
-                document.getElementById('page-title').textContent = 
-                    document.querySelector(`.nav-item[data-section="${sectionId}"] .nav-label`).textContent;
-                
-                // Charger les données spécifiques à la section
-                switch(sectionId) {
-                    case 'dashboard':
-                        loadDashboardData();
-                        break;
-                    case 'agents':
-                        loadAgents();
-                        break;
-                    case 'supervisors':
-                        loadSupervisors1();
-                        break;
-                    case 'tickets':
-                        loadTickets();
-                        break;
-                    case 'reports':
-                        loadReports();
-                        break;
-                    case 'settings':
-                        loadSettings();
-                        break;
-                }
-            }
-        }
-        
-        // Changer l'onglet des superviseurs
-        function switchSupervisorTab(tabId) {
-            // Mettre à jour les tabs
-            document.querySelectorAll('[data-supervisor-tab]').forEach(tab => {
-                tab.classList.remove('active');
-            });
-            document.querySelector(`[data-supervisor-tab="${tabId}"]`).classList.add('active');
-            
-            // Afficher le contenu correspondant
-            document.querySelectorAll('.tab-content').forEach(content => {
-                content.classList.remove('active');
-            });
-            document.getElementById(`${tabId}-tab`).classList.add('active');
-            
-            // Charger les données correspondantes
-            if (tabId === 'supervisor1') {
-                loadSupervisors1();
-            } else if (tabId === 'supervisor2') {
-                loadSupervisors2();
-            }
-        }
-        
-        // Afficher le modal d'ajout d'utilisateur
-        function showAddUserModal() {
-            document.getElementById('add-user-modal').classList.add('active');
-        }
-        
-        // Cacher le modal d'ajout d'utilisateur
-        function hideAddUserModal() {
-            document.getElementById('add-user-modal').classList.remove('active');
-            document.getElementById('add-user-form').reset();
-            document.getElementById('supervisor-assignment').style.display = 'none';
-            document.getElementById('agent-supervisor').style.display = 'none';
-        }
-        
-        // Charger les options de superviseur niveau 1
-        async function loadSupervisor1Options() {
-            const select = document.getElementById('assign-supervisor1');
-            
-            try {
-                const response = await fetch('/api/subsystem/supervisors/level1', {
-                    headers: {
-                        'x-auth-token': currentToken
-                    }
-                });
-                
-                const data = await response.json();
-                
-                if (data.success) {
-                    const supervisors = data.supervisors || [];
-                    
-                    // Vider les options
-                    select.innerHTML = '<option value="">Aucun (assigner plus tard)</option>';
-                    
-                    // Ajouter chaque superviseur
-                    supervisors.forEach(supervisor => {
-                        const option = document.createElement('option');
-                        option.value = supervisor._id;
-                        option.textContent = `${supervisor.name || supervisor.username}`;
-                        select.appendChild(option);
-                    });
-                }
-            } catch (error) {
-                console.error('Erreur chargement superviseurs 1:', error);
-                showNotification('Erreur lors du chargement des superviseurs', 'error');
-            }
-        }
-        
-        // Charger les options de superviseur niveau 2
-        async function loadSupervisor2Options() {
-            const select = document.getElementById('assign-supervisor2');
-            
-            try {
-                const response = await fetch('/api/subsystem/supervisors/level2', {
-                    headers: {
-                        'x-auth-token': currentToken
-                    }
-                });
-                
-                const data = await response.json();
-                
-                if (data.success) {
-                    const supervisors = data.supervisors || [];
-                    
-                    // Vider les options
-                    select.innerHTML = '<option value="">Aucun (assigner plus tard)</option>';
-                    
-                    // Ajouter chaque superviseur
-                    supervisors.forEach(supervisor => {
-                        const option = document.createElement('option');
-                        option.value = supervisor._id;
-                        option.textContent = `${supervisor.name || supervisor.username}`;
-                        select.appendChild(option);
-                    });
-                }
-            } catch (error) {
-                console.error('Erreur chargement superviseurs 2:', error);
-                showNotification('Erreur lors du chargement des superviseurs', 'error');
-            }
-        }
-        
-        // Créer un nouvel utilisateur
-        async function createUser(e) {
-            e.preventDefault();
-            
-            const role = document.getElementById('user-role').value;
-            const fullname = document.getElementById('user-fullname').value.trim();
-            const email = document.getElementById('user-email').value.trim();
-            const password = document.getElementById('user-password').value;
-            const confirmPassword = document.getElementById('user-confirm-password').value;
-            const level = document.getElementById('user-level').value;
-            const supervisor1Id = document.getElementById('assign-supervisor1').value;
-            const supervisor2Id = document.getElementById('assign-supervisor2').value;
-            
-            // Validation
-            if (!role || !fullname || !email || !password) {
-                showNotification('Veuillez remplir tous les champs obligatoires', 'warning');
-                return;
-            }
-            
-            if (password !== confirmPassword) {
-                showNotification('Les mots de passe ne correspondent pas', 'warning');
-                return;
-            }
-            
-            // Déterminer le rôle et le niveau pour l'API
-            let apiRole = 'agent';
-            let apiLevel = 1;
-            
-            if (role === 'supervisor1') {
-                apiRole = 'supervisor';
-                apiLevel = 1;
-            } else if (role === 'supervisor2') {
-                apiRole = 'supervisor';
-                apiLevel = 2;
-            }
-            
-            try {
-                // Désactiver le bouton
-                const submitBtn = e.target.querySelector('button[type="submit"]');
-                const originalText = submitBtn.innerHTML;
-                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Création...';
-                submitBtn.disabled = true;
-                
-                const response = await fetch('/api/subsystem/users/create', {
-                    method: 'POST',
-                    headers: {
-                        'x-auth-token': currentToken,
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        name: fullname,
-                        username: email,
-                        password: password,
-                        role: apiRole,
-                        level: apiLevel
-                    })
-                });
-                
-                const data = await response.json();
-                
-                if (data.success) {
-                    showNotification('Utilisateur créé avec succès !', 'success');
-                    hideAddUserModal();
-                    
-                    // Recharger les données selon la section active
-                    const activeSection = document.querySelector('.nav-item.active').getAttribute('data-section');
-                    if (activeSection === 'agents' || activeSection === 'supervisors') {
-                        showSection(activeSection);
-                    }
-                } else {
-                    showNotification(data.error || 'Erreur lors de la création', 'error');
-                }
-            } catch (error) {
-                console.error('Erreur création utilisateur:', error);
-                showNotification('Erreur de connexion au serveur', 'error');
-            } finally {
-                // Réactiver le bouton
-                const submitBtn = e.target.querySelector('button[type="submit"]');
-                submitBtn.innerHTML = originalText;
-                submitBtn.disabled = false;
-            }
-        }
-        
-        // Voir les détails d'un utilisateur
-        window.viewUser = async function(userId) {
-            const user = users.find(u => u._id === userId);
-            if (user) {
-                alert(`Détails de l'utilisateur:
-                
-Nom: ${user.name || user.username}
-Email: ${user.username}
-Rôle: ${user.role}
-Niveau: ${user.level || 1}
-Statut: ${user.is_active ? 'Actif' : 'Inactif'}
-Date création: ${user.dateCreation ? new Date(user.dateCreation).toLocaleDateString('fr-FR') : 'Non disponible'}
-Tickets vendus: ${user.total_tickets || 0}
-Ventes totales: ${(user.total_sales || 0).toLocaleString()} HTG`);
-            }
-        };
-        
-        // Modifier un utilisateur
-        window.editUser = async function(userId) {
-            const user = users.find(u => u._id === userId);
-            if (!user) {
-                showNotification('Utilisateur non trouvé', 'error');
-                return;
-            }
-            
-            const modal = document.getElementById('edit-user-modal');
-            const form = document.getElementById('edit-user-form');
-            
-            form.innerHTML = `
-                <div class="form-group">
-                    <label class="form-label">Nom complet</label>
-                    <input type="text" class="form-control" id="edit-fullname" value="${user.name || ''}" required>
-                </div>
-                
-                <div class="form-group">
-                    <label class="form-label">Email</label>
-                    <input type="email" class="form-control" id="edit-email" value="${user.username}" required>
-                </div>
-                
-                <div class="form-group">
-                    <label class="form-label">Nouveau mot de passe (laisser vide pour ne pas changer)</label>
-                    <input type="password" class="form-control" id="edit-password" placeholder="••••••••">
-                </div>
-                
-                <div class="form-group">
-                    <label class="form-label">Confirmer mot de passe</label>
-                    <input type="password" class="form-control" id="edit-confirm-password" placeholder="••••••••">
-                </div>
-                
-                <div class="form-group">
-                    <label class="form-label">Niveau d'accès</label>
-                    <select class="form-control" id="edit-level">
-                        <option value="1" ${user.level === 1 ? 'selected' : ''}>Niveau 1 (Basique)</option>
-                        <option value="2" ${user.level === 2 ? 'selected' : ''}>Niveau 2 (Avancé)</option>
-                        <option value="3" ${user.level === 3 ? 'selected' : ''}>Niveau 3 (Administrateur)</option>
-                    </select>
-                </div>
-                
-                <input type="hidden" id="edit-user-id" value="${userId}">
-            `;
-            
-            modal.classList.add('active');
-            
-            // Gérer la soumission du formulaire
-            form.onsubmit = async function(e) {
-                e.preventDefault();
-                
-                const fullname = document.getElementById('edit-fullname').value.trim();
-                const email = document.getElementById('edit-email').value.trim();
-                const password = document.getElementById('edit-password').value;
-                const confirmPassword = document.getElementById('edit-confirm-password').value;
-                const level = document.getElementById('edit-level').value;
-                
-                if (password && password !== confirmPassword) {
-                    showNotification('Les mots de passe ne correspondent pas', 'warning');
-                    return;
-                }
-                
-                try {
-                    const response = await fetch(`/api/subsystem/users/${userId}`, {
-                        method: 'PUT',
-                        headers: {
-                            'x-auth-token': currentToken,
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({
-                            name: fullname,
-                            level: level,
-                            password: password || undefined
-                        })
-                    });
-                    
-                    const data = await response.json();
-                    
-                    if (data.success) {
-                        showNotification('Utilisateur modifié avec succès', 'success');
-                        hideEditUserModal();
-                        
-                        // Recharger les données
-                        const activeSection = document.querySelector('.nav-item.active').getAttribute('data-section');
-                        showSection(activeSection);
-                    } else {
-                        showNotification(data.error || 'Erreur lors de la modification', 'error');
-                    }
-                } catch (error) {
-                    console.error('Erreur modification utilisateur:', error);
-                    showNotification('Erreur de connexion au serveur', 'error');
-                }
-            };
-        };
-        
-        // Activer/Désactiver un utilisateur
-        window.toggleUserStatus = async function(userId, isCurrentlyActive) {
-            if (!confirm(`Êtes-vous sûr de vouloir ${isCurrentlyActive ? 'désactiver' : 'activer'} cet utilisateur ?`)) {
-                return;
-            }
-            
-            try {
-                const response = await fetch(`/api/subsystem/users/${userId}/status`, {
-                    method: 'PUT',
-                    headers: {
-                        'x-auth-token': currentToken,
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        is_active: !isCurrentlyActive
-                    })
-                });
-                
-                const data = await response.json();
-                
-                if (data.success) {
-                    showNotification(`Utilisateur ${isCurrentlyActive ? 'désactivé' : 'activé'} avec succès`, 'success');
-                    
-                    // Recharger les données
-                    const activeSection = document.querySelector('.nav-item.active').getAttribute('data-section');
-                    showSection(activeSection);
-                } else {
-                    showNotification(data.error || 'Erreur lors du changement de statut', 'error');
-                }
-            } catch (error) {
-                console.error('Erreur changement statut:', error);
-                showNotification('Erreur de connexion au serveur', 'error');
-            }
-        };
-        
-        // Assigner un superviseur à un agent
-        window.assignSupervisor = function(userId) {
-            const user = users.find(u => u._id === userId);
-            if (!user) return;
-            
-            document.getElementById('assign-modal').classList.add('active');
-            document.getElementById('assign-modal').setAttribute('data-user-id', userId);
-            document.getElementById('assign-modal').setAttribute('data-user-role', 'agent');
-            
-            // Charger les superviseurs niveau 1
-            loadSupervisorOptionsForAssignment();
-        };
-        
-        // Assigner un superviseur niveau 2 à un superviseur niveau 1
-        window.assignSupervisor2 = function(supervisorId) {
-            document.getElementById('assign-modal').classList.add('active');
-            document.getElementById('assign-modal').setAttribute('data-user-id', supervisorId);
-            document.getElementById('assign-modal').setAttribute('data-user-role', 'supervisor1');
-            
-            // Charger les superviseurs niveau 2
-            loadSupervisor2OptionsForAssignment();
-        };
-        
-        // Charger les options de superviseur pour l'assignation
-        async function loadSupervisorOptionsForAssignment() {
-            const select = document.getElementById('select-supervisor1');
-            
-            try {
-                const response = await fetch('/api/subsystem/supervisors/level1', {
-                    headers: {
-                        'x-auth-token': currentToken
-                    }
-                });
-                
-                const data = await response.json();
-                
-                if (data.success) {
-                    const supervisors = data.supervisors || [];
-                    
-                    // Vider les options
-                    select.innerHTML = '<option value="">Aucun</option>';
-                    
-                    // Ajouter chaque superviseur
-                    supervisors.forEach(supervisor => {
-                        const option = document.createElement('option');
-                        option.value = supervisor._id;
-                        option.textContent = `${supervisor.name || supervisor.username}`;
-                        select.appendChild(option);
-                    });
-                }
-            } catch (error) {
-                console.error('Erreur chargement superviseurs:', error);
-            }
-        }
-        
-        // Charger les options de superviseur niveau 2 pour l'assignation
-        async function loadSupervisor2OptionsForAssignment() {
-            const select = document.getElementById('select-supervisor2');
-            
-            try {
-                const response = await fetch('/api/subsystem/supervisors/level2', {
-                    headers: {
-                        'x-auth-token': currentToken
-                    }
-                });
-                
-                const data = await response.json();
-                
-                if (data.success) {
-                    const supervisors = data.supervisors || [];
-                    
-                    // Vider les options
-                    select.innerHTML = '<option value="">Aucun</option>';
-                    
-                    // Ajouter chaque superviseur
-                    supervisors.forEach(supervisor => {
-                        const option = document.createElement('option');
-                        option.value = supervisor._id;
-                        option.textContent = `${supervisor.name || supervisor.username}`;
-                        select.appendChild(option);
-                    });
-                }
-            } catch (error) {
-                console.error('Erreur chargement superviseurs 2:', error);
-            }
-        }
-        
-        // Sauvegarder l'assignation
-        async function saveAssignment() {
-            const userId = document.getElementById('assign-modal').getAttribute('data-user-id');
-            const userRole = document.getElementById('assign-modal').getAttribute('data-user-role');
-            const supervisor1Id = document.getElementById('select-supervisor1').value;
-            const supervisor2Id = document.getElementById('select-supervisor2').value;
-            
-            try {
-                let response;
-                
-                if (userRole === 'agent') {
-                    response = await fetch('/api/subsystem/assign', {
-                        method: 'POST',
-                        headers: {
-                            'x-auth-token': currentToken,
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({
-                            userId: userId,
-                            supervisorId: supervisor1Id,
-                            supervisorType: 'supervisor1'
-                        })
-                    });
-                } else if (userRole === 'supervisor1') {
-                    response = await fetch('/api/subsystem/assign', {
-                        method: 'POST',
-                        headers: {
-                            'x-auth-token': currentToken,
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({
-                            userId: userId,
-                            supervisorId: supervisor2Id,
-                            supervisorType: 'supervisor2'
-                        })
-                    });
-                }
-                
-                if (response) {
-                    const data = await response.json();
-                    
-                    if (data.success) {
-                        showNotification('Assignation sauvegardée avec succès', 'success');
-                        hideAssignModal();
-                        
-                        // Recharger les données
-                        const activeSection = document.querySelector('.nav-item.active').getAttribute('data-section');
-                        showSection(activeSection);
-                    } else {
-                        showNotification(data.error || 'Erreur lors de l\'assignation', 'error');
-                    }
-                }
-            } catch (error) {
-                console.error('Erreur assignation:', error);
-                showNotification('Erreur de connexion au serveur', 'error');
-            }
-        }
-        
-        // Cacher le modal d'assignation
-        function hideAssignModal() {
-            document.getElementById('assign-modal').classList.remove('active');
-            document.getElementById('select-supervisor1').value = '';
-            document.getElementById('select-supervisor2').value = '';
-        }
-        
-        // Cacher le modal d'édition
-        function hideEditUserModal() {
-            document.getElementById('edit-user-modal').classList.remove('active');
-        }
-        
-        // Filtrer les agents
-        function filterAgents() {
-            const searchTerm = document.getElementById('search-agents').value.toLowerCase();
-            const statusFilter = document.getElementById('filter-agent-status').value;
-            const rows = document.querySelectorAll('#agents-table-body tr');
-            
-            rows.forEach(row => {
-                const text = row.textContent.toLowerCase();
-                const isActive = row.querySelector('.status-badge')?.textContent.includes('Actif');
-                
-                let shouldShow = true;
-                
-                if (searchTerm && !text.includes(searchTerm)) {
-                    shouldShow = false;
-                }
-                
-                if (statusFilter === 'active' && !isActive) {
-                    shouldShow = false;
-                } else if (statusFilter === 'inactive' && isActive) {
-                    shouldShow = false;
-                }
-                
-                row.style.display = shouldShow ? '' : 'none';
-            });
-        }
-        
-        // Charger les tickets
+        // --- TICKETS (CORRIGÉ) ---
+        // Utilise /api/subsystem/tickets
         async function loadTickets() {
             const loading = document.getElementById('tickets-loading');
             const table = document.getElementById('tickets-table');
@@ -2407,22 +1689,16 @@ Ventes totales: ${(user.total_sales || 0).toLocaleString()} HTG`);
             table.style.display = 'none';
             
             try {
-                const period = document.getElementById('filter-ticket-period').value;
-                const response = await fetch(`/api/subsystem/tickets?period=${period}`, {
-                    headers: {
-                        'x-auth-token': currentToken
-                    }
+                const response = await fetch('/api/subsystem/tickets', {
+                    headers: { 'x-auth-token': currentToken }
                 });
                 
                 const data = await response.json();
                 
                 if (data.success) {
                     const tickets = data.tickets || [];
-                    
-                    // Vider le tableau
                     tbody.innerHTML = '';
                     
-                    // Ajouter chaque ticket
                     tickets.forEach(ticket => {
                         const row = document.createElement('tr');
                         row.innerHTML = `
@@ -2437,7 +1713,6 @@ Ventes totales: ${(user.total_sales || 0).toLocaleString()} HTG`);
                                 </span>
                             </td>
                         `;
-                        
                         tbody.appendChild(row);
                     });
                     
@@ -2445,187 +1720,380 @@ Ventes totales: ${(user.total_sales || 0).toLocaleString()} HTG`);
                     table.style.display = 'table';
                 }
             } catch (error) {
-                console.error('Erreur chargement tickets:', error);
+                console.error('Erreur tickets:', error);
                 loading.style.display = 'none';
-                showNotification('Erreur lors du chargement des tickets', 'error');
             }
         }
         
-        // Exporter les tickets
-        async function exportTickets() {
-            try {
-                const period = document.getElementById('filter-ticket-period').value;
-                const response = await fetch(`/api/subsystem/tickets/export?period=${period}`, {
-                    headers: {
-                        'x-auth-token': currentToken
-                    }
-                });
-                
-                if (response.ok) {
-                    const blob = await response.blob();
-                    const url = window.URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = `tickets-${new Date().toISOString().split('T')[0]}.csv`;
-                    document.body.appendChild(a);
-                    a.click();
-                    window.URL.revokeObjectURL(url);
-                    document.body.removeChild(a);
-                    
-                    showNotification('Export des tickets réussi', 'success');
-                } else {
-                    showNotification('Erreur lors de l\'export des tickets', 'error');
-                }
-            } catch (error) {
-                console.error('Erreur export tickets:', error);
-                showNotification('Erreur de connexion au serveur', 'error');
+        // --- CRÉATION UTILISATEUR (CORRIGÉ) ---
+        // Utilise /api/subsystem/users/create et envoie 'username' au lieu de 'email'
+        async function createUser(e) {
+            e.preventDefault();
+            
+            const role = document.getElementById('user-role').value;
+            const fullname = document.getElementById('user-fullname').value.trim();
+            const email = document.getElementById('user-email').value.trim();
+            const password = document.getElementById('user-password').value;
+            const confirmPassword = document.getElementById('user-confirm-password').value;
+            const level = document.getElementById('user-level').value;
+            
+            if (password !== confirmPassword) {
+                showNotification('Les mots de passe ne correspondent pas', 'warning');
+                return;
             }
-        }
-        
-        // Générer un rapport
-        async function generateReport() {
-            const loading = document.getElementById('reports-loading');
-            const results = document.getElementById('report-results');
             
-            loading.style.display = 'flex';
-            results.style.display = 'none';
+            const submitBtn = e.target.querySelector('button[type="submit"]');
+            const originalText = submitBtn.innerHTML;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Création...';
+            submitBtn.disabled = true;
             
             try {
-                const period = document.getElementById('report-period').value;
-                
-                const response = await fetch(`/api/subsystem/stats`, {
+                // Utilisation de la route sécurisée du sous-système
+                const response = await fetch('/api/subsystem/users/create', {
+                    method: 'POST',
                     headers: {
-                        'x-auth-token': currentToken
-                    }
+                        'x-auth-token': currentToken,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        name: fullname,
+                        username: email, // Serveur attend username, pas email
+                        password: password,
+                        role: role, // Serveur gère la conversion agent/supervisor1/2
+                        level: parseInt(level)
+                    })
                 });
                 
                 const data = await response.json();
                 
                 if (data.success) {
-                    const stats = data.stats;
+                    showNotification('Utilisateur créé avec succès !', 'success');
+                    hideAddUserModal();
                     
-                    // Générer le HTML du rapport
-                    let html = `
-                        <div style="margin-bottom: 25px;">
-                            <h3 style="color: #2c3e50; margin-bottom: 15px;">Rapport du sous-système</h3>
-                            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 20px;">
-                                <div style="background-color: #f8f9fa; padding: 15px; border-radius: 8px;">
-                                    <div style="font-size: 0.9rem; color: #6c757d; margin-bottom: 5px;">Période</div>
-                                    <div style="font-weight: bold; color: #2c3e50;">${period === 'daily' ? 'Quotidien' : period === 'weekly' ? 'Hebdomadaire' : 'Mensuel'}</div>
-                                </div>
-                                <div style="background-color: #f8f9fa; padding: 15px; border-radius: 8px;">
-                                    <div style="font-size: 0.9rem; color: #6c757d; margin-bottom: 5px;">Agents actifs</div>
-                                    <div style="font-weight: bold; color: #2c3e50;">${stats.active_users || 0}</div>
-                                </div>
-                                <div style="background-color: #f8f9fa; padding: 15px; border-radius: 8px;">
-                                    <div style="font-size: 0.9rem; color: #6c757d; margin-bottom: 5px;">Ventes aujourd'hui</div>
-                                    <div style="font-weight: bold; color: #2c3e50;">${(stats.today_sales || 0).toLocaleString()} HTG</div>
-                                </div>
-                                <div style="background-color: #f8f9fa; padding: 15px; border-radius: 8px;">
-                                    <div style="font-size: 0.9rem; color: #6c757d; margin-bottom: 5px;">Profit du mois</div>
-                                    <div style="font-weight: bold; color: #2c3e50;">${(stats.monthly_profit || 0).toLocaleString()} HTG</div>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div style="margin-top: 25px; padding-top: 15px; border-top: 1px solid #dee2e6; font-size: 0.9rem; color: #6c757d;">
-                            Rapport généré le ${new Date().toLocaleString('fr-FR')}
-                        </div>
-                    `;
+                    // Assignations si nécessaire (logique séparée car routes différentes)
+                    const newUserId = data.user.id;
+                    const sup1 = document.getElementById('assign-supervisor1').value;
+                    const sup2 = document.getElementById('assign-supervisor2').value;
                     
-                    results.innerHTML = html;
-                    loading.style.display = 'none';
-                    results.style.display = 'block';
+                    if (role === 'agent' && sup1) {
+                         await performAssignment(newUserId, sup1, 'supervisor1');
+                    }
+                    if (role === 'supervisor1' && sup2) {
+                         await performAssignment(newUserId, sup2, 'supervisor2');
+                    }
+                    
+                    refreshCurrentSection();
                 } else {
-                    showNotification(data.error || 'Erreur lors de la génération du rapport', 'error');
-                    loading.style.display = 'none';
+                    showNotification(data.error || 'Erreur lors de la création', 'error');
                 }
             } catch (error) {
-                console.error('Erreur génération rapport:', error);
-                showNotification('Erreur de connexion au serveur', 'error');
-                loading.style.display = 'none';
+                console.error('Erreur création:', error);
+                showNotification('Erreur de connexion', 'error');
+            } finally {
+                submitBtn.innerHTML = originalText;
+                submitBtn.disabled = false;
             }
         }
         
-        // Charger les rapports
-        function loadReports() {
-            // Initialiser le formulaire de rapport
-            generateReport();
+        // --- ASSIGNATION (CORRIGÉ) ---
+        // Utilise la route /api/subsystem/users/:id/assign-supervisor
+        async function performAssignment(userId, supervisorId, type) {
+             try {
+                 await fetch(`/api/subsystem/users/${userId}/assign-supervisor`, {
+                     method: 'PUT',
+                     headers: {
+                         'x-auth-token': currentToken,
+                         'Content-Type': 'application/json'
+                     },
+                     body: JSON.stringify({
+                         supervisor_id: supervisorId,
+                         supervisor_type: type
+                     })
+                 });
+             } catch (e) { console.error(e); }
+        }
+
+        async function saveAssignment() {
+            const userId = document.getElementById('assign-modal').getAttribute('data-user-id');
+            const userRole = document.getElementById('assign-modal').getAttribute('data-user-role');
+            const supervisor1Id = document.getElementById('select-supervisor1').value;
+            const supervisor2Id = document.getElementById('select-supervisor2').value;
+            
+            const targetId = userRole === 'agent' ? supervisor1Id : supervisor2Id;
+            const type = userRole === 'agent' ? 'supervisor1' : 'supervisor2';
+            
+            try {
+                const response = await fetch(`/api/subsystem/users/${userId}/assign-supervisor`, {
+                    method: 'PUT',
+                    headers: {
+                        'x-auth-token': currentToken,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        supervisor_id: targetId,
+                        supervisor_type: type
+                    })
+                });
+                
+                const data = await response.json();
+                if (data.success) {
+                    showNotification('Assignation réussie', 'success');
+                    hideAssignModal();
+                    refreshCurrentSection();
+                } else {
+                    showNotification(data.error, 'error');
+                }
+            } catch (error) {
+                showNotification('Erreur serveur', 'error');
+            }
+        }
+
+        // --- GESTION DES STATUTS (CORRIGÉ) ---
+        // Utilise /api/subsystem/users/:id/status
+        async function toggleUserStatus(userId, isCurrentlyActive) {
+            if (!confirm(`Confirmer ${isCurrentlyActive ? 'désactivation' : 'activation'} ?`)) return;
+            
+            try {
+                const response = await fetch(`/api/subsystem/users/${userId}/status`, {
+                    method: 'PUT',
+                    headers: {
+                        'x-auth-token': currentToken,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ is_active: !isCurrentlyActive })
+                });
+                
+                const data = await response.json();
+                if (data.success) {
+                    showNotification('Statut mis à jour', 'success');
+                    refreshCurrentSection();
+                } else {
+                    showNotification(data.error, 'error');
+                }
+            } catch (error) {
+                console.error(error);
+                showNotification('Erreur serveur', 'error');
+            }
         }
         
-        // Charger les paramètres
-        function loadSettings() {
-            // Les paramètres sont déjà chargés dans updateSubsystemInfo()
-        }
-        
-        // Rafraîchir les données
-        function refreshData() {
-            const refreshBtn = document.getElementById('refresh-btn');
-            const originalHtml = refreshBtn.innerHTML;
+        // --- MODIFICATION (CORRIGÉ) ---
+        // Utilise /api/subsystem/users/:id
+        window.editUser = async function(userId) {
+            // Logique de recherche dans les tableaux locaux
+            let user = users.find(u => u._id === userId) || 
+                       supervisors1.find(u => u._id === userId) || 
+                       supervisors2.find(u => u._id === userId);
+                       
+            if (!user) return;
             
-            refreshBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
-            refreshBtn.disabled = true;
+            const modal = document.getElementById('edit-user-modal');
+            const form = document.getElementById('edit-user-form');
             
-            loadDashboardData();
-            
-            // Recharger la section active
-            const activeSection = document.querySelector('.nav-item.active').getAttribute('data-section');
-            showSection(activeSection);
-            
-            // Réactiver le bouton après 2 secondes
-            setTimeout(() => {
-                refreshBtn.innerHTML = originalHtml;
-                refreshBtn.disabled = false;
-                showNotification('Données rafraîchies', 'success');
-            }, 2000);
-        }
-        
-        // Afficher une notification
-        function showNotification(message, type = 'info') {
-            const container = document.getElementById('notification-container');
-            
-            const notification = document.createElement('div');
-            notification.className = `notification ${type}`;
-            
-            let icon = 'fas fa-info-circle';
-            if (type === 'success') icon = 'fas fa-check-circle';
-            if (type === 'error') icon = 'fas fa-times-circle';
-            if (type === 'warning') icon = 'fas fa-exclamation-triangle';
-            
-            notification.innerHTML = `
-                <i class="${icon}"></i>
-                <span>${message}</span>
-                <button style="background: none; border: none; color: inherit; margin-left: auto; cursor: pointer;" 
-                        onclick="this.parentElement.remove()">
-                    <i class="fas fa-times"></i>
-                </button>
+            form.innerHTML = `
+                <div class="form-group">
+                    <label class="form-label">Nom complet</label>
+                    <input type="text" class="form-control" id="edit-fullname" value="${user.name || ''}" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Nouveau mot de passe</label>
+                    <input type="password" class="form-control" id="edit-password" placeholder="••••••••">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Niveau d'accès</label>
+                    <select class="form-control" id="edit-level">
+                        <option value="1" ${user.level === 1 ? 'selected' : ''}>Niveau 1</option>
+                        <option value="2" ${user.level === 2 ? 'selected' : ''}>Niveau 2</option>
+                        <option value="3" ${user.level === 3 ? 'selected' : ''}>Niveau 3</option>
+                    </select>
+                </div>
             `;
             
-            container.appendChild(notification);
+            modal.classList.add('active');
             
-            // Supprimer automatiquement après 5 secondes
-            setTimeout(() => {
-                if (notification.parentNode) {
-                    notification.remove();
-                }
-            }, 5000);
+            form.onsubmit = async function(e) {
+                e.preventDefault();
+                try {
+                    const response = await fetch(`/api/subsystem/users/${userId}`, {
+                        method: 'PUT',
+                        headers: {
+                            'x-auth-token': currentToken,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            name: document.getElementById('edit-fullname').value,
+                            level: document.getElementById('edit-level').value,
+                            password: document.getElementById('edit-password').value || undefined
+                        })
+                    });
+                    
+                    const data = await response.json();
+                    if(data.success) {
+                        showNotification('Modifié avec succès', 'success');
+                        hideEditUserModal();
+                        refreshCurrentSection();
+                    }
+                } catch(err) { console.error(err); }
+            };
+        };
+
+        // --- UTILITAIRES ---
+        
+        function refreshCurrentSection() {
+            const activeSection = document.querySelector('.nav-item.active').getAttribute('data-section');
+            showSection(activeSection);
+        }
+
+        function setupEventListeners() {
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.addEventListener('click', function() {
+                    document.querySelectorAll('.nav-item').forEach(nav => nav.classList.remove('active'));
+                    this.classList.add('active');
+                    showSection(this.getAttribute('data-section'));
+                });
+            });
+            
+            document.getElementById('refresh-btn').addEventListener('click', () => {
+                showNotification('Rafraîchissement...', 'info');
+                refreshCurrentSection();
+            });
+            
+            document.getElementById('add-user-btn').addEventListener('click', showAddUserModal);
+            document.getElementById('logout-btn').addEventListener('click', logout);
+            
+            // Tabs superviseurs
+            document.querySelectorAll('[data-supervisor-tab]').forEach(tab => {
+                tab.addEventListener('click', function() {
+                    const tabId = this.getAttribute('data-supervisor-tab');
+                    document.querySelectorAll('[data-supervisor-tab]').forEach(t => t.classList.remove('active'));
+                    this.classList.add('active');
+                    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                    document.getElementById(`${tabId}-tab`).classList.add('active');
+                    
+                    if(tabId === 'supervisor1') loadSupervisors1();
+                    else loadSupervisors2();
+                });
+            });
+
+            // Modals
+            document.getElementById('close-add-modal').addEventListener('click', hideAddUserModal);
+            document.getElementById('cancel-add').addEventListener('click', hideAddUserModal);
+            document.getElementById('add-user-form').addEventListener('submit', createUser);
+            
+            document.getElementById('close-edit-modal').addEventListener('click', hideEditUserModal);
+            document.getElementById('cancel-edit').addEventListener('click', hideEditUserModal);
+            
+            document.getElementById('close-assign-modal').addEventListener('click', hideAssignModal);
+            document.getElementById('cancel-assign').addEventListener('click', hideAssignModal);
+            document.getElementById('save-assign').addEventListener('click', saveAssignment);
+            
+            // Changement de rôle dans le modal d'ajout
+            document.getElementById('user-role').addEventListener('change', function() {
+                const role = this.value;
+                const assignmentDiv = document.getElementById('supervisor-assignment');
+                const agentDiv = document.getElementById('agent-supervisor');
+                
+                assignmentDiv.style.display = role === 'supervisor1' ? 'block' : 'none';
+                agentDiv.style.display = role === 'agent' ? 'block' : 'none';
+                
+                if (role === 'agent') loadSupervisorOptions('assign-supervisor1', 'supervisor1');
+                if (role === 'supervisor1') loadSupervisorOptions('assign-supervisor2', 'supervisor2');
+            });
         }
         
-        // Déconnexion
+        function showSection(sectionId) {
+            document.querySelectorAll('.section-content').forEach(s => s.style.display = 'none');
+            const section = document.getElementById(`${sectionId}-section`);
+            if (section) {
+                section.style.display = 'block';
+                if(sectionId === 'dashboard') loadDashboardData();
+                if(sectionId === 'agents') loadAgents();
+                if(sectionId === 'supervisors') loadSupervisors1();
+                if(sectionId === 'tickets') loadTickets();
+            }
+        }
+        
+        // Load Options pour les selects
+        async function loadSupervisorOptions(selectId, roleType) {
+            const select = document.getElementById(selectId);
+            try {
+                // Utilise les routes spécifiques pour les listes légères
+                const endpoint = roleType === 'supervisor1' 
+                    ? '/api/subsystem/supervisors/level1' 
+                    : '/api/subsystem/supervisors/level2';
+                    
+                const response = await fetch(endpoint, {
+                    headers: { 'x-auth-token': currentToken }
+                });
+                const data = await response.json();
+                
+                if(data.success) {
+                    select.innerHTML = '<option value="">Aucun</option>';
+                    data.supervisors.forEach(s => {
+                        const opt = document.createElement('option');
+                        opt.value = s._id;
+                        opt.textContent = s.name || s.username;
+                        select.appendChild(opt);
+                    });
+                }
+            } catch(e) { console.error(e); }
+        }
+
+        function showAddUserModal() { document.getElementById('add-user-modal').classList.add('active'); }
+        function hideAddUserModal() { 
+            document.getElementById('add-user-modal').classList.remove('active'); 
+            document.getElementById('add-user-form').reset();
+            document.getElementById('supervisor-assignment').style.display = 'none';
+            document.getElementById('agent-supervisor').style.display = 'none';
+        }
+        
+        function hideEditUserModal() { document.getElementById('edit-user-modal').classList.remove('active'); }
+        
+        window.assignSupervisor = function(userId) {
+            document.getElementById('assign-modal').classList.add('active');
+            document.getElementById('assign-modal').setAttribute('data-user-id', userId);
+            document.getElementById('assign-modal').setAttribute('data-user-role', 'agent');
+            document.getElementById('select-supervisor2').parentElement.style.display = 'none';
+            document.getElementById('select-supervisor1').parentElement.style.display = 'block';
+            loadSupervisorOptions('select-supervisor1', 'supervisor1');
+        };
+        
+        window.assignSupervisor2 = function(userId) {
+            document.getElementById('assign-modal').classList.add('active');
+            document.getElementById('assign-modal').setAttribute('data-user-id', userId);
+            document.getElementById('assign-modal').setAttribute('data-user-role', 'supervisor1');
+            document.getElementById('select-supervisor1').parentElement.style.display = 'none';
+            document.getElementById('select-supervisor2').parentElement.style.display = 'block';
+            loadSupervisorOptions('select-supervisor2', 'supervisor2');
+        };
+        
+        function hideAssignModal() { document.getElementById('assign-modal').classList.remove('active'); }
+
+        function showNotification(message, type = 'info') {
+            const container = document.getElementById('notification-container');
+            const notif = document.createElement('div');
+            notif.className = `notification ${type}`;
+            notif.innerHTML = `<span>${message}</span>`;
+            container.appendChild(notif);
+            setTimeout(() => notif.remove(), 3000);
+        }
+        
         function logout() {
-            if (confirm('Êtes-vous sûr de vouloir vous déconnecter ?')) {
+            if(confirm('Déconnexion ?')) {
                 localStorage.removeItem('nova_token');
-                localStorage.removeItem('nova_user_data');
                 redirectToLogin();
             }
         }
         
-        // Fonctions globales pour les boutons d'action
-        window.toggleUserStatus = toggleUserStatus;
-        window.viewUser = viewUser;
-        window.editUser = editUser;
-        window.assignSupervisor = assignSupervisor;
-        window.assignSupervisor2 = assignSupervisor2;
+        // Recherche simple côté client
+        document.getElementById('search-agents').addEventListener('input', function(e) {
+            const term = e.target.value.toLowerCase();
+            const rows = document.querySelectorAll('#agents-table-body tr');
+            rows.forEach(row => {
+                const text = row.textContent.toLowerCase();
+                row.style.display = text.includes(term) ? '' : 'none';
+            });
+        });
     </script>
+
 </body>
 </html>

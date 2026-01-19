@@ -1,220 +1,23 @@
-// Configuration de base avec APP_CONFIG
-const API_BASE_URL = 'https://lotatonova-fv0b.onrender.com';
+// Configuration de base avec APP_CONFIG const API_BASE_URL = 'https://lotatonova-fv0b.onrender.com';
 // Configuration API Backend
 const APP_CONFIG = {
-    health: `${API_BASE_URL}/api/health`,
-    login: `${API_BASE_URL}/api/auth/login`,
-    // Endpoints pour les résultats
-    results: `${API_BASE_URL}/api/results`,
-    checkWinners: `${API_BASE_URL}/api/check-winners`,
-    // Endpoints pour les tickets
-    tickets: `${API_BASE_URL}/api/tickets`,
-    ticketsPending: `${API_BASE_URL}/api/tickets/pending`,
-    winningTickets: `${API_BASE_URL}/api/tickets/winning`,
-    history: `${API_BASE_URL}/api/history`,
-    multiDrawTickets: `${API_BASE_URL}/api/tickets/multi-draw`,
-    companyInfo: `${API_BASE_URL}/api/company-info`,
-    logo: `${API_BASE_URL}/api/logo`
+health: ${API_BASE_URL}/api/health,
+login: ${API_BASE_URL}/api/auth/login,
+// Endpoints pour les résultats
+results: ${API_BASE_URL}/api/results,
+checkWinners: ${API_BASE_URL}/api/check-winners,
+// Endpoints pour les tickets
+tickets: ${API_BASE_URL}/api/tickets,
+ticketsPending: ${API_BASE_URL}/api/tickets/pending,
+winningTickets: ${API_BASE_URL}/api/tickets/winning,
+history: ${API_BASE_URL}/api/history,
+multiDrawTickets: ${API_BASE_URL}/api/tickets/multi-draw,
+companyInfo: ${API_BASE_URL}/api/company-info,
+logo: ${API_BASE_URL}/api/logo
 };
-
-const FIVE_MINUTES = 5 * 60 * 1000; // 5 minutes en millisecondes
-
-// Base de données simulée pour les résultats (sera remplacée par l'API)
-let resultsDatabase = {
-    'miami': {
-        'morning': {
-            date: new Date().toISOString(),
-            lot1: '123', // 3 chiffres
-            lot2: '45',  // 2 chiffres
-            lot3: '34'   // 2 chiffres
-        },
-        'evening': {
-            date: new Date().toISOString(),
-            lot1: '892',
-            lot2: '34',
-            lot3: '56'
-        }
-    },
-    'georgia': {
-        'morning': {
-            date: new Date().toISOString(),
-            lot1: '327',
-            lot2: '45',
-            lot3: '89'
-        },
-        'evening': {
-            date: new Date().toISOString(),
-            lot1: '567',
-            lot2: '12',
-            lot3: '34'
-        }
-    },
-    'newyork': {
-        'morning': {
-            date: new Date().toISOString(),
-            lot1: '892',
-            lot2: '34',
-            lot3: '56'
-        },
-        'evening': {
-            date: new Date().toISOString(),
-            lot1: '123',
-            lot2: '45',
-            lot3: '67'
-        }
-    },
-    'texas': {
-        'morning': {
-            date: new Date().toISOString(),
-            lot1: '567',
-            lot2: '89',
-            lot3: '01'
-        },
-        'evening': {
-            date: new Date().toISOString(),
-            lot1: '234',
-            lot2: '56',
-            lot3: '78'
-        }
-    },
-    'tunisia': {
-        'morning': {
-            date: new Date().toISOString(),
-            lot1: '234',
-            lot2: '56',
-            lot3: '78'
-        },
-        'evening': {
-            date: new Date().toISOString(),
-            lot1: '345',
-            lot2: '67',
-            lot3: '89'
-        }
-    }
-};
-
-// Données des tirages
-const draws = {
-    miami: {
-        name: "Miami (Florida)",
-        times: {
-            morning: "1:30 PM",
-            evening: "9:50 PM"
-        },
-        date: "Sam, 29 Nov",
-        countdown: "18 h 30 min"
-    },
-    georgia: {
-        name: "Georgia",
-        times: {
-            morning: "12:30 PM",
-            evening: "7:00 PM"
-        },
-        date: "Sam, 29 Nov",
-        countdown: "17 h 29 min"
-    },
-    newyork: {
-        name: "New York",
-        times: {
-            morning: "2:30 PM",
-            evening: "8:00 PM"
-        },
-        date: "Sam, 29 Nov",
-        countdown: "19 h 30 min"
-    },
-    texas: {
-        name: "Texas",
-        times: {
-            morning: "12:00 PM",
-            evening: "6:00 PM"
-        },
-        date: "Sam, 29 Nov",
-        countdown: "18 h 27 min"
-    },
-    tunisia: {
-        name: "Tunisie",
-        times: {
-            morning: "10:30 AM",
-            evening: "2:00 PM"
-        },
-        date: "Sam, 29 Nov",
-        countdown: "8 h 30 min"
-    }
-};
-
-// Types de paris disponibles avec multiplicateurs
-const betTypes = {
-    lotto3: {
-        name: "LOTO 3",
-        multiplier: 500,
-        icon: "fas fa-list-ol",
-        description: "3 chif (lot 1 + 1 chif devan)",
-        category: "lotto"
-    },
-    grap: {
-        name: "GRAP",
-        multiplier: 500,
-        icon: "fas fa-chart-line",
-        description: "Grap boule paire (111, 222, ..., 000)",
-        category: "special"
-    },
-    marriage: {
-        name: "MARYAJ",
-        multiplier: 1000,
-        icon: "fas fa-link",
-        description: "Maryaj 2 chif (ex: 12*34)",
-        category: "special"
-    },
-    borlette: {
-        name: "BORLETTE",
-        multiplier: 60, // 1er lot ×60
-        multiplier2: 20, // 2e lot ×20
-        multiplier3: 10, // 3e lot ×10
-        icon: "fas fa-dice",
-        description: "2 chif (1er lot ×60, 2e ×20, 3e ×10)",
-        category: "borlette"
-    },
-    boulpe: {
-        name: "BOUL PE",
-        multiplier: 60, // 1er lot ×60
-        multiplier2: 20, // 2e lot ×20
-        multiplier3: 10, // 3e lot ×10
-        icon: "fas fa-circle",
-        description: "Boul pe (00-99)",
-        category: "borlette"
-    },
-    lotto4: {
-        name: "LOTO 4",
-        multiplier: 5000,
-        icon: "fas fa-list-ol",
-        description: "4 chif (lot 1+2 accumulate) - 3 opsyon",
-        category: "lotto"
-    },
-    lotto5: {
-        name: "LOTO 5",
-        multiplier: 25000,
-        icon: "fas fa-list-ol",
-        description: "5 chif (lot 1+2+3 accumulate) - 3 opsyon",
-        category: "lotto"
-    },
-    // Types de paris automatiques
-    'auto-marriage': {
-        name: "MARYAJ OTOMATIK",
-        multiplier: 1000,
-        icon: "fas fa-robot",
-        description: "Marie boules otomatik",
-        category: "special"
-    },
-    'auto-lotto4': {
-        name: "LOTO 4 OTOMATIK",
-        multiplier: 5000,
-        icon: "fas fa-robot",
-        description: "Lotto 4 otomatik",
-        category: "special"
-    }
-};
-
+const FIVE_MINUTES = 5 * 60 * 1000;
 // Variables globales
+let authToken = null;
 let currentDraw = null;
 let currentDrawTime = null;
 let activeBets = [];
@@ -229,211 +32,541 @@ let restrictedBalls = [];
 let gameRestrictions = {};
 let selectedMultiDraws = new Set();
 let selectedMultiGame = 'borlette';
-let selectedBalls = []; // Stocke les boules sélectionnées pour les jeux automatiques
-
+let selectedBalls = [];
 // Variables pour les fiches multi-tirages
 let currentMultiDrawTicket = {
-    id: Date.now().toString(),
-    bets: [], // Liste des paris multi-tirages
-    totalAmount: 0,
-    draws: new Set(), // Tirages sélectionnés
-    createdAt: new Date().toISOString()
+id: Date.now().toString(),
+bets: [],
+totalAmount: 0,
+draws: new Set(),
+createdAt: new Date().toISOString()
 };
-
-let multiDrawTickets = []; // Liste des fiches multi-tirages sauvegardées
-
+let multiDrawTickets = [];
 // Informations de l'entreprise
 let companyInfo = {
-    name: "Nova Lotto",
-    phone: "+509 32 53 49 58",
-    address: "Cap Haïtien",
-    reportTitle: "Nova Lotto",
-    reportPhone: "40104585"
+name: "Nova Lotto",
+phone: "+509 32 53 49 58",
+address: "Cap Haïtien",
+reportTitle: "Nova Lotto",
+reportPhone: "40104585"
 };
-
 // Tickets gagnants
 let winningTickets = [];
+// Données des tirages (garder en local pour l'interface)
+const draws = {
+miami: {
+name: "Miami (Florida)",
+times: { morning: "1:30 PM", evening: "9:50 PM" },
+date: "Sam, 29 Nov",
+countdown: "18 h 30 min"
+},
+georgia: {
+name: "Georgia",
+times: { morning: "12:30 PM", evening: "7:00 PM" },
+date: "Sam, 29 Nov",
+countdown: "17 h 29 min"
+},
+newyork: {
+name: "New York",
+times: { morning: "2:30 PM", evening: "8:00 PM" },
+date: "Sam, 29 Nov",
+countdown: "19 h 30 min"
+},
+texas: {
+name: "Texas",
+times: { morning: "12:00 PM", evening: "6:00 PM" },
+date: "Sam, 29 Nov",
+countdown: "18 h 27 min"
+},
+tunisia: {
+name: "Tunisie",
+times: { morning: "10:30 AM", evening: "2:00 PM" },
+date: "Sam, 29 Nov",
+countdown: "8 h 30 min"
+}
+};
+// Types de paris disponibles avec multiplicateurs
+const betTypes = {
+lotto3: {
+name: "LOTO 3",
+multiplier: 500,
+icon: "fas fa-list-ol",
+description: "3 chif (lot 1 + 1 chif devan)",
+category: "lotto"
+},
+grap: {
+name: "GRAP",
+multiplier: 500,
+icon: "fas fa-chart-line",
+description: "Grap boule paire (111, 222, ..., 000)",
+category: "special"
+},
+marriage: {
+name: "MARYAJ",
+multiplier: 1000,
+icon: "fas fa-link",
+description: "Maryaj 2 chif (ex: 12*34)",
+category: "special"
+},
+borlette: {
+name: "BORLETTE",
+multiplier: 60,
+multiplier2: 20,
+multiplier3: 10,
+icon: "fas fa-dice",
+description: "2 chif (1er lot ×60, 2e ×20, 3e ×10)",
+category: "borlette"
+},
+boulpe: {
+name: "BOUL PE",
+multiplier: 60,
+multiplier2: 20,
+multiplier3: 10,
+icon: "fas fa-circle",
+description: "Boul pe (00-99)",
+category: "borlette"
+},
+lotto4: {
+name: "LOTO 4",
+multiplier: 5000,
+icon: "fas fa-list-ol",
+description: "4 chif (lot 1+2 accumulate) - 3 opsyon",
+category: "lotto"
+},
+lotto5: {
+name: "LOTO 5",
+multiplier: 25000,
+icon: "fas fa-list-ol",
+description: "5 chif (lot 1+2+3 accumulate) - 3 opsyon",
+category: "lotto"
+},
+'auto-marriage': {
+name: "MARYAJ OTOMATIK",
+multiplier: 1000,
+icon: "fas fa-robot",
+description: "Marie boules otomatik",
+category: "special"
+},
+'auto-lotto4': {
+name: "LOTO 4 OTOMATIK",
+multiplier: 5000,
+icon: "fas fa-robot",
+description: "Lotto 4 otomatik",
+category: "special"
+}
+};
+// =================== FONCTION API AMÉLIORÉE ===================
+async function apiCall(endpoint, method = 'GET', data = null, retries = 3) {
+const url = endpoint.startsWith('http') ? endpoint : ${API_BASE_URL}${endpoint};
+console.log(`[API] ${method} ${url}`, data ? 'avec données' : '');
 
-// Gestion du token
-let authToken = null;
+const headers = {
+    'Content-Type': 'application/json',
+};
 
-// Fonctions API
-async function apiCall(endpoint, method = 'GET', data = null) {
-    const url = endpoint.startsWith('http') ? endpoint : `${API_BASE_URL}${endpoint}`;
-    const headers = {
-        'Content-Type': 'application/json',
-    };
-    
-    // Ajouter le token d'authentification si disponible
-    if (authToken) {
-        headers['Authorization'] = `Bearer ${authToken}`;
-    }
-    
-    const options = {
-        method,
-        headers,
-    };
-    
-    if (data && (method === 'POST' || method === 'PUT' || method === 'PATCH')) {
-        options.body = JSON.stringify(data);
-    }
-    
+// Ajouter le token d'authentification
+if (authToken) {
+    headers['Authorization'] = `Bearer ${authToken}`;
+    console.log('[API] Token ajouté:', authToken.substring(0, 20) + '...');
+} else {
+    console.warn('[API] ⚠️ Pas de token d\'authentification');
+}
+
+const options = {
+    method,
+    headers,
+};
+
+if (data && (method === 'POST' || method === 'PUT' || method === 'PATCH')) {
+    options.body = JSON.stringify(data);
+}
+
+for (let attempt = 1; attempt <= retries; attempt++) {
     try {
+        console.log(`[API] Tentative ${attempt}/${retries}`);
+        
         const response = await fetch(url, options);
         
+        console.log(`[API] Réponse HTTP ${response.status}`);
+        
         if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
+            const errorText = await response.text();
+            console.error(`[API] Erreur ${response.status}:`, errorText);
+            
+            if (response.status === 401) {
+                console.error('[API] ❌ Non authentifié - Token invalide ou expiré');
+                // Rediriger vers la page de connexion
+                if (window.location.pathname !== '/index.html') {
+                    showNotification("Session expirée. Reconnexion nécessaire.", "error");
+                    setTimeout(() => {
+                        window.location.href = '/index.html';
+                    }, 2000);
+                }
+                throw new Error('Non authentifié');
+            }
+            
+            throw new Error(`HTTP error! status: ${response.status} - ${errorText}`);
         }
         
-        return await response.json();
+        const result = await response.json();
+        console.log('[API] ✅ Succès:', result.success ? 'OK' : 'ÉCHEC');
+        
+        return result;
+        
     } catch (error) {
-        console.error('API call error:', error);
-        throw error;
+        console.error(`[API] ❌ Erreur tentative ${attempt}:`, error.message);
+        
+        if (attempt === retries) {
+            console.error('[API] ❌ Toutes les tentatives ont échoué');
+            throw error;
+        }
+        
+        // Attendre avant de réessayer
+        const delay = attempt * 1000;
+        console.log(`[API] ⏳ Attente de ${delay}ms avant réessai...`);
+        await new Promise(resolve => setTimeout(resolve, delay));
     }
 }
-
-// Vérifier l'authentification
+}
+// =================== VÉRIFICATION D'AUTHENTIFICATION ===================
 function checkAuth() {
-    const token = localStorage.getItem('nova_token');
-    
-    if (!token) {
-        // Rediriger vers la page de connexion
+console.log('[AUTH] Vérification authentification...');
+// Vérifier dans localStorage
+const token = localStorage.getItem('nova_token');
+
+if (!token) {
+    console.error('[AUTH] ❌ Pas de token trouvé');
+    // Rediriger vers la page de connexion
+    if (window.location.pathname !== '/index.html') {
         window.location.href = '/index.html';
-        return false;
     }
-    
-    authToken = token;
-    return true;
+    return false;
 }
 
-// Charger les données depuis l'API
+console.log('[AUTH] ✅ Token trouvé:', token.substring(0, 20) + '...');
+authToken = token;
+
+// Extraire les infos du token
+try {
+    const parts = token.split('_');
+    if (parts.length >= 4) {
+        currentAdmin = {
+            id: parts[2],
+            role: parts[3],
+            name: localStorage.getItem('nova_user_name') || 'Agent'
+        };
+        console.log('[AUTH] Utilisateur:', currentAdmin);
+    }
+} catch (error) {
+    console.error('[AUTH] Erreur parsing token:', error);
+}
+
+return true;
+}
+// =================== CHARGEMENT DONNÉES DEPUIS L'API ===================
 async function loadDataFromAPI() {
-    try {
-        // Charger les tickets
-        const ticketsData = await apiCall(APP_CONFIG.tickets);
-        savedTickets = ticketsData.tickets || [];
-        ticketNumber = ticketsData.nextTicketNumber || 1;
-        
-        // Charger les tickets en attente
-        const pendingData = await apiCall(APP_CONFIG.ticketsPending);
-        pendingSyncTickets = pendingData.tickets || [];
-        
-        // Charger les tickets gagnants
-        const winningData = await apiCall(APP_CONFIG.winningTickets);
-        winningTickets = winningData.tickets || [];
-        
-        // Charger les fiches multi-tirages
-        const multiDrawData = await apiCall(APP_CONFIG.multiDrawTickets);
-        multiDrawTickets = multiDrawData.tickets || [];
-        
-        // Charger les informations de l'entreprise
-        const companyData = await apiCall(APP_CONFIG.companyInfo);
-        if (companyData) {
-            companyInfo = companyData;
-        }
-        
-        // Charger le logo
-        const logoData = await apiCall(APP_CONFIG.logo);
-        if (logoData && logoData.logoUrl) {
-            companyLogo = logoData.logoUrl;
-        }
-        
-        console.log('Données chargées depuis l\'API:', { 
-            tickets: savedTickets.length, 
-            ticketNumber, 
-            pending: pendingSyncTickets.length,
-            winning: winningTickets.length,
-            multiDraw: multiDrawTickets.length
-        });
-    } catch (error) {
-        console.error('Erreur lors du chargement des données:', error);
-        showNotification("Erreur de chargement des données", "error");
+console.log('[LOAD] 📥 Chargement des données depuis l'API...');
+try {
+    // Test de connexion
+    console.log('[LOAD] Test de connexion API...');
+    const healthCheck = await apiCall(APP_CONFIG.health);
+    console.log('[LOAD] ✅ Serveur accessible:', healthCheck);
+    
+    // Charger les tickets
+    console.log('[LOAD] Chargement des tickets...');
+    const ticketsData = await apiCall(APP_CONFIG.tickets);
+    savedTickets = ticketsData.tickets || [];
+    ticketNumber = ticketsData.nextTicketNumber || 100001;
+    console.log(`[LOAD] ✅ ${savedTickets.length} tickets chargés, prochain numéro: ${ticketNumber}`);
+    
+    // Charger les tickets en attente
+    console.log('[LOAD] Chargement des tickets en attente...');
+    const pendingData = await apiCall(APP_CONFIG.ticketsPending);
+    pendingSyncTickets = pendingData.tickets || [];
+    console.log(`[LOAD] ✅ ${pendingSyncTickets.length} tickets en attente`);
+    
+    // Charger les tickets gagnants
+    console.log('[LOAD] Chargement des tickets gagnants...');
+    const winningData = await apiCall(APP_CONFIG.winningTickets);
+    winningTickets = winningData.tickets || [];
+    console.log(`[LOAD] ✅ ${winningTickets.length} tickets gagnants`);
+    
+    // Charger les fiches multi-tirages
+    console.log('[LOAD] Chargement des fiches multi-tirages...');
+    const multiDrawData = await apiCall(APP_CONFIG.multiDrawTickets);
+    multiDrawTickets = multiDrawData.tickets || [];
+    console.log(`[LOAD] ✅ ${multiDrawTickets.length} fiches multi-tirages`);
+    
+    // Charger les informations de l'entreprise
+    console.log('[LOAD] Chargement des infos entreprise...');
+    const companyData = await apiCall(APP_CONFIG.companyInfo);
+    if (companyData && companyData.success) {
+        companyInfo = {
+            name: companyData.company_name,
+            phone: companyData.company_phone,
+            address: companyData.company_address,
+            reportTitle: companyData.report_title,
+            reportPhone: companyData.report_phone
+        };
+        console.log('[LOAD] ✅ Infos entreprise:', companyInfo);
+    }
+    
+    // Charger le logo
+    console.log('[LOAD] Chargement du logo...');
+    const logoData = await apiCall(APP_CONFIG.logo);
+    if (logoData && logoData.logoUrl) {
+        companyLogo = logoData.logoUrl;
+        console.log('[LOAD] ✅ Logo:', companyLogo);
+    }
+    
+    console.log('[LOAD] ✅ Toutes les données chargées avec succès!');
+    showNotification("Données chargées avec succès", "success");
+    
+} catch (error) {
+    console.error('[LOAD] ❌ Erreur lors du chargement des données:', error);
+    showNotification("Erreur de chargement: " + error.message, "error");
+    
+    // Si erreur d'authentification, rediriger
+    if (error.message.includes('401') || error.message.includes('Non authentifié')) {
+        setTimeout(() => {
+            window.location.href = '/index.html';
+        }, 2000);
     }
 }
-
-// Sauvegarder un ticket via API
+}
+// =================== SAUVEGARDE TICKET VIA API ===================
 async function saveTicketAPI(ticket) {
-    try {
-        const response = await apiCall(APP_CONFIG.tickets, 'POST', ticket);
-        return response;
-    } catch (error) {
-        console.error('Erreur lors de la sauvegarde du ticket:', error);
-        throw error;
-    }
-}
-
-// Sauvegarder un ticket en attente via API
-async function savePendingTicketAPI(ticket) {
-    try {
-        const response = await apiCall(APP_CONFIG.ticketsPending, 'POST', ticket);
-        return response;
-    } catch (error) {
-        console.error('Erreur lors de la sauvegarde du ticket en attente:', error);
-        throw error;
-    }
-}
-
-// Sauvegarder une fiche multi-tirages via API
-async function saveMultiDrawTicketAPI(ticket) {
-    try {
-        const response = await apiCall(APP_CONFIG.multiDrawTickets, 'POST', ticket);
-        return response;
-    } catch (error) {
-        console.error('Erreur lors de la sauvegarde de la fiche multi-tirages:', error);
-        throw error;
-    }
-}
-
-// Sauvegarder l'historique via API
-async function saveHistoryAPI(historyRecord) {
-    try {
-        const response = await apiCall(APP_CONFIG.history, 'POST', historyRecord);
-        return response;
-    } catch (error) {
-        console.error('Erreur lors de la sauvegarde de l\'historique:', error);
-        throw error;
-    }
-}
-
-// Initialisation
-document.addEventListener('DOMContentLoaded', function() {
-    console.log("Document chargé, initialisation...");
-    
-    // Vérifier l'authentification
-    if (!checkAuth()) {
-        return;
-    }
-    
-    // Masquer l'écran de connexion intégré
-    document.getElementById('login-screen').style.display = 'none';
-    
-    // Afficher l'application principale
-    showMainApp();
-    
-    // Mettre à jour l'heure
-    updateCurrentTime();
-    
-    // Charger les données depuis l'API
-    loadDataFromAPI();
-    
-    // Configurer la détection de connexion
-    setupConnectionDetection();
-    
-    // Mettre à jour l'affichage du logo
-    updateLogoDisplay();
-    
-    // Charger les résultats depuis la base de données
-    loadResultsFromDatabase();
-    
-    // Ajouter les écouteurs d'événements pour les tirages
-    document.querySelectorAll('.draw-card').forEach(card => {
-        card.addEventListener('click', function() {
-            console.log("Carte de tiraj cliquée:", this.getAttribute('data-draw'));
-            const drawId = this.getAttribute('data-draw');
-            openBettingScreen(drawId, 'morning');
-        });
+console.log('[SAVE] 💾 Sauvegarde du ticket via API...');
+console.log('[SAVE] Données du ticket:', {
+draw: ticket.draw,
+draw_time: ticket.drawTime,
+bets_count: ticket.bets.length,
+total: ticket.total
+});
+try {
+    const response = await apiCall(APP_CONFIG.tickets, 'POST', {
+        draw: ticket.draw,
+        draw_time: ticket.drawTime,
+        bets: ticket.bets,
+        total: ticket.total
     });
     
+    if (response.success) {
+        console.log('[SAVE] ✅ Ticket sauvegardé:', response.ticket);
+        return response;
+    } else {
+        console.error('[SAVE] ❌ Échec sauvegarde:', response.error);
+        throw new Error(response.error || 'Échec de la sauvegarde');
+    }
+} catch (error) {
+    console.error('[SAVE] ❌ Erreur lors de la sauvegarde:', error);
+    throw error;
+}
+}
+// =================== SAUVEGARDER TICKET ===================
+async function saveTicket() {
+console.log('[TICKET] 💾 Sauvegarde du ticket...');
+if (activeBets.length === 0) {
+    showNotification("Pa gen okenn parye pou sove nan fiche a", "warning");
+    return;
+}
+
+if (!currentDraw || !currentDrawTime) {
+    showNotification("Tiraj pa seleksyone", "error");
+    return;
+}
+
+const ticket = {
+    draw: currentDraw,
+    drawTime: currentDrawTime,
+    bets: [...activeBets],
+    total: activeBets.reduce((sum, bet) => sum + bet.amount, 0),
+    agentName: currentAdmin ? currentAdmin.name : 'Agent',
+    agentId: currentAdmin ? currentAdmin.id : 1,
+    date: new Date().toISOString()
+};
+
+console.log('[TICKET] Ticket à sauvegarder:', ticket);
+
+try {
+    const response = await saveTicketAPI(ticket);
+    
+    if (response.success && response.ticket) {
+        // Ajouter le ticket sauvegardé à la liste locale
+        savedTickets.push({
+            id: response.ticket.id,
+            number: response.ticket.number,
+            ...ticket
+        });
+        
+        console.log('[TICKET] ✅ Ticket sauvegardé avec succès!');
+        showNotification("Fiche sove avèk siksè!", "success");
+        
+        // Réinitialiser les paris actifs
+        activeBets = [];
+        updateBetsList();
+        
+        return response;
+    }
+} catch (error) {
+    console.error('[TICKET] ❌ Erreur lors de la sauvegarde:', error);
+    showNotification("Erreur: " + error.message, "error");
+    throw error;
+}
+}
+// =================== INITIALISATION ===================
+document.addEventListener('DOMContentLoaded', function() {
+console.log('='.repeat(60));
+console.log('🚀 INITIALISATION LOTATO');
+console.log('='.repeat(60));
+// Vérifier l'authentification
+if (!checkAuth()) {
+    console.error('[INIT] ❌ Authentification échouée');
+    return;
+}
+
+console.log('[INIT] ✅ Authentification OK');
+
+// Masquer l'écran de connexion
+document.getElementById('login-screen').style.display = 'none';
+
+// Afficher l'application
+showMainApp();
+
+// Mettre à jour l'heure
+updateCurrentTime();
+
+// Charger les données depuis l'API
+console.log('[INIT] Chargement des données...');
+loadDataFromAPI();
+
+// Configurer la détection de connexion
+setupConnectionDetection();
+
+// Mettre à jour le logo
+updateLogoDisplay();
+
+// Charger les résultats
+loadResultsFromDatabase();
+
+// Setup event listeners...
+setupEventListeners();
+
+// Actualiser périodiquement
+setInterval(updateCurrentTime, 60000);
+setInterval(updatePendingBadge, 30000);
+setInterval(checkForNewResults, 300000); // 5 minutes
+
+console.log('[INIT] ✅ Initialisation terminée');
+console.log('='.repeat(60));
+});
+// =================== FONCTIONS UTILITAIRES ===================
+function showMainApp() {
+document.getElementById('main-container').style.display = 'block';
+document.getElementById('bottom-nav').style.display = 'flex';
+document.getElementById('sync-status').style.display = 'flex';
+document.getElementById('admin-panel').style.display = 'block';
+}
+function setupConnectionDetection() {
+window.addEventListener('online', function() {
+isOnline = true;
+console.log('[NETWORK] ✅ Connexion rétablie');
+showNotification("Koneksyon entènèt retabli", "success");
+checkForNewResults();
+});
+window.addEventListener('offline', function() {
+    isOnline = false;
+    console.log('[NETWORK] ❌ Connexion perdue');
+    showNotification("Pa konekte ak entènèt", "warning");
+});
+}
+function updateCurrentTime() {
+const now = new Date();
+const options = { weekday: 'long', year: 'numeric', month: 'short', day: 'numeric' };
+const dateString = now.toLocaleDateString('fr-FR', options);
+const timeString = now.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+const timeElement = document.getElementById('current-time');
+const ticketDateElement = document.getElementById('ticket-date');
+
+if (timeElement) timeElement.textContent = `${dateString} - ${timeString}`;
+if (ticketDateElement) ticketDateElement.textContent = `${dateString} - ${timeString}`;
+}
+function updateLogoDisplay() {
+const logoElements = document.querySelectorAll('#company-logo, #ticket-logo');
+logoElements.forEach(logo => {
+if (logo) {
+logo.src = companyLogo;
+logo.onerror = function() {
+this.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgZmlsbD0iI2YzOWMxMiIvPjx0ZXh0IHg9IjUwIiB5PSI1NSIgZm9udC1mYW1pbHk9IkFyaWFsIiBmb250LXNpemU9IjE0IiBmaWxsPSJ3aGl0ZSIgdGV4dC1hbmNob3I9Im1pZGRsZSI+Qk9STEVUVEU8L3RleHQ+PC9zdmc+';
+};
+}
+});
+}
+function showNotification(message, type = 'info') {
+console.log([NOTIF] ${type.toUpperCase()}: ${message});
+const notification = document.createElement('div');
+notification.className = `notification ${type}`;
+
+let icon = 'fas fa-info-circle';
+if (type === 'success') icon = 'fas fa-check-circle';
+if (type === 'warning') icon = 'fas fa-exclamation-triangle';
+if (type === 'error') icon = 'fas fa-times-circle';
+
+notification.innerHTML = `
+    <i class="${icon}"></i>
+    <span>${message}</span>
+`;
+
+document.body.appendChild(notification);
+
+setTimeout(() => {
+    notification.style.opacity = '0';
+    notification.style.transform = 'translate(-50%, 20px)';
+    setTimeout(() => {
+        if (notification.parentNode) {
+            notification.parentNode.removeChild(notification);
+        }
+    }, 300);
+}, 5000);
+}
+// Charger les résultats depuis la base de données
+async function loadResultsFromDatabase() {
+console.log('[RESULTS] Chargement des résultats...');
+try {
+    const resultsData = await apiCall(APP_CONFIG.results);
+    if (resultsData && resultsData.results) {
+        console.log('[RESULTS] ✅ Résultats chargés');
+        updateResultsDisplay();
+    }
+} catch (error) {
+    console.error('[RESULTS] ❌ Erreur chargement résultats:', error);
+}
+}
+// Vérifier les nouveaux résultats
+async function checkForNewResults() {
+if (!isOnline) return;
+console.log('[RESULTS] 🔄 Vérification des nouveaux résultats...');
+
+try {
+    await loadResultsFromDatabase();
+} catch (error) {
+    console.error('[RESULTS] ❌ Erreur vérification résultats:', error);
+}
+}
+function updatePendingBadge() {
+// À implémenter si nécessaire
+}
+function updateResultsDisplay() {
+// À implémenter selon votre UI
+}
+function setupEventListeners() {
+// À implémenter - tous vos event listeners existants
+console.log('[INIT] Configuration des event listeners...');
+}
+function updateBetsList() {
+// Votre code existant pour mettre à jour la liste des paris
+}
+
     // Ajouter les écouteurs d'événements pour les boutons de tirage
     document.querySelectorAll('.draw-btn').forEach(btn => {
         btn.addEventListener('click', function(e) {

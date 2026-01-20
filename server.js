@@ -430,10 +430,19 @@ app.post('/api/auth/login', async (req, res) => {
     
     console.log('Tentative de connexion:', { username, password, role });
     
+    // Gérer les rôles supervisor1 et supervisor2
+    let dbRole = role;
+    let level = 1;
+    
+    if (role === 'supervisor1' || role === 'supervisor2') {
+      dbRole = 'supervisor';
+      level = role === 'supervisor1' ? 1 : 2;
+    }
+    
     const user = await User.findOne({ 
       username,
       password,
-      role
+      role: dbRole
     });
 
     if (!user) {
@@ -444,7 +453,20 @@ app.post('/api/auth/login', async (req, res) => {
       });
     }
 
-    console.log('Utilisateur trouvé:', user.username, user.role);
+    // Vérifier le niveau pour les superviseurs
+    if (dbRole === 'supervisor') {
+      // Convertir le niveau en nombre pour la comparaison
+      const userLevel = parseInt(user.level || 1);
+      if (userLevel !== level) {
+        console.log('Niveau de superviseur incorrect');
+        return res.status(401).json({
+          success: false,
+          error: 'Niveau de superviseur incorrect'
+        });
+      }
+    }
+
+    console.log('Utilisateur trouvé:', user.username, user.role, user.level);
 
     const token = `nova_${Date.now()}_${user._id}_${user.role}_${user.level || 1}`;
 
@@ -454,9 +476,9 @@ app.post('/api/auth/login', async (req, res) => {
         redirectUrl = '/lotato.html';
         break;
       case 'supervisor':
-        if (user.level === 1) {
+        if (user.level == 1) {
           redirectUrl = '/control-level1.html';
-        } else if (user.level === 2) {
+        } else if (user.level == 2) {
           redirectUrl = '/control-level2.html';
         } else {
           redirectUrl = '/supervisor-control.html';
@@ -496,7 +518,6 @@ app.post('/api/auth/login', async (req, res) => {
     });
   }
 });
-
 // =================== NOUVELLES ROUTES POUR LOTATO ===================
 
 // Route pour enregistrer un historique

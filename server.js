@@ -1962,53 +1962,6 @@ app.get('/api/supervisor2/notifications', vérifierToken, async (req, res) => {
     });
   }
 });
-// Nouvelle route pour vérifier la session des superviseurs level 2
-app.get('/api/supervisor2/check', vérifierToken, async (req, res) => {
-  try {
-    if (!req.tokenInfo) {
-      return res.status(401).json({
-        success: false,
-        error: 'Session invalide'
-      });
-    }
-    
-    const user = await User.findById(req.tokenInfo.userId);
-    
-    if (!user) {
-      return res.status(401).json({
-        success: false,
-        error: 'Utilisateur non trouvé'
-      });
-    }
-    
-    // Vérifier spécifiquement pour superviseur level 2
-    if (user.role !== 'supervisor' || user.level !== 2) {
-      return res.status(403).json({
-        success: false,
-        error: 'Accès refusé. Rôle superviseur level 2 requis.'
-      });
-    }
-    
-    res.json({
-      success: true,
-      admin: {
-        id: user._id,
-        username: user.username,
-        name: user.name,
-        role: user.role,
-        level: user.level,
-        email: user.email,
-        subsystem_id: user.subsystem_id
-      }
-    });
-  } catch (error) {
-    console.error('Erreur vérification session supervisor2:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Erreur lors de la vérification de la session'
-    });
-  }
-});
 
 // =================== ROUTES API EXISTANTES ===================
 

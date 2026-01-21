@@ -430,11 +430,31 @@ app.post('/api/auth/login', async (req, res) => {
     
     console.log('Tentative de connexion:', { username, password, role });
     
-    const user = await User.findOne({ 
+    // Gérer les rôles spéciaux pour les superviseurs
+    let dbRole = role;
+    let level = 1;
+    
+    if (role === 'supervisor1') {
+      dbRole = 'supervisor';
+      level = 1;
+    } else if (role === 'supervisor2') {
+      dbRole = 'supervisor';
+      level = 2;
+    }
+    
+    // Recherche de l'utilisateur avec le rôle approprié
+    let query = {
       username,
       password,
-      role
-    });
+      role: dbRole
+    };
+    
+    // Ajouter la condition de niveau pour les superviseurs
+    if (dbRole === 'supervisor') {
+      query.level = level;
+    }
+    
+    const user = await User.findOne(query);
 
     if (!user) {
       console.log('Utilisateur non trouvé ou informations incorrectes');
@@ -444,7 +464,7 @@ app.post('/api/auth/login', async (req, res) => {
       });
     }
 
-    console.log('Utilisateur trouvé:', user.username, user.role);
+    console.log('Utilisateur trouvé:', user.username, user.role, user.level);
 
     const token = `nova_${Date.now()}_${user._id}_${user.role}_${user.level || 1}`;
 
@@ -496,7 +516,6 @@ app.post('/api/auth/login', async (req, res) => {
     });
   }
 });
-
 // =================== NOUVELLES ROUTES POUR LOTATO ===================
 
 // Route pour enregistrer un historique

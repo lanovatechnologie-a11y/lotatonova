@@ -430,19 +430,10 @@ app.post('/api/auth/login', async (req, res) => {
     
     console.log('Tentative de connexion:', { username, password, role });
     
-    // Gérer les rôles supervisor1 et supervisor2
-    let dbRole = role;
-    let level = 1;
-    
-    if (role === 'supervisor1' || role === 'supervisor2') {
-      dbRole = 'supervisor';
-      level = role === 'supervisor1' ? 1 : 2;
-    }
-    
     const user = await User.findOne({ 
       username,
       password,
-      role: dbRole
+      role
     });
 
     if (!user) {
@@ -453,20 +444,7 @@ app.post('/api/auth/login', async (req, res) => {
       });
     }
 
-    // Vérifier le niveau pour les superviseurs
-    if (dbRole === 'supervisor') {
-      // Convertir le niveau en nombre pour la comparaison
-      const userLevel = parseInt(user.level || 1);
-      if (userLevel !== level) {
-        console.log('Niveau de superviseur incorrect');
-        return res.status(401).json({
-          success: false,
-          error: 'Niveau de superviseur incorrect'
-        });
-      }
-    }
-
-    console.log('Utilisateur trouvé:', user.username, user.role, user.level);
+    console.log('Utilisateur trouvé:', user.username, user.role);
 
     const token = `nova_${Date.now()}_${user._id}_${user.role}_${user.level || 1}`;
 
@@ -476,9 +454,9 @@ app.post('/api/auth/login', async (req, res) => {
         redirectUrl = '/lotato.html';
         break;
       case 'supervisor':
-        if (user.level == 1) {
+        if (user.level === 1) {
           redirectUrl = '/control-level1.html';
-        } else if (user.level == 2) {
+        } else if (user.level === 2) {
           redirectUrl = '/control-level2.html';
         } else {
           redirectUrl = '/supervisor-control.html';
@@ -518,6 +496,7 @@ app.post('/api/auth/login', async (req, res) => {
     });
   }
 });
+
 // =================== NOUVELLES ROUTES POUR LOTATO ===================
 
 // Route pour enregistrer un historique
@@ -1765,6 +1744,202 @@ app.get('/api/subsystem/tickets', vérifierToken, async (req, res) => {
     res.status(500).json({
       success: false,
       error: 'Erreur serveur lors de la récupération des tickets'
+    });
+  }
+});
+// Route pour obtenir les superviseurs level 1 et agents du système
+app.get('/api/supervisor2/overview', vérifierToken, async (req, res) => {
+  try {
+    // Vérifier que c'est un superviseur level 2
+    if (!req.tokenInfo || req.tokenInfo.role !== 'supervisor' || req.tokenInfo.level !== '2') {
+      return res.status(403).json({
+        success: false,
+        error: 'Accès refusé. Rôle superviseur level 2 requis.'
+      });
+    }
+
+    const user = await User.findById(req.tokenInfo.userId);
+    if (!user) {
+      return res.status(401).json({
+        success: false,
+        error: 'Utilisateur non trouvé'
+      });
+    }
+
+    // Récupérer les superviseurs level 1 du même sous-système
+    const supervisors = await User.find({
+      role: 'supervisor',
+      level: 1,
+      subsystem_id: user.subsystem_id,
+      is_active: true
+    });
+
+    // Récupérer les agents du même sous-système
+    const agents = await User.find({
+      role: 'agent',
+      subsystem_id: user.subsystem_id,
+      is_active: true
+    });
+
+    // Récupérer le sous-système
+    const subsystem = await Subsystem.findById(user.subsystem_id);
+
+    res.json({
+      success: true,
+      data: {
+        subsystem_name: subsystem ? subsystem.name : 'Système',
+        supervisors_count: supervisors.length,
+        agents_count: agents.length,
+        user_name: user.name
+      }
+    });
+
+  } catch (error) {
+    console.error('Erreur récupération overview:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Erreur serveur lors de la récupération des données'
+    });
+  }
+});
+
+// Route pour supprimer un ticket (moins de 15 minutes)
+app.delete('/api/tickets/:id', vérifierToken, async (req, res) => {
+  try {
+    // Vérifier que c'est un superviseur level 2
+    if (!req.tokenInfo || req.tokenInfo.role !== 'supervisor' || req.tokenInfo.level !== '2') {
+      return res.status(403).json({
+        success: false,
+        error: 'Accès refusé. Rôle superviseur level 2 requis.'
+      });
+    }
+
+    const supervisor = await User.findById(req.tokenInfo.userId);
+    if (!supervisor) {
+      return res.status(401).json({
+        success: false,
+        error: 'Utilisateur non trouvé'
+      });
+    }
+
+    const ticketId = req.params.id;
+    const ticket = await Ticket.findById(ticketId);
+
+    if (!ticket) {
+      return res.status(404).json({
+        success: false,
+        error: 'Ticket non trouvé'
+      });
+    }
+
+    // Vérifier que le ticket appartient au même sous-système
+    if (ticket.subsystem_id.toString() !== supervisor.subsystem_id.toString()) {
+      return res.status(403).json({
+        success: false,
+        error: 'Ticket ne fait pas partie de votre système'
+      });
+    }
+
+    // Vérifier l'âge du ticket (15 minutes maximum)
+    const ticketDate = new Date(ticket.date);
+    const now = new Date();
+    const diffMinutes = (now - ticketDate) / (1000 * 60);
+
+    if (diffMinutes > 15) {
+      return res.status(400).json({
+        success: false,
+        error: 'Le ticket ne peut être supprimé que dans les 15 premières minutes'
+      });
+    }
+
+    // Supprimer le ticket
+    await Ticket.findByIdAndDelete(ticketId);
+
+    res.json({
+      success: true,
+      message: 'Ticket supprimé avec succès'
+    });
+
+  } catch (error) {
+    console.error('Erreur suppression ticket:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Erreur serveur lors de la suppression du ticket'
+    });
+  }
+});
+
+// Route pour les notifications du superviseur level 2
+app.get('/api/supervisor2/notifications', vérifierToken, async (req, res) => {
+  try {
+    if (!req.tokenInfo || req.tokenInfo.role !== 'supervisor' || req.tokenInfo.level !== '2') {
+      return res.status(403).json({
+        success: false,
+        error: 'Accès refusé. Rôle superviseur level 2 requis.'
+      });
+    }
+
+    const supervisor = await User.findById(req.tokenInfo.userId);
+    if (!supervisor) {
+      return res.status(401).json({
+        success: false,
+        error: 'Utilisateur non trouvé'
+      });
+    }
+
+    // Récupérer les activités récentes du sous-système
+    const recentTickets = await Ticket.find({
+      subsystem_id: supervisor.subsystem_id,
+      date: { $gte: new Date(Date.now() - 24 * 60 * 60 * 1000) } // 24 dernières heures
+    })
+      .sort({ date: -1 })
+      .limit(10)
+      .populate('agent_id', 'name');
+
+    const recentWinners = await Winner.find({
+      date: { $gte: new Date(Date.now() - 24 * 60 * 60 * 1000) }
+    })
+      .sort({ date: -1 })
+      .limit(10)
+      .populate('agent_id', 'name');
+
+    const activities = [];
+
+    // Ajouter les activités de tickets
+    recentTickets.forEach(ticket => {
+      activities.push({
+        type: 'ticket',
+        user: ticket.agent_name,
+        action: 'Ticket créé',
+        details: `Ticket #${ticket.number} - ${ticket.total} HTG`,
+        timestamp: ticket.date
+      });
+    });
+
+    // Ajouter les activités de gains
+    recentWinners.forEach(winner => {
+      activities.push({
+        type: 'win',
+        user: winner.agent_id ? winner.agent_id.name : 'Agent',
+        action: 'Ticket gagnant',
+        details: `Gains: ${winner.total_winnings} HTG`,
+        timestamp: winner.date
+      });
+    });
+
+    // Trier par date
+    activities.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+    res.json({
+      success: true,
+      activities: activities.slice(0, 20) // Limiter à 20 activités
+    });
+
+  } catch (error) {
+    console.error('Erreur récupération notifications:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Erreur serveur lors de la récupération des notifications'
     });
   }
 });

@@ -1,14 +1,14 @@
-// Configuration pour production
-const API_BASE_URL = window.location.origin; // Utilise l'origine actuelle
-// OU spécifiquement pour votre déploiement :
-// const API_BASE_URL = 'https://lotatonova-fv0b.onrender.com';
+// Solution 1: Configuration de l'URL
+const API_BASE_URL = window.location.origin; // Utilise l'URL courante
 
+// Configuration API Backend
 const APP_CONFIG = {
     health: `${API_BASE_URL}/api/health`,
     login: `${API_BASE_URL}/api/auth/login`,
-    authCheck: `${API_BASE_URL}/api/auth/check`,
+    // Endpoints pour les résultats
     results: `${API_BASE_URL}/api/results`,
     checkWinners: `${API_BASE_URL}/api/check-winners`,
+    // Endpoints pour les tickets
     tickets: `${API_BASE_URL}/api/tickets`,
     ticketsPending: `${API_BASE_URL}/api/tickets/pending`,
     winningTickets: `${API_BASE_URL}/api/tickets/winning`,
@@ -18,7 +18,81 @@ const APP_CONFIG = {
     logo: `${API_BASE_URL}/api/logo`
 };
 
-const FIVE_MINUTES = 5 * 60 * 1000;
+const FIVE_MINUTES = 5 * 60 * 1000; // 5 minutes en millisecondes
+
+// Base de données simulée pour les résultats (sera remplacée par l'API)
+let resultsDatabase = {
+    'miami': {
+        'morning': {
+            date: new Date().toISOString(),
+            lot1: '123', // 3 chiffres
+            lot2: '45',  // 2 chiffres
+            lot3: '34'   // 2 chiffres
+        },
+        'evening': {
+            date: new Date().toISOString(),
+            lot1: '892',
+            lot2: '34',
+            lot3: '56'
+        }
+    },
+    'georgia': {
+        'morning': {
+            date: new Date().toISOString(),
+            lot1: '327',
+            lot2: '45',
+            lot3: '89'
+        },
+        'evening': {
+            date: new Date().toISOString(),
+            lot1: '567',
+            lot2: '12',
+            lot3: '34'
+        }
+    },
+    'newyork': {
+        'morning': {
+            date: new Date().toISOString(),
+            lot1: '892',
+            lot2: '34',
+            lot3: '56'
+        },
+        'evening': {
+            date: new Date().toISOString(),
+            lot1: '123',
+            lot2: '45',
+            lot3: '67'
+        }
+    },
+    'texas': {
+        'morning': {
+            date: new Date().toISOString(),
+            lot1: '567',
+            lot2: '89',
+            lot3: '01'
+        },
+        'evening': {
+            date: new Date().toISOString(),
+            lot1: '234',
+            lot2: '56',
+            lot3: '78'
+        }
+    },
+    'tunisia': {
+        'morning': {
+            date: new Date().toISOString(),
+            lot1: '234',
+            lot2: '56',
+            lot3: '78'
+        },
+        'evening': {
+            date: new Date().toISOString(),
+            lot1: '345',
+            lot2: '67',
+            lot3: '89'
+        }
+    }
+};
 
 // Données des tirages
 const draws = {
@@ -27,38 +101,49 @@ const draws = {
         times: {
             morning: "1:30 PM",
             evening: "9:50 PM"
-        }
+        },
+        date: "Sam, 29 Nov",
+        countdown: "18 h 30 min"
     },
     georgia: {
         name: "Georgia",
         times: {
             morning: "12:30 PM",
             evening: "7:00 PM"
-        }
+        },
+        date: "Sam, 29 Nov",
+        countdown: "17 h 29 min"
     },
     newyork: {
         name: "New York",
         times: {
             morning: "2:30 PM",
             evening: "8:00 PM"
-        }
+        },
+        date: "Sam, 29 Nov",
+        countdown: "19 h 30 min"
     },
     texas: {
         name: "Texas",
         times: {
             morning: "12:00 PM",
             evening: "6:00 PM"
-        }
+        },
+        date: "Sam, 29 Nov",
+        countdown: "18 h 27 min"
     },
     tunisia: {
         name: "Tunisie",
         times: {
             morning: "10:30 AM",
             evening: "2:00 PM"
-        }
+        },
+        date: "Sam, 29 Nov",
+        countdown: "8 h 30 min"
     }
 };
 
+// Types de paris disponibles avec multiplicateurs
 const betTypes = {
     lotto3: {
         name: "LOTO 3",
@@ -83,18 +168,18 @@ const betTypes = {
     },
     borlette: {
         name: "BORLETTE",
-        multiplier: 60,
-        multiplier2: 20,
-        multiplier3: 10,
+        multiplier: 60, // 1er lot ×60
+        multiplier2: 20, // 2e lot ×20
+        multiplier3: 10, // 3e lot ×10
         icon: "fas fa-dice",
         description: "2 chif (1er lot ×60, 2e ×20, 3e ×10)",
         category: "borlette"
     },
     boulpe: {
         name: "BOUL PE",
-        multiplier: 60,
-        multiplier2: 20,
-        multiplier3: 10,
+        multiplier: 60, // 1er lot ×60
+        multiplier2: 20, // 2e lot ×20
+        multiplier3: 10, // 3e lot ×10
         icon: "fas fa-circle",
         description: "Boul pe (00-99)",
         category: "borlette"
@@ -113,6 +198,7 @@ const betTypes = {
         description: "5 chif (lot 1+2+3 accumulate) - 3 opsyon",
         category: "lotto"
     },
+    // Types de paris automatiques
     'auto-marriage': {
         name: "MARYAJ OTOMATIK",
         multiplier: 1000,
@@ -133,287 +219,262 @@ const betTypes = {
 let currentDraw = null;
 let currentDrawTime = null;
 let activeBets = [];
+let ticketNumber = 1;
 let savedTickets = [];
 let currentAdmin = null;
 let pendingSyncTickets = [];
 let isOnline = navigator.onLine;
-let authToken = null;
 let companyLogo = "logo-borlette.jpg";
+let currentBetCategory = null;
+let restrictedBalls = [];
+let gameRestrictions = {};
+let selectedMultiDraws = new Set();
+let selectedMultiGame = 'borlette';
+let selectedBalls = []; // Stocke les boules sélectionnées pour les jeux automatiques
+
+// Variables pour les fiches multi-tirages
+let currentMultiDrawTicket = {
+    id: Date.now().toString(),
+    bets: [], // Liste des paris multi-tirages
+    totalAmount: 0,
+    draws: new Set(), // Tirages sélectionnés
+    createdAt: new Date().toISOString()
+};
+
+let multiDrawTickets = []; // Liste des fiches multi-tirages sauvegardées
+
+// Informations de l'entreprise
 let companyInfo = {
     name: "Nova Lotto",
     phone: "+509 32 53 49 58",
-    address: "Cap Haïtien"
+    address: "Cap Haïtien",
+    reportTitle: "Nova Lotto",
+    reportPhone: "40104585"
 };
 
-// =================== FONCTIONS API CORRIGÉES ===================
+// Tickets gagnants
+let winningTickets = [];
 
+// Gestion du token
+let authToken = null;
+
+// Solution 4: Correction de la Fonction apiCall
 async function apiCall(endpoint, method = 'GET', data = null) {
-    console.log(`API Call: ${method} ${endpoint}`);
-    
     const url = endpoint.startsWith('http') ? endpoint : `${API_BASE_URL}${endpoint}`;
+    
+    console.log(`API Call: ${method} ${url}`);
+    
     const headers = {
         'Content-Type': 'application/json',
     };
     
-    // CORRECTION CRITIQUE : Le serveur attend le token dans x-auth-token
+    // Ajouter le token d'authentification si disponible
     if (authToken) {
-        headers['x-auth-token'] = authToken;
+        headers['Authorization'] = `Bearer ${authToken}`;
+        headers['x-auth-token'] = authToken; // Format additionnel pour compatibilité
     }
     
     const options = {
         method,
         headers,
-        credentials: 'include' // Important pour les cookies CORS
     };
     
     if (data && (method === 'POST' || method === 'PUT' || method === 'PATCH')) {
         options.body = JSON.stringify(data);
+        console.log("Données envoyées:", data);
     }
     
     try {
         const response = await fetch(url, options);
         
+        console.log("Statut réponse:", response.status);
+        
         if (!response.ok) {
             const errorText = await response.text();
-            console.error('Erreur HTTP:', response.status, errorText);
-            
-            // Si 401, rediriger vers login
-            if (response.status === 401) {
-                localStorage.removeItem('nova_token');
-                window.location.href = '/index.html';
-            }
-            
-            throw new Error(`HTTP ${response.status}: ${errorText}`);
+            console.error("Erreur réponse:", errorText);
+            throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
         }
         
-        return await response.json();
-        
+        const result = await response.json();
+        console.log("Réponse JSON:", result);
+        return result;
     } catch (error) {
-        console.error('Erreur API:', error);
-        showNotification(`Erreur de connexion: ${error.message}`, "error");
+        console.error('API call error:', error);
         throw error;
     }
 }
 
 // Vérifier l'authentification
 function checkAuth() {
-    // Récupérer le token de l'URL d'abord
-    const urlParams = new URLSearchParams(window.location.search);
-    let token = urlParams.get('token');
+    const token = localStorage.getItem('nova_token');
     
     if (!token) {
-        // Sinon du localStorage
-        token = localStorage.getItem('nova_token');
-    }
-    
-    if (!token) {
-        console.log('Aucun token trouvé, redirection vers login');
+        // Rediriger vers la page de connexion
         window.location.href = '/index.html';
         return false;
     }
     
     authToken = token;
-    localStorage.setItem('nova_token', token);
-    console.log('Token chargé:', token.substring(0, 20) + '...');
     return true;
 }
 
-// Charger les informations de l'utilisateur
-async function loadUserInfo() {
+// Solution 5: Test de Connexion
+async function testConnection() {
     try {
-        const response = await apiCall('/api/auth/check');
-        if (response.success && response.admin) {
-            currentAdmin = response.admin;
-            console.log('Utilisateur chargé:', currentAdmin);
-            return true;
-        }
-        return false;
+        console.log("Test de connexion au serveur...");
+        const response = await fetch(`${API_BASE_URL}/api/health`);
+        const data = await response.json();
+        console.log("Serveur connecté:", data);
+        showNotification("Serveur connecté", "success");
+        return true;
     } catch (error) {
-        console.error('Erreur chargement utilisateur:', error);
+        console.error("Erreur de connexion:", error);
+        showNotification("Erreur de connexion au serveur", "error");
         return false;
     }
 }
 
-// Charger les données initiales
+// Charger les données depuis l'API
 async function loadDataFromAPI() {
     try {
-        // Vérifier et charger l'utilisateur
-        if (!await loadUserInfo()) {
-            showNotification("Session invalide", "error");
-            setTimeout(() => window.location.href = '/index.html', 2000);
-            return;
-        }
-        
         // Charger les tickets
-        const ticketsData = await apiCall('/api/tickets');
-        if (ticketsData.success) {
-            savedTickets = ticketsData.tickets || [];
-            console.log(`${savedTickets.length} tickets chargés`);
-        }
+        const ticketsData = await apiCall(APP_CONFIG.tickets);
+        savedTickets = ticketsData.tickets || [];
+        ticketNumber = ticketsData.nextTicketNumber || 1;
         
         // Charger les tickets en attente
-        const pendingData = await apiCall('/api/tickets/pending');
-        if (pendingData.success) {
-            pendingSyncTickets = pendingData.tickets || [];
-        }
+        const pendingData = await apiCall(APP_CONFIG.ticketsPending);
+        pendingSyncTickets = pendingData.tickets || [];
         
-        // Charger les infos entreprise
-        const companyData = await apiCall('/api/company-info');
-        if (companyData.success) {
-            companyInfo = {
-                name: companyData.company_name || "Nova Lotto",
-                phone: companyData.company_phone || "",
-                address: companyData.company_address || ""
-            };
+        // Charger les tickets gagnants
+        const winningData = await apiCall(APP_CONFIG.winningTickets);
+        winningTickets = winningData.tickets || [];
+        
+        // Charger les fiches multi-tirages
+        const multiDrawData = await apiCall(APP_CONFIG.multiDrawTickets);
+        multiDrawTickets = multiDrawData.tickets || [];
+        
+        // Charger les informations de l'entreprise
+        const companyData = await apiCall(APP_CONFIG.companyInfo);
+        if (companyData) {
+            companyInfo = companyData;
         }
         
         // Charger le logo
-        const logoData = await apiCall('/api/logo');
-        if (logoData.success && logoData.logoUrl) {
+        const logoData = await apiCall(APP_CONFIG.logo);
+        if (logoData && logoData.logoUrl) {
             companyLogo = logoData.logoUrl;
-            updateLogoDisplay();
         }
         
+        console.log('Données chargées depuis l\'API:', { 
+            tickets: savedTickets.length, 
+            ticketNumber, 
+            pending: pendingSyncTickets.length,
+            winning: winningTickets.length,
+            multiDraw: multiDrawTickets.length
+        });
     } catch (error) {
-        console.error('Erreur chargement données:', error);
-        showNotification("Erreur de chargement", "error");
+        console.error('Erreur lors du chargement des données:', error);
+        showNotification("Erreur de chargement des données", "error");
     }
 }
 
-// =================== FONCTION PRINCIPALE SAUVEGARDE CORRIGÉE ===================
-
-async function saveTicket() {
-    console.log("=== DÉBUT SAUVEGARDE TICKET ===");
-    
-    if (activeBets.length === 0) {
-        showNotification("Pa gen okenn parye pou sove", "warning");
-        return null;
-    }
-    
-    if (!currentDraw || !currentDrawTime) {
-        showNotification("Tanpri chwazi yon tiraj", "warning");
-        return null;
-    }
-    
-    // CORRECTION : Format exact attendu par le serveur
-    const ticketData = {
-        draw: currentDraw,
-        draw_time: currentDrawTime, // snake_case obligatoire
-        bets: activeBets.map(bet => ({
-            type: bet.type,
-            name: bet.name,
-            number: bet.number,
-            amount: bet.amount,
-            multiplier: bet.multiplier || betTypes[bet.type]?.multiplier || 1,
-            options: bet.options || null,
-            perOptionAmount: bet.perOptionAmount || null,
-            isLotto4: bet.isLotto4 || false,
-            isLotto5: bet.isLotto5 || false,
-            isAuto: bet.isAuto || false,
-            isGroup: bet.isGroup || false,
-            details: bet.details || null
-        }))
-        // NE PAS envoyer : total, agent_id, agent_name, number
-        // Le serveur les calcule/récupère automatiquement
-    };
-    
-    console.log("Données envoyées:", ticketData);
-    
+// Sauvegarder un ticket via API
+async function saveTicketAPI(ticket) {
     try {
-        const response = await apiCall('/api/tickets', 'POST', ticketData);
-        
-        if (response.success) {
-            console.log("✅ Ticket sauvegardé:", response);
-            
-            // Ajouter aux tickets locaux
-            if (response.ticket) {
-                savedTickets.push(response.ticket);
-            }
-            
-            // Réinitialiser les paris
-            activeBets = [];
-            updateBetsList();
-            
-            showNotification("Fiche sove avèk siksè!", "success");
-            return response;
-        } else {
-            showNotification(response.error || "Erreur de sauvegarde", "error");
-            return null;
-        }
+        const response = await apiCall(APP_CONFIG.tickets, 'POST', ticket);
+        return response;
     } catch (error) {
-        console.error("❌ Erreur sauvegarde:", error);
-        showNotification("Erreur réseau: " + error.message, "error");
-        return null;
+        console.error('Erreur lors de la sauvegarde du ticket:', error);
+        throw error;
     }
 }
 
-// =================== INITIALISATION ===================
+// Sauvegarder un ticket en attente via API
+async function savePendingTicketAPI(ticket) {
+    try {
+        const response = await apiCall(APP_CONFIG.ticketsPending, 'POST', ticket);
+        return response;
+    } catch (error) {
+        console.error('Erreur lors de la sauvegarde du ticket en attente:', error);
+        throw error;
+    }
+}
 
+// Sauvegarder une fiche multi-tirages via API
+async function saveMultiDrawTicketAPI(ticket) {
+    try {
+        const response = await apiCall(APP_CONFIG.multiDrawTickets, 'POST', ticket);
+        return response;
+    } catch (error) {
+        console.error('Erreur lors de la sauvegarde de la fiche multi-tirages:', error);
+        throw error;
+    }
+}
+
+// Sauvegarder l'historique via API
+async function saveHistoryAPI(historyRecord) {
+    try {
+        const response = await apiCall(APP_CONFIG.history, 'POST', historyRecord);
+        return response;
+    } catch (error) {
+        console.error('Erreur lors de la sauvegarde de l\'historique:', error);
+        throw error;
+    }
+}
+
+// Solution 2: Correction de l'Authentification
+// Initialisation
 document.addEventListener('DOMContentLoaded', async function() {
-    console.log("LOTATO - Initialisation...");
+    console.log("Document chargé, initialisation...");
+    
+    // Récupérer le token depuis l'URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const tokenFromUrl = urlParams.get('token');
+    
+    if (tokenFromUrl) {
+        localStorage.setItem('nova_token', tokenFromUrl);
+        authToken = tokenFromUrl;
+        console.log("Token récupéré depuis URL");
+    }
     
     // Vérifier l'authentification
     if (!checkAuth()) {
         return;
     }
     
-    // Masquer login, afficher app
+    // Solution 5: Tester la connexion
+    await testConnection();
+    
+    // Masquer l'écran de connexion intégré
     document.getElementById('login-screen').style.display = 'none';
-    document.getElementById('main-container').style.display = 'block';
-    document.getElementById('bottom-nav').style.display = 'flex';
     
-    // Charger les données
-    await loadDataFromAPI();
+    // Afficher l'application principale
+    showMainApp();
     
-    // Configurer les écouteurs d'événements
-    setupEventListeners();
+    // Mettre à jour l'heure
+    updateCurrentTime();
     
-    console.log("✅ LOTATO prêt");
-});
-
-function setupEventListeners() {
-    // Bouton sauvegarder
-    document.getElementById('save-ticket-only').addEventListener('click', saveTicket);
+    // Charger les données depuis l'API
+    loadDataFromAPI();
     
-    // Bouton sauvegarder et imprimer
-    document.getElementById('save-print-ticket').addEventListener('click', async function() {
-        const result = await saveTicket();
-        if (result && result.success) {
-            setTimeout(() => printTicket(result.ticket), 500);
-        }
-    });
+    // Configurer la détection de connexion
+    setupConnectionDetection();
     
-    // Navigation
-    document.querySelectorAll('.nav-item').forEach(item => {
-        item.addEventListener('click', function() {
-            const screen = this.getAttribute('data-screen');
-            showScreen(screen);
-        });
-    });
+    // Mettre à jour l'affichage du logo
+    updateLogoDisplay();
     
-    // Tirages
+    // Charger les résultats depuis la base de données
+    loadResultsFromDatabase();
+    
+    // Ajouter les écouteurs d'événements pour les tirages
     document.querySelectorAll('.draw-card').forEach(card => {
         card.addEventListener('click', function() {
+            console.log("Carte de tiraj cliquée:", this.getAttribute('data-draw'));
             const drawId = this.getAttribute('data-draw');
             openBettingScreen(drawId, 'morning');
         });
     });
-    
-    // Boutons tirage
-    document.querySelectorAll('.draw-btn').forEach(btn => {
-        btn.addEventListener('click', function(e) {
-            e.stopPropagation();
-            const card = this.closest('.draw-card');
-            const drawId = card.getAttribute('data-draw');
-            const time = this.getAttribute('data-time');
-            
-            card.querySelectorAll('.draw-btn').forEach(b => b.classList.remove('active'));
-            this.classList.add('active');
-            
-            openBettingScreen(drawId, time);
-        });
-    });
-}
     
     // Ajouter les écouteurs d'événements pour les boutons de tirage
     document.querySelectorAll('.draw-btn').forEach(btn => {
@@ -593,7 +654,7 @@ function setupEventListeners() {
     setInterval(checkForNewResults, 300000); // Toutes les 5 minutes
     
     console.log("Initialisation terminée");
-;
+});
 
 // Charger les fiches multi-tirages depuis l'API
 async function loadMultiDrawTickets() {
@@ -3318,7 +3379,7 @@ function generateAutoMarriages() {
         return;
     }
     
-    const amount = prompt("Kantite pou chak maryaj:", "1");
+    const amount = prompt("Kantite pour chak maryaj:", "1");
     if (!amount || isNaN(amount) || amount <= 0) {
         return;
     }
@@ -3358,7 +3419,7 @@ function generateAutoLotto4() {
         return;
     }
     
-    const amount = prompt("Kantite pou chak Lotto 4:", "1");
+    const amount = prompt("Kantite pour chak Lotto 4:", "1");
     if (!amount || isNaN(amount) || amount <= 0) {
         return;
     }
@@ -3390,11 +3451,11 @@ function reverseLotto4Combinations() {
     const lotto4Bets = activeBets.filter(bet => bet.type === 'lotto4' && !bet.isAuto);
     
     if (lotto4Bets.length === 0) {
-        showNotification("Pa gen Lotto 4 pou renverse", "warning");
+        showNotification("Pa gen Lotto 4 pour renverse", "warning");
         return;
     }
     
-    const amount = prompt("Kantite pou chak Lotto 4 renverse:", "1");
+    const amount = prompt("Kantite pour chak Lotto 4 renverse:", "1");
     if (!amount || isNaN(amount) || amount <= 0) {
         return;
     }
@@ -3554,7 +3615,7 @@ async function saveAndPrintTicket() {
     }, 100);
 }
 
-// Sauvegarder la fiche via API
+// Solution 3: Correction de la Fonction saveTicket
 async function saveTicket() {
     console.log("Sauvegarder fiche via API");
     if (activeBets.length === 0) {
@@ -3563,37 +3624,46 @@ async function saveTicket() {
     }
     
     const ticket = {
-        id: Date.now().toString(),
-        number: ticketNumber,
-        date: new Date().toISOString(),
         draw: currentDraw,
-        drawTime: currentDrawTime,
-        bets: [...activeBets],
-        total: activeBets.reduce((sum, bet) => sum + bet.amount, 0),
-        agentName: currentAdmin ? currentAdmin.name : 'Agent',
-        agentId: currentAdmin ? currentAdmin.id : 1
+        draw_time: currentDrawTime,
+        bets: activeBets.map(bet => ({
+            type: bet.type,
+            name: bet.name,
+            number: bet.number,
+            amount: bet.amount,
+            multiplier: bet.multiplier,
+            options: bet.options || {},
+            perOptionAmount: bet.perOptionAmount || bet.amount,
+            isLotto4: bet.isLotto4 || false,
+            isLotto5: bet.isLotto5 || false,
+            isAuto: bet.isAuto || false,
+            isGroup: bet.isGroup || false,
+            details: bet.details || null
+        }))
     };
     
     try {
-        // Sauvegarder via API
-        const response = await saveTicketAPI(ticket);
+        console.log("Envoi ticket:", ticket);
+        const response = await apiCall(APP_CONFIG.tickets, 'POST', ticket);
+        console.log("Réponse serveur:", response);
         
-        // Ajouter aux tickets sauvegardés localement
-        savedTickets.push(ticket);
-        
-        // Incrémenter le numéro de ticket
-        ticketNumber++;
-        
-        showNotification("Fiche sove avèk siksè!", "success");
-        
-        // Réinitialiser les paris actifs
-        activeBets = [];
-        updateBetsList();
-        
-        return response;
+        if (response.success) {
+            // Ajouter aux tickets sauvegardés localement
+            savedTickets.push(response.ticket);
+            
+            showNotification("Fiche sove avèk siksè!", "success");
+            
+            // Réinitialiser les paris actifs
+            activeBets = [];
+            updateBetsList();
+            
+            return response;
+        } else {
+            throw new Error(response.error || "Erreur inconnue");
+        }
     } catch (error) {
         console.error('Erreur lors de la sauvegarde du ticket:', error);
-        showNotification("Erreur lors de la sauvegarde du ticket", "error");
+        showNotification("Erreur lors de la sauvegarde: " + error.message, "error");
         throw error;
     }
 }

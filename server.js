@@ -1200,6 +1200,72 @@ app.delete('/api/tickets/:id', vérifierToken, async (req, res) => {
     });
   }
 });
+// Route pour les informations du sous-système
+app.get('/api/subsystem-info', vérifierToken, async (req, res) => {
+    try {
+        const user = await User.findById(req.tokenInfo.userId);
+        if (!user) {
+            return res.status(401).json({
+                success: false,
+                error: 'Utilisateur non trouvé'
+            });
+        }
+
+        // Récupérer le sous-système
+        const subsystem = await Subsystem.findById(user.subsystem_id);
+        
+        // Configuration par défaut si pas de sous-système
+        let config = {
+            name: subsystem ? subsystem.name : "Nova Lotto",
+            logo: "logo-borlette.jpg",
+            settings: {
+                blockDrawBeforeMinutes: 5,
+                allowMultiDraw: true,
+                allowAutoGames: true,
+                maxBetAmount: 10000
+            }
+        };
+
+        // Récupérer les tirages actifs
+        const activeDraws = await Draw.find({ is_active: true });
+        const draws = {};
+        
+        activeDraws.forEach(draw => {
+            draws[draw.code] = {
+                name: draw.name,
+                times: draw.times,
+                date: new Date().toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' }),
+                countdown: "Calculé dynamiquement"
+            };
+        });
+
+        // Récupérer les jeux configurés
+        // Pour l'instant, utiliser les jeux par défaut
+        const games = {
+            lotto3: {
+                name: "LOTO 3",
+                multiplier: 500,
+                icon: "fas fa-list-ol",
+                description: "3 chif (lot 1 + 1 chif devan)",
+                category: "lotto"
+            },
+            // ... autres jeux comme dans le fichier lotato.js
+        };
+
+        res.json({
+            success: true,
+            config: config,
+            draws: draws,
+            games: games
+        });
+    } catch (error) {
+        console.error('Erreur chargement info sous-système:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Erreur lors du chargement des informations du sous-système'
+        });
+    }
+});
 
 // =================== NOUVELLES ROUTES POUR LOTATO ===================
 

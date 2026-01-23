@@ -1339,59 +1339,82 @@ app.get('/api/tickets', vérifierToken, async (req, res) => {
 });
 
 // Route pour sauvegarder un ticket (modifiée pour utiliser le token)
+// Route pour sauvegarder un ticket (modifiée pour ajouter des logs)
 app.post('/api/tickets', vérifierToken, async (req, res) => {
-  try {
-    const { draw, draw_time, bets } = req.body;
+    try {
+        console.log('Requête de sauvegarde reçue:', req.body);
+        const { draw, draw_time, bets } = req.body;
+        
+        // Valider les données
+        if (!draw || !draw_time || !bets || !Array.isArray(bets)) {
+            console.error('Données manquantes ou invalides:', { draw, draw_time, bets });
+            return res.status(400).json({
+                success: false,
+                error: 'Données manquantes ou invalides'
+            });
+        }
 
-    const user = await User.findById(req.tokenInfo.userId);
-    if (!user) {
-      return res.status(401).json({
-        success: false,
-        error: 'Utilisateur non trouvé'
-      });
+        const user = await User.findById(req.tokenInfo.userId);
+        if (!user) {
+            return res.status(401).json({
+                success: false,
+                error: 'Utilisateur non trouvé'
+            });
+        }
+
+        const lastTicket = await Ticket.findOne().sort({ number: -1 });
+        const ticketNumber = lastTicket ? lastTicket.number + 1 : 100001;
+
+        const total = bets.reduce((sum, bet) => sum + (bet.amount || 0), 0);
+
+        console.log('Création du ticket avec:', {
+            number: ticketNumber,
+            draw,
+            draw_time,
+            betsCount: bets.length,
+            total,
+            agent_id: user._id,
+            agent_name: user.name
+        });
+
+        const ticket = new Ticket({
+            number: ticketNumber,
+            draw: draw,
+            draw_time: draw_time,
+            bets: bets,
+            total: total,
+            agent_id: user._id,
+            agent_name: user.name,
+            subsystem_id: user.subsystem_id,
+            date: new Date()
+        });
+
+        await ticket.save();
+        
+        console.log('Ticket sauvegardé avec succès:', ticket._id);
+
+        res.json({
+            success: true,
+            ticket: {
+                id: ticket._id,
+                number: ticket.number,
+                date: ticket.date,
+                draw: ticket.draw,
+                draw_time: ticket.draw_time,
+                bets: ticket.bets,
+                total: ticket.total,
+                agent_name: ticket.agent_name
+            }
+        });
+    } catch (error) {
+        console.error('Erreur détaillée sauvegarde fiche:', error);
+        console.error('Stack trace:', error.stack);
+        res.status(500).json({
+            success: false,
+            error: 'Erreur lors de la sauvegarde de la fiche: ' + error.message
+        });
     }
-
-    const lastTicket = await Ticket.findOne().sort({ number: -1 });
-    const ticketNumber = lastTicket ? lastTicket.number + 1 : 100001;
-
-    const total = bets.reduce((sum, bet) => sum + bet.amount, 0);
-
-    const ticket = new Ticket({
-      number: ticketNumber,
-      draw: draw,
-      draw_time: draw_time,
-      bets: bets,
-      total: total,
-      agent_id: user._id,
-      agent_name: user.name,
-      subsystem_id: user.subsystem_id,
-      date: new Date()
-    });
-
-    await ticket.save();
-
-    res.json({
-      success: true,
-      ticket: {
-        id: ticket._id,
-        number: ticket.number,
-        date: ticket.date,
-        draw: ticket.draw,
-        draw_time: ticket.draw_time,
-        bets: ticket.bets,
-        total: ticket.total,
-        agent_name: ticket.agent_name
-      }
-    });
-  } catch (error) {
-    console.error('Erreur sauvegarde fiche:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Erreur lors de la sauvegarde de la fiche'
-    });
-  }
 });
-
 // Route pour les tickets en attente de l'agent
 app.get('/api/tickets/pending', vérifierToken, async (req, res) => {
   try {

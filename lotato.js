@@ -445,14 +445,21 @@ async function loadDataFromAPI() {
 // Sauvegarder un ticket via API
 async function saveTicketAPI(ticket) {
     try {
-        const response = await apiCall(APP_CONFIG.tickets, 'POST', ticket);
+        // S'assurer que le format correspond au serveur
+        const ticketForServer = {
+            draw: ticket.draw,
+            draw_time: ticket.draw_time, // Le serveur attend 'draw_time' avec underscore
+            bets: ticket.bets,
+            // Ne pas envoyer d'autres champs que le serveur n'attend pas
+        };
+        
+        const response = await apiCall(APP_CONFIG.tickets, 'POST', ticketForServer);
         return response;
     } catch (error) {
         console.error('Erreur lors de la sauvegarde du ticket:', error);
         throw error;
     }
 }
-
 // Sauvegarder un ticket en attente via API
 async function savePendingTicketAPI(ticket) {
     try {

@@ -1200,72 +1200,6 @@ app.delete('/api/tickets/:id', vérifierToken, async (req, res) => {
     });
   }
 });
-// Route pour les informations du sous-système
-app.get('/api/subsystem-info', vérifierToken, async (req, res) => {
-    try {
-        const user = await User.findById(req.tokenInfo.userId);
-        if (!user) {
-            return res.status(401).json({
-                success: false,
-                error: 'Utilisateur non trouvé'
-            });
-        }
-
-        // Récupérer le sous-système
-        const subsystem = await Subsystem.findById(user.subsystem_id);
-        
-        // Configuration par défaut si pas de sous-système
-        let config = {
-            name: subsystem ? subsystem.name : "Nova Lotto",
-            logo: "logo-borlette.jpg",
-            settings: {
-                blockDrawBeforeMinutes: 5,
-                allowMultiDraw: true,
-                allowAutoGames: true,
-                maxBetAmount: 10000
-            }
-        };
-
-        // Récupérer les tirages actifs
-        const activeDraws = await Draw.find({ is_active: true });
-        const draws = {};
-        
-        activeDraws.forEach(draw => {
-            draws[draw.code] = {
-                name: draw.name,
-                times: draw.times,
-                date: new Date().toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' }),
-                countdown: "Calculé dynamiquement"
-            };
-        });
-
-        // Récupérer les jeux configurés
-        // Pour l'instant, utiliser les jeux par défaut
-        const games = {
-            lotto3: {
-                name: "LOTO 3",
-                multiplier: 500,
-                icon: "fas fa-list-ol",
-                description: "3 chif (lot 1 + 1 chif devan)",
-                category: "lotto"
-            },
-            // ... autres jeux comme dans le fichier lotato.js
-        };
-
-        res.json({
-            success: true,
-            config: config,
-            draws: draws,
-            games: games
-        });
-    } catch (error) {
-        console.error('Erreur chargement info sous-système:', error);
-        res.status(500).json({
-            success: false,
-            error: 'Erreur lors du chargement des informations du sous-système'
-        });
-    }
-});
 
 // =================== NOUVELLES ROUTES POUR LOTATO ===================
 
@@ -1908,6 +1842,270 @@ app.post('/api/check-winners', vérifierToken, async (req, res) => {
     res.status(500).json({
       success: false,
       error: 'Erreur lors de la vérification des gagnants'
+    });
+  }
+});
+
+// =================== NOUVELLES ROUTES POUR LES DONNÉES DU SOUS-SYSTÈME ===================
+
+// Route pour obtenir les informations du sous-système
+app.get('/api/subsystem-info', vérifierToken, async (req, res) => {
+  try {
+    const user = await User.findById(req.tokenInfo.userId);
+    if (!user) {
+      return res.status(401).json({
+        success: false,
+        error: 'Utilisateur non trouvé'
+      });
+    }
+
+    const subsystem = await Subsystem.findById(user.subsystem_id);
+    if (!subsystem) {
+      return res.status(404).json({
+        success: false,
+        error: 'Sous-système non trouvé'
+      });
+    }
+
+    // Récupérer la configuration de l'entreprise
+    const config = await Config.findOne();
+    
+    // Récupérer les tirages
+    const draws = await Draw.find({ is_active: true }).sort({ order: 1 });
+
+    // Formater les tirages pour le frontend
+    const formattedDraws = {};
+    draws.forEach(draw => {
+      formattedDraws[draw.code] = {
+        name: draw.name,
+        times: draw.times,
+        icon: draw.icon
+      };
+    });
+
+    res.json({
+      success: true,
+      config: {
+        name: subsystem.name,
+        logo: config ? config.logo_url : 'logo-borlette.jpg',
+        settings: {
+          blockDrawBeforeMinutes: 5,
+          allowMultiDraw: true,
+          allowAutoGames: true,
+          maxBetAmount: 10000
+        }
+      },
+      draws: formattedDraws,
+      games: {
+        lotto3: {
+          name: "LOTO 3",
+          multiplier: 500,
+          icon: "fas fa-list-ol",
+          description: "3 chif (lot 1 + 1 chif devan)",
+          category: "lotto"
+        },
+        grap: {
+          name: "GRAP",
+          multiplier: 500,
+          icon: "fas fa-chart-line",
+          description: "Grap boule paire (111, 222, ..., 000)",
+          category: "special"
+        },
+        marriage: {
+          name: "MARYAJ",
+          multiplier: 1000,
+          icon: "fas fa-link",
+          description: "Maryaj 2 chif (ex: 12*34)",
+          category: "special"
+        },
+        borlette: {
+          name: "BORLETTE",
+          multiplier: 60,
+          multiplier2: 20,
+          multiplier3: 10,
+          icon: "fas fa-dice",
+          description: "2 chif (1er lot ×60, 2e ×20, 3e ×10)",
+          category: "borlette"
+        },
+        boulpe: {
+          name: "BOUL PE",
+          multiplier: 60,
+          multiplier2: 20,
+          multiplier3: 10,
+          icon: "fas fa-circle",
+          description: "Boul pe (00-99)",
+          category: "borlette"
+        },
+        lotto4: {
+          name: "LOTO 4",
+          multiplier: 5000,
+          icon: "fas fa-list-ol",
+          description: "4 chif (lot 1+2 accumulate) - 3 opsyon",
+          category: "lotto"
+        },
+        lotto5: {
+          name: "LOTO 5",
+          multiplier: 25000,
+          icon: "fas fa-list-ol",
+          description: "5 chif (lot 1+2+3 accumulate) - 3 opsyon",
+          category: "lotto"
+        },
+        'auto-marriage': {
+          name: "MARYAJ OTOMATIK",
+          multiplier: 1000,
+          icon: "fas fa-robot",
+          description: "Marie boules otomatik",
+          category: "special"
+        },
+        'auto-lotto4': {
+          name: "LOTO 4 OTOMATIK",
+          multiplier: 5000,
+          icon: "fas fa-robot",
+          description: "Lotto 4 otomatik",
+          category: "special"
+        }
+      }
+    });
+
+  } catch (error) {
+    console.error('Erreur chargement info sous-système:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Erreur serveur lors du chargement des informations du sous-système'
+    });
+  }
+});
+
+// Route pour obtenir les tirages du sous-système
+app.get('/api/subsystem/draws', vérifierToken, async (req, res) => {
+  try {
+    const user = await User.findById(req.tokenInfo.userId);
+    if (!user) {
+      return res.status(401).json({
+        success: false,
+        error: 'Utilisateur non trouvé'
+      });
+    }
+
+    const draws = await Draw.find({ is_active: true }).sort({ order: 1 });
+
+    // Formater les tirages
+    const formattedDraws = draws.map(draw => ({
+      id: draw._id,
+      code: draw.code,
+      name: draw.name,
+      times: draw.times,
+      icon: draw.icon,
+      order: draw.order
+    }));
+
+    res.json({
+      success: true,
+      draws: formattedDraws
+    });
+
+  } catch (error) {
+    console.error('Erreur chargement tirages:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Erreur serveur lors du chargement des tirages'
+    });
+  }
+});
+
+// Route pour obtenir les jeux du sous-système
+app.get('/api/subsystem/games', vérifierToken, async (req, res) => {
+  try {
+    const user = await User.findById(req.tokenInfo.userId);
+    if (!user) {
+      return res.status(401).json({
+        success: false,
+        error: 'Utilisateur non trouvé'
+      });
+    }
+
+    // Pour l'instant, retourner les jeux par défaut
+    // Plus tard, cela pourrait être configuré par sous-système
+    const games = {
+      lotto3: {
+        name: "LOTO 3",
+        multiplier: 500,
+        icon: "fas fa-list-ol",
+        description: "3 chif (lot 1 + 1 chif devan)",
+        category: "lotto"
+      },
+      grap: {
+        name: "GRAP",
+        multiplier: 500,
+        icon: "fas fa-chart-line",
+        description: "Grap boule paire (111, 222, ..., 000)",
+        category: "special"
+      },
+      marriage: {
+        name: "MARYAJ",
+        multiplier: 1000,
+        icon: "fas fa-link",
+        description: "Maryaj 2 chif (ex: 12*34)",
+        category: "special"
+      },
+      borlette: {
+        name: "BORLETTE",
+        multiplier: 60,
+        multiplier2: 20,
+        multiplier3: 10,
+        icon: "fas fa-dice",
+        description: "2 chif (1er lot ×60, 2e ×20, 3e ×10)",
+        category: "borlette"
+      },
+      boulpe: {
+        name: "BOUL PE",
+        multiplier: 60,
+        multiplier2: 20,
+        multiplier3: 10,
+        icon: "fas fa-circle",
+        description: "Boul pe (00-99)",
+        category: "borlette"
+      },
+      lotto4: {
+        name: "LOTO 4",
+        multiplier: 5000,
+        icon: "fas fa-list-ol",
+        description: "4 chif (lot 1+2 accumulate) - 3 opsyon",
+        category: "lotto"
+      },
+      lotto5: {
+        name: "LOTO 5",
+        multiplier: 25000,
+        icon: "fas fa-list-ol",
+        description: "5 chif (lot 1+2+3 accumulate) - 3 opsyon",
+        category: "lotto"
+      },
+      'auto-marriage': {
+        name: "MARYAJ OTOMATIK",
+        multiplier: 1000,
+        icon: "fas fa-robot",
+        description: "Marie boules otomatik",
+        category: "special"
+      },
+      'auto-lotto4': {
+        name: "LOTO 4 OTOMATIK",
+        multiplier: 5000,
+        icon: "fas fa-robot",
+        description: "Lotto 4 otomatik",
+        category: "special"
+      }
+    };
+
+    res.json({
+      success: true,
+      games: games
+    });
+
+  } catch (error) {
+    console.error('Erreur chargement jeux:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Erreur serveur lors du chargement des jeux'
     });
   }
 });
@@ -3102,6 +3300,9 @@ app.listen(PORT, () => {
   console.log('  GET    /api/results                     - Récupérer résultats');
   console.log('  POST   /api/check-winners               - Vérifier gagnants');
   console.log('  GET    /api/auth/check                  - Vérifier session');
+  console.log('  GET    /api/subsystem-info              - Informations sous-système');
+  console.log('  GET    /api/subsystem/draws             - Tirages du sous-système');
+  console.log('  GET    /api/subsystem/games             - Jeux du sous-système');
   console.log('');
   console.log('📋 Routes API SOUS-SYSTÈMES (Admin + Supervisor Level 2) disponibles:');
   console.log('  GET    /api/subsystem/users             - Lister utilisateurs');

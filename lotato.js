@@ -14,16 +14,10 @@ const APP_CONFIG = {
     history: `${API_BASE_URL}/api/history`,
     multiDrawTickets: `${API_BASE_URL}/api/tickets/multi-draw`,
     companyInfo: `${API_BASE_URL}/api/company-info`,
-    logo: `${API_BASE_URL}/api/logo`,
-    // Nouveaux endpoints pour sous-systèmes
-    subsystemInfo: `${API_BASE_URL}/api/subsystem-info`,
-    userInfo: `${API_BASE_URL}/api/auth/check`,
-    subsystemDraws: `${API_BASE_URL}/api/subsystem/draws`,
-    subsystemGames: `${API_BASE_URL}/api/subsystem/games`
+    logo: `${API_BASE_URL}/api/logo`
 };
 
 const FIVE_MINUTES = 5 * 60 * 1000; // 5 minutes en millisecondes
-const DRAW_BLOCK_TIME = 5 * 60 * 1000; // 5 minutes avant le tirage
 
 // Base de données simulée pour les résultats (sera remplacée par l'API)
 let resultsDatabase = {
@@ -99,33 +93,125 @@ let resultsDatabase = {
     }
 };
 
-// Données des tirages (seront remplacées par les données du sous-système)
-let draws = {};
-
-// Types de paris disponibles avec multiplicateurs (seront configurés par sous-système)
-let betTypes = {};
-
-// Configuration du sous-système
-let subsystemConfig = {
-    name: "Nova Lotto",
-    logo: "logo-borlette.jpg",
-    draws: {},
-    games: {},
-    settings: {
-        blockDrawBeforeMinutes: 5,
-        allowMultiDraw: true,
-        allowAutoGames: true,
-        maxBetAmount: 10000
+// Données des tirages
+const draws = {
+    miami: {
+        name: "Miami (Florida)",
+        times: {
+            morning: "1:30 PM",
+            evening: "9:50 PM"
+        },
+        date: "Sam, 29 Nov",
+        countdown: "18 h 30 min"
+    },
+    georgia: {
+        name: "Georgia",
+        times: {
+            morning: "12:30 PM",
+            evening: "7:00 PM"
+        },
+        date: "Sam, 29 Nov",
+        countdown: "17 h 29 min"
+    },
+    newyork: {
+        name: "New York",
+        times: {
+            morning: "2:30 PM",
+            evening: "8:00 PM"
+        },
+        date: "Sam, 29 Nov",
+        countdown: "19 h 30 min"
+    },
+    texas: {
+        name: "Texas",
+        times: {
+            morning: "12:00 PM",
+            evening: "6:00 PM"
+        },
+        date: "Sam, 29 Nov",
+        countdown: "18 h 27 min"
+    },
+    tunisia: {
+        name: "Tunisie",
+        times: {
+            morning: "10:30 AM",
+            evening: "2:00 PM"
+        },
+        date: "Sam, 29 Nov",
+        countdown: "8 h 30 min"
     }
 };
 
-// Informations de l'entreprise
-let companyInfo = {
-    name: "Nova Lotto",
-    phone: "+509 32 53 49 58",
-    address: "Cap Haïtien",
-    reportTitle: "Nova Lotto",
-    reportPhone: "40104585"
+// Types de paris disponibles avec multiplicateurs
+const betTypes = {
+    lotto3: {
+        name: "LOTO 3",
+        multiplier: 500,
+        icon: "fas fa-list-ol",
+        description: "3 chif (lot 1 + 1 chif devan)",
+        category: "lotto"
+    },
+    grap: {
+        name: "GRAP",
+        multiplier: 500,
+        icon: "fas fa-chart-line",
+        description: "Grap boule paire (111, 222, ..., 000)",
+        category: "special"
+    },
+    marriage: {
+        name: "MARYAJ",
+        multiplier: 1000,
+        icon: "fas fa-link",
+        description: "Maryaj 2 chif (ex: 12*34)",
+        category: "special"
+    },
+    borlette: {
+        name: "BORLETTE",
+        multiplier: 60, // 1er lot ×60
+        multiplier2: 20, // 2e lot ×20
+        multiplier3: 10, // 3e lot ×10
+        icon: "fas fa-dice",
+        description: "2 chif (1er lot ×60, 2e ×20, 3e ×10)",
+        category: "borlette"
+    },
+    boulpe: {
+        name: "BOUL PE",
+        multiplier: 60, // 1er lot ×60
+        multiplier2: 20, // 2e lot ×20
+        multiplier3: 10, // 3e lot ×10
+        icon: "fas fa-circle",
+        description: "Boul pe (00-99)",
+        category: "borlette"
+    },
+    lotto4: {
+        name: "LOTO 4",
+        multiplier: 5000,
+        icon: "fas fa-list-ol",
+        description: "4 chif (lot 1+2 accumulate) - 3 opsyon",
+        category: "lotto"
+    },
+    lotto5: {
+        name: "LOTO 5",
+        multiplier: 25000,
+        icon: "fas fa-list-ol",
+        description: "5 chif (lot 1+2+3 accumulate) - 3 opsyon",
+        category: "lotto"
+    },
+    // Types de paris automatiques
+    'auto-marriage': {
+        name: "MARYAJ OTOMATIK",
+        multiplier: 1000,
+        icon: "fas fa-robot",
+        description: "Marie boules otomatik",
+        category: "special"
+    },
+    'auto-lotto4': {
+        name: "LOTO 4 OTOMATIK",
+        multiplier: 5000,
+        icon: "fas fa-robot",
+        description: "Lotto 4 otomatik",
+        category: "special"
+    }
 };
 
 // Variables globales
@@ -134,9 +220,10 @@ let currentDrawTime = null;
 let activeBets = [];
 let ticketNumber = 1;
 let savedTickets = [];
-let currentUser = null;
+let currentAdmin = null;
 let pendingSyncTickets = [];
 let isOnline = navigator.onLine;
+let companyLogo = "logo-borlette.jpg";
 let currentBetCategory = null;
 let restrictedBalls = [];
 let gameRestrictions = {};
@@ -155,14 +242,20 @@ let currentMultiDrawTicket = {
 
 let multiDrawTickets = []; // Liste des fiches multi-tirages sauvegardées
 
+// Informations de l'entreprise
+let companyInfo = {
+    name: "Nova Lotto",
+    phone: "+509 32 53 49 58",
+    address: "Cap Haïtien",
+    reportTitle: "Nova Lotto",
+    reportPhone: "40104585"
+};
+
 // Tickets gagnants
 let winningTickets = [];
 
 // Gestion du token
 let authToken = null;
-
-// Statut de blocage des tirages
-let drawBlockStatus = {};
 
 // Fonctions API
 async function apiCall(endpoint, method = 'GET', data = null) {
@@ -173,7 +266,7 @@ async function apiCall(endpoint, method = 'GET', data = null) {
     
     // Ajouter le token d'authentification si disponible
     if (authToken) {
-        headers['Authorization'] = authToken;
+        headers['Authorization'] = `Bearer ${authToken}`;
     }
     
     const options = {
@@ -187,13 +280,6 @@ async function apiCall(endpoint, method = 'GET', data = null) {
     
     try {
         const response = await fetch(url, options);
-        
-        if (response.status === 401) {
-            // Token invalide ou expiré
-            localStorage.removeItem('nova_token');
-            window.location.href = '/index.html';
-            return null;
-        }
         
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
@@ -216,185 +302,8 @@ function checkAuth() {
         return false;
     }
     
-    // S'assurer que le token commence par "Bearer "
-    if (!token.startsWith('Bearer ')) {
-        authToken = `Bearer ${token}`;
-    } else {
-        authToken = token;
-    }
-    
+    authToken = token;
     return true;
-}
-
-// Charger les informations de l'utilisateur
-async function loadUserInfo() {
-    try {
-        const response = await apiCall(APP_CONFIG.userInfo);
-        if (response && response.success) {
-            currentUser = response.admin;
-            console.log("Utilisateur connecté:", currentUser);
-            return true;
-        }
-    } catch (error) {
-        console.error('Erreur chargement utilisateur:', error);
-    }
-    return false;
-}
-
-// Charger la configuration du sous-système
-async function loadSubsystemConfig() {
-    try {
-        // Charger les informations du sous-système
-        const subsystemResponse = await apiCall(APP_CONFIG.subsystemInfo);
-        if (subsystemResponse && subsystemResponse.success) {
-            subsystemConfig = {
-                ...subsystemConfig,
-                ...subsystemResponse.config
-            };
-            
-            // Mettre à jour les tirages
-            if (subsystemResponse.draws) {
-                draws = subsystemResponse.draws;
-            }
-            
-            // Mettre à jour les jeux
-            if (subsystemResponse.games) {
-                betTypes = subsystemResponse.games;
-            }
-            
-            console.log("Configuration sous-système chargée:", subsystemConfig);
-            return true;
-        }
-        
-        // Si pas de configuration spécifique, utiliser les tirages par défaut
-        if (!draws || Object.keys(draws).length === 0) {
-            draws = {
-                miami: {
-                    name: "Miami (Florida)",
-                    times: {
-                        morning: "1:30 PM",
-                        evening: "9:50 PM"
-                    },
-                    date: "Sam, 29 Nov",
-                    countdown: "18 h 30 min"
-                },
-                georgia: {
-                    name: "Georgia",
-                    times: {
-                        morning: "12:30 PM",
-                        evening: "7:00 PM"
-                    },
-                    date: "Sam, 29 Nov",
-                    countdown: "17 h 29 min"
-                },
-                newyork: {
-                    name: "New York",
-                    times: {
-                        morning: "2:30 PM",
-                        evening: "8:00 PM"
-                    },
-                    date: "Sam, 29 Nov",
-                    countdown: "19 h 30 min"
-                },
-                texas: {
-                    name: "Texas",
-                    times: {
-                        morning: "12:00 PM",
-                        evening: "6:00 PM"
-                    },
-                    date: "Sam, 29 Nov",
-                    countdown: "18 h 27 min"
-                },
-                tunisia: {
-                    name: "Tunisie",
-                    times: {
-                        morning: "10:30 AM",
-                        evening: "2:00 PM"
-                    },
-                    date: "Sam, 29 Nov",
-                    countdown: "8 h 30 min"
-                }
-            };
-        }
-        
-        // Si pas de jeux spécifiques, utiliser les jeux par défaut
-        if (!betTypes || Object.keys(betTypes).length === 0) {
-            betTypes = {
-                lotto3: {
-                    name: "LOTO 3",
-                    multiplier: 500,
-                    icon: "fas fa-list-ol",
-                    description: "3 chif (lot 1 + 1 chif devan)",
-                    category: "lotto"
-                },
-                grap: {
-                    name: "GRAP",
-                    multiplier: 500,
-                    icon: "fas fa-chart-line",
-                    description: "Grap boule paire (111, 222, ..., 000)",
-                    category: "special"
-                },
-                marriage: {
-                    name: "MARYAJ",
-                    multiplier: 1000,
-                    icon: "fas fa-link",
-                    description: "Maryaj 2 chif (ex: 12*34)",
-                    category: "special"
-                },
-                borlette: {
-                    name: "BORLETTE",
-                    multiplier: 60, // 1er lot ×60
-                    multiplier2: 20, // 2e lot ×20
-                    multiplier3: 10, // 3e lot ×10
-                    icon: "fas fa-dice",
-                    description: "2 chif (1er lot ×60, 2e ×20, 3e ×10)",
-                    category: "borlette"
-                },
-                boulpe: {
-                    name: "BOUL PE",
-                    multiplier: 60, // 1er lot ×60
-                    multiplier2: 20, // 2e lot ×20
-                    multiplier3: 10, // 3e lot ×10
-                    icon: "fas fa-circle",
-                    description: "Boul pe (00-99)",
-                    category: "borlette"
-                },
-                lotto4: {
-                    name: "LOTO 4",
-                    multiplier: 5000,
-                    icon: "fas fa-list-ol",
-                    description: "4 chif (lot 1+2 accumulate) - 3 opsyon",
-                    category: "lotto"
-                },
-                lotto5: {
-                    name: "LOTO 5",
-                    multiplier: 25000,
-                    icon: "fas fa-list-ol",
-                    description: "5 chif (lot 1+2+3 accumulate) - 3 opsyon",
-                    category: "lotto"
-                },
-                'auto-marriage': {
-                    name: "MARYAJ OTOMATIK",
-                    multiplier: 1000,
-                    icon: "fas fa-robot",
-                    description: "Marie boules otomatik",
-                    category: "special"
-                },
-                'auto-lotto4': {
-                    name: "LOTO 4 OTOMATIK",
-                    multiplier: 5000,
-                    icon: "fas fa-robot",
-                    description: "Lotto 4 otomatik",
-                    category: "special"
-                }
-            };
-        }
-        
-        return true;
-    } catch (error) {
-        console.error('Erreur chargement configuration sous-système:', error);
-        return false;
-    }
 }
 
 // Charger les données depuis l'API
@@ -445,21 +354,14 @@ async function loadDataFromAPI() {
 // Sauvegarder un ticket via API
 async function saveTicketAPI(ticket) {
     try {
-        // S'assurer que le format correspond au serveur
-        const ticketForServer = {
-            draw: ticket.draw,
-            draw_time: ticket.draw_time, // Le serveur attend 'draw_time' avec underscore
-            bets: ticket.bets,
-            // Ne pas envoyer d'autres champs que le serveur n'attend pas
-        };
-        
-        const response = await apiCall(APP_CONFIG.tickets, 'POST', ticketForServer);
+        const response = await apiCall(APP_CONFIG.tickets, 'POST', ticket);
         return response;
     } catch (error) {
         console.error('Erreur lors de la sauvegarde du ticket:', error);
         throw error;
     }
 }
+
 // Sauvegarder un ticket en attente via API
 async function savePendingTicketAPI(ticket) {
     try {
@@ -493,107 +395,13 @@ async function saveHistoryAPI(historyRecord) {
     }
 }
 
-// Vérifier si un tirage est bloqué
-function checkDrawBlockStatus(drawId, time) {
-    const draw = draws[drawId];
-    if (!draw || !draw.times) return false;
-    
-    const drawTimeStr = draw.times[time];
-    if (!drawTimeStr) return false;
-    
-    // Convertir l'heure du tirage en objet Date
-    const now = new Date();
-    const [timePart, period] = drawTimeStr.split(' ');
-    const [hours, minutes] = timePart.split(':').map(Number);
-    
-    let drawHours = hours;
-    if (period === 'PM' && hours !== 12) {
-        drawHours += 12;
-    } else if (period === 'AM' && hours === 12) {
-        drawHours = 0;
-    }
-    
-    const drawTime = new Date();
-    drawTime.setHours(drawHours, minutes, 0, 0);
-    
-    // Vérifier si on est dans les 5 minutes avant le tirage
-    const timeDiff = drawTime - now;
-    const isBlocked = timeDiff > 0 && timeDiff <= DRAW_BLOCK_TIME;
-    
-    drawBlockStatus[`${drawId}_${time}`] = {
-        isBlocked,
-        timeDiff,
-        drawTime,
-        remainingMinutes: Math.ceil(timeDiff / (60 * 1000))
-    };
-    
-    return isBlocked;
-}
-
-// Mettre à jour l'affichage des tirages bloqués
-function updateDrawBlockDisplay() {
-    document.querySelectorAll('.draw-card').forEach(card => {
-        const drawId = card.getAttribute('data-draw');
-        const morningBtn = card.querySelector('[data-time="morning"]');
-        const eveningBtn = card.querySelector('[data-time="evening"]');
-        
-        // Vérifier le matin
-        const morningBlocked = checkDrawBlockStatus(drawId, 'morning');
-        if (morningBtn) {
-            if (morningBlocked) {
-                morningBtn.classList.add('blocked');
-                morningBtn.innerHTML = `<i class="fas fa-lock"></i> Maten<br><small>Fèmen</small>`;
-                morningBtn.style.opacity = '0.6';
-                morningBtn.style.cursor = 'not-allowed';
-                morningBtn.title = `Tiraj fèmen (5 minit anvan)`;
-            } else {
-                morningBtn.classList.remove('blocked');
-                morningBtn.innerHTML = `Maten<br><small>${draws[drawId].times.morning}</small>`;
-                morningBtn.style.opacity = '1';
-                morningBtn.style.cursor = 'pointer';
-                morningBtn.title = '';
-            }
-        }
-        
-        // Vérifier le soir
-        const eveningBlocked = checkDrawBlockStatus(drawId, 'evening');
-        if (eveningBtn) {
-            if (eveningBlocked) {
-                eveningBtn.classList.add('blocked');
-                eveningBtn.innerHTML = `<i class="fas fa-lock"></i> Swè<br><small>Fèmen</small>`;
-                eveningBtn.style.opacity = '0.6';
-                eveningBtn.style.cursor = 'not-allowed';
-                eveningBtn.title = `Tiraj fèmen (5 minit anvan)`;
-            } else {
-                eveningBtn.classList.remove('blocked');
-                eveningBtn.innerHTML = `Swè<br><small>${draws[drawId].times.evening}</small>`;
-                eveningBtn.style.opacity = '1';
-                eveningBtn.style.cursor = 'pointer';
-                eveningBtn.title = '';
-            }
-        }
-    });
-}
-
 // Initialisation
-document.addEventListener('DOMContentLoaded', async function() {
+document.addEventListener('DOMContentLoaded', function() {
     console.log("Document chargé, initialisation...");
     
     // Vérifier l'authentification
     if (!checkAuth()) {
         return;
-    }
-    
-    // Charger les informations de l'utilisateur
-    if (!await loadUserInfo()) {
-        showNotification("Erreur de chargement du profil utilisateur", "error");
-        window.location.href = '/index.html';
-        return;
-    }
-    
-    // Charger la configuration du sous-système
-    if (!await loadSubsystemConfig()) {
-        showNotification("Erreur de chargement de la configuration", "error");
     }
     
     // Masquer l'écran de connexion intégré
@@ -602,14 +410,11 @@ document.addEventListener('DOMContentLoaded', async function() {
     // Afficher l'application principale
     showMainApp();
     
-    // Afficher le nom du sous-système
-    updateSubsystemDisplay();
-    
     // Mettre à jour l'heure
     updateCurrentTime();
     
     // Charger les données depuis l'API
-    await loadDataFromAPI();
+    loadDataFromAPI();
     
     // Configurer la détection de connexion
     setupConnectionDetection();
@@ -618,15 +423,14 @@ document.addEventListener('DOMContentLoaded', async function() {
     updateLogoDisplay();
     
     // Charger les résultats depuis la base de données
-    await loadResultsFromDatabase();
+    loadResultsFromDatabase();
     
     // Ajouter les écouteurs d'événements pour les tirages
     document.querySelectorAll('.draw-card').forEach(card => {
         card.addEventListener('click', function() {
+            console.log("Carte de tiraj cliquée:", this.getAttribute('data-draw'));
             const drawId = this.getAttribute('data-draw');
-            if (!checkDrawBlockStatus(drawId, 'morning')) {
-                openBettingScreen(drawId, 'morning');
-            }
+            openBettingScreen(drawId, 'morning');
         });
     });
     
@@ -634,11 +438,6 @@ document.addEventListener('DOMContentLoaded', async function() {
     document.querySelectorAll('.draw-btn').forEach(btn => {
         btn.addEventListener('click', function(e) {
             e.stopPropagation();
-            if (this.classList.contains('blocked')) {
-                showNotification("Tiraj sa fèmen! Pa kapab ajoute parye 5 minit anvan tiraj.", "warning");
-                return;
-            }
-            
             const card = this.closest('.draw-card');
             const drawId = card.getAttribute('data-draw');
             const time = this.getAttribute('data-time');
@@ -733,6 +532,8 @@ document.addEventListener('DOMContentLoaded', async function() {
         document.querySelector('.container').style.display = 'block';
     });
     
+    // Connexion intégrée supprimée - utilisation de la page index.html
+    
     // Boutons de connexion
     document.getElementById('retry-connection').addEventListener('click', function() {
         console.log("Réessayer connexion");
@@ -810,44 +611,8 @@ document.addEventListener('DOMContentLoaded', async function() {
     // Vérifier périodiquement les résultats
     setInterval(checkForNewResults, 300000); // Toutes les 5 minutes
     
-    // Vérifier périodiquement le statut de blocage des tirages
-    setInterval(updateDrawBlockDisplay, 60000); // Toutes les minutes
-    
-    // Initialiser l'affichage des tirages bloqués
-    updateDrawBlockDisplay();
-    
     console.log("Initialisation terminée");
 });
-
-// Mettre à jour l'affichage du sous-système
-function updateSubsystemDisplay() {
-    // Mettre à jour le nom du sous-système
-    const subsystemNameElement = document.getElementById('subsystem-name');
-    if (subsystemNameElement && subsystemConfig.name) {
-        subsystemNameElement.textContent = subsystemConfig.name;
-    }
-    
-    // Mettre à jour le nom de l'utilisateur
-    const userNameElement = document.getElementById('user-name');
-    if (userNameElement && currentUser) {
-        userNameElement.textContent = currentUser.name;
-    }
-    
-    // Mettre à jour le rôle de l'utilisateur
-    const userRoleElement = document.getElementById('user-role');
-    if (userRoleElement && currentUser) {
-        let roleText = '';
-        switch(currentUser.role) {
-            case 'agent': roleText = 'Ajan'; break;
-            case 'supervisor': 
-                roleText = currentUser.level === 2 ? 'Sipèvizè Nivo 2' : 'Sipèvizè Nivo 1';
-                break;
-            case 'subsystem': roleText = 'Administratè Sistèm'; break;
-            default: roleText = currentUser.role;
-        }
-        userRoleElement.textContent = roleText;
-    }
-}
 
 // Charger les fiches multi-tirages depuis l'API
 async function loadMultiDrawTickets() {
@@ -1089,8 +854,8 @@ async function saveAndPrintMultiDrawTicket() {
         bets: [...currentMultiDrawTicket.bets],
         total: currentMultiDrawTicket.totalAmount,
         draws: Array.from(currentMultiDrawTicket.draws),
-        agentName: currentUser ? currentUser.name : 'Agent',
-        agentId: currentUser ? currentUser.id : 1
+        agentName: currentAdmin ? currentAdmin.name : 'Agent',
+        agentId: currentAdmin ? currentAdmin.id : 1
     };
     
     try {
@@ -1148,9 +913,9 @@ function printMultiDrawTicket(ticket) {
     printContent.innerHTML = `
         <div style="text-align: center; padding: 20px; border: 2px solid #000; font-family: Arial, sans-serif;">
             <div style="margin-bottom: 15px;">
-                <img src="${subsystemConfig.logo}" alt="Logo ${subsystemConfig.name}" class="ticket-logo" style="max-width: 80px; height: auto;">
+                <img src="${companyLogo}" alt="Logo Nova Lotto" class="ticket-logo" style="max-width: 80px; height: auto;">
             </div>
-            <h2>${subsystemConfig.name}</h2>
+            <h2>${companyInfo.name}</h2>
             <p>Fiche Multi-Tirages</p>
             <p><strong>Nimewo:</strong> #${String(ticket.number).padStart(6, '0')} (Multi)</p>
             <p><strong>Dat:</strong> ${new Date(ticket.date).toLocaleString('fr-FR')}</p>
@@ -1176,7 +941,7 @@ function printMultiDrawTicket(ticket) {
     printWindow.document.write(`
         <html>
             <head>
-                <title>Fiche Multi-Tirages ${subsystemConfig.name}</title>
+                <title>Fiche Multi-Tirages ${companyInfo.name}</title>
                 <style>
                     body { font-family: Arial, sans-serif; margin: 0; padding: 20px; }
                     @media print {
@@ -1225,7 +990,7 @@ function viewCurrentMultiDrawTicket() {
             <body>
                 <div class="ticket">
                     <div class="ticket-header">
-                        <h2>${subsystemConfig.name}</h2>
+                        <h2>${companyInfo.name}</h2>
                         <h3>Fiche Multi-Tirages (Preview)</h3>
                         <p><strong>Nimewo:</strong> #${ticket.number}</p>
                         <p><strong>Dat:</strong> ${ticket.date}</p>
@@ -1389,11 +1154,6 @@ function showTotalNotification(totalAmount, type = 'normal') {
 function addBet(betType) {
     console.log("Ajouter pari:", betType);
     const bet = betTypes[betType];
-    if (!bet) {
-        showNotification("Tip parye pa valab", "error");
-        return;
-    }
-    
     let number, amount;
     
     switch(betType) {
@@ -2312,11 +2072,6 @@ function updateMultiGameForm(gameType) {
     const numberInputs = document.getElementById('multi-number-inputs');
     const bet = betTypes[gameType];
     
-    if (!bet) {
-        console.error("Jeu non trouvé:", gameType);
-        return;
-    }
-    
     let html = '';
     
     switch(gameType) {
@@ -2442,7 +2197,7 @@ function showMainApp() {
 function updateLogoDisplay() {
     const logoElements = document.querySelectorAll('#company-logo, #ticket-logo');
     logoElements.forEach(logo => {
-        logo.src = subsystemConfig.logo;
+        logo.src = companyLogo;
         logo.onerror = function() {
             this.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgZmlsbD0iI2YzOWMxMiIvPjx0ZXh0IHg9IjUwIiB5PSI1NSIgZm9udC1mYW1pbHk9IkFyaWFsIiBmb250LXNpemU9IjE0IiBmaWxsPSJ3aGl0ZSIgdGV4dC1hbmNob3I9Im1pZGRsZSI+Qk9STEVUVEU8L3RleHQ+PC9zdmc+';
         };
@@ -2550,21 +2305,9 @@ function updatePendingBadge() {
 // Ouvrir l'écran de pari
 function openBettingScreen(drawId, time = null) {
     console.log("Ouvrir écran pari:", drawId, time);
-    
-    // Vérifier si le tirage est bloqué
-    if (checkDrawBlockStatus(drawId, time)) {
-        showNotification("Tiraj sa fèmen! Pa kapab ajoute parye 5 minit anvan tiraj.", "warning");
-        return;
-    }
-    
     currentDraw = drawId;
     currentDrawTime = time;
     const draw = draws[drawId];
-    
-    if (!draw) {
-        showNotification("Tiraj pa jwenn", "error");
-        return;
-    }
     
     let title = draw.name;
     if (time) {
@@ -2621,11 +2364,6 @@ function setupGameSelection() {
 function showAutoGameForm(gameType) {
     console.log("Afficher formulaire jeu automatique:", gameType);
     const bet = betTypes[gameType];
-    
-    if (!bet) {
-        showNotification("Tip jwèt pa disponib nan sistèm sa", "error");
-        return;
-    }
     
     // Cacher l'interface des jeux
     document.getElementById('games-interface').style.display = 'none';
@@ -3151,11 +2889,6 @@ function showBetForm(gameType) {
     console.log("Afficher formulaire pour:", gameType);
     const bet = betTypes[gameType];
     
-    if (!bet) {
-        showNotification("Tip jwèt pa disponib", "error");
-        return;
-    }
-    
     // Cacher l'interface des jeux
     document.getElementById('games-interface').style.display = 'none';
     document.getElementById('bet-type-nav').style.display = 'none';
@@ -3680,7 +3413,7 @@ function reverseLotto4Combinations() {
         return;
     }
     
-    const amount = prompt("Kantite pour chak Lotto 4 renverse:", "1");
+    const amount = prompt("Kantite pou chak Lotto 4 renverse:", "1");
     if (!amount || isNaN(amount) || amount <= 0) {
         return;
     }
@@ -3853,12 +3586,11 @@ async function saveTicket() {
         number: ticketNumber,
         date: new Date().toISOString(),
         draw: currentDraw,
-        draw_time: currentDrawTime, // Important: utiliser draw_time pour le backend
+        drawTime: currentDrawTime,
         bets: [...activeBets],
         total: activeBets.reduce((sum, bet) => sum + bet.amount, 0),
-        agent_name: currentUser ? currentUser.name : 'Agent',
-        agent_id: currentUser ? currentUser.id : 1,
-        subsystem_id: currentUser ? currentUser.subsystem_id : null
+        agentName: currentAdmin ? currentAdmin.name : 'Agent',
+        agentId: currentAdmin ? currentAdmin.id : 1
     };
     
     try {
@@ -3866,10 +3598,7 @@ async function saveTicket() {
         const response = await saveTicketAPI(ticket);
         
         // Ajouter aux tickets sauvegardés localement
-        savedTickets.push({
-            ...ticket,
-            drawTime: currentDrawTime // Garder drawTime pour le frontend
-        });
+        savedTickets.push(ticket);
         
         // Incrémenter le numéro de ticket
         ticketNumber++;
@@ -3944,14 +3673,14 @@ function printTicket() {
     printContent.innerHTML = `
         <div style="text-align: center; padding: 20px; border: 2px solid #000; font-family: Arial, sans-serif;">
             <div style="margin-bottom: 15px;">
-                <img src="${subsystemConfig.logo}" alt="Logo ${subsystemConfig.name}" class="ticket-logo" style="max-width: 80px; height: auto;">
+                <img src="${companyLogo}" alt="Logo Nova Lotto" class="ticket-logo" style="max-width: 80px; height: auto;">
             </div>
-            <h2>${subsystemConfig.name}</h2>
+            <h2>${companyInfo.name}</h2>
             <p>Fiche Parye</p>
             <p><strong>Nimewo:</strong> #${String(lastTicket.number).padStart(6, '0')}</p>
             <p><strong>Dat:</strong> ${new Date(lastTicket.date).toLocaleString('fr-FR')}</p>
             <p><strong>Tiraj:</strong> ${draws[lastTicket.draw].name} (${lastTicket.drawTime === 'morning' ? 'Maten' : 'Swè'})</p>
-            <p><strong>Ajan:</strong> ${lastTicket.agent_name}</p>
+            <p><strong>Ajan:</strong> ${lastTicket.agentName}</p>
             <hr>
             <div style="margin: 15px 0;">
                 ${betsHTML}
@@ -3972,7 +3701,7 @@ function printTicket() {
     printWindow.document.write(`
         <html>
             <head>
-                <title>Fiche ${subsystemConfig.name}</title>
+                <title>Fiche ${companyInfo.name}</title>
                 <style>
                     body { font-family: Arial, sans-serif; margin: 0; padding: 20px; }
                     @media print {
@@ -4245,7 +3974,7 @@ function updateTicketManagementScreen() {
                 </div>
                 <div class="ticket-details">
                     ${betsHTML}
-                    ${ticket.agent_name ? `<div><strong>Ajan:</strong> ${ticket.agent_name}</div>` : ''}
+                    ${ticket.agentName ? `<div><strong>Ajan:</strong> ${ticket.agentName}</div>` : ''}
                 </div>
                 ${canEdit ? `
                     <div style="display: flex; gap: 10px; margin-top: 10px;">
@@ -4440,7 +4169,7 @@ function showPendingTickets() {
                 </div>
                 <div class="ticket-details">
                     <div><strong>${ticket.bets.length} parye</strong></div>
-                    ${ticket.agent_name ? `<div><strong>Ajan:</strong> ${ticket.agent_name}</div>` : ''}
+                    ${ticket.agentName ? `<div><strong>Ajan:</strong> ${ticket.agentName}</div>` : ''}
                 </div>
                 ${canEdit ? `
                     <div style="display: flex; gap: 10px; margin-top: 10px;">
@@ -4469,7 +4198,7 @@ function generateEndOfDrawReport() {
     
     reportContent.innerHTML = `
         <div class="report-header">
-            <h3>${subsystemConfig.name}</h3>
+            <h3>${companyInfo.reportTitle}</h3>
             <p>Rapò Fin Tiraj</p>
             <p>${new Date().toLocaleString()}</p>
         </div>
@@ -4488,8 +4217,8 @@ function generateEndOfDrawReport() {
             </div>
         </div>
         <p style="margin-top: 20px; text-align: center;">
-            <strong>Ajan:</strong> ${currentUser ? currentUser.name : 'N/A'}<br>
-            <strong>Sous-système:</strong> ${subsystemConfig.name}
+            <strong>Tel:</strong> ${companyInfo.reportPhone}<br>
+            <strong>Adrès:</strong> ${companyInfo.address}
         </p>
     `;
     
@@ -4629,11 +4358,3 @@ function updateNormalBetTotalNotification() {
         showTotalNotification(total, 'normal');
     }
 }
-
-// Déconnexion
-window.logout = function() {
-    if (confirm("Èske ou vreman vle dekonnecte?")) {
-        localStorage.removeItem('nova_token');
-        window.location.href = '/index.html';
-    }
-};

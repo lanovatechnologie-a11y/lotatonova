@@ -1339,82 +1339,59 @@ app.get('/api/tickets', vérifierToken, async (req, res) => {
 });
 
 // Route pour sauvegarder un ticket (modifiée pour utiliser le token)
-// Route pour sauvegarder un ticket (modifiée pour ajouter des logs)
 app.post('/api/tickets', vérifierToken, async (req, res) => {
-    try {
-        console.log('Requête de sauvegarde reçue:', req.body);
-        const { draw, draw_time, bets } = req.body;
-        
-        // Valider les données
-        if (!draw || !draw_time || !bets || !Array.isArray(bets)) {
-            console.error('Données manquantes ou invalides:', { draw, draw_time, bets });
-            return res.status(400).json({
-                success: false,
-                error: 'Données manquantes ou invalides'
-            });
-        }
+  try {
+    const { draw, draw_time, bets } = req.body;
 
-        const user = await User.findById(req.tokenInfo.userId);
-        if (!user) {
-            return res.status(401).json({
-                success: false,
-                error: 'Utilisateur non trouvé'
-            });
-        }
-
-        const lastTicket = await Ticket.findOne().sort({ number: -1 });
-        const ticketNumber = lastTicket ? lastTicket.number + 1 : 100001;
-
-        const total = bets.reduce((sum, bet) => sum + (bet.amount || 0), 0);
-
-        console.log('Création du ticket avec:', {
-            number: ticketNumber,
-            draw,
-            draw_time,
-            betsCount: bets.length,
-            total,
-            agent_id: user._id,
-            agent_name: user.name
-        });
-
-        const ticket = new Ticket({
-            number: ticketNumber,
-            draw: draw,
-            draw_time: draw_time,
-            bets: bets,
-            total: total,
-            agent_id: user._id,
-            agent_name: user.name,
-            subsystem_id: user.subsystem_id,
-            date: new Date()
-        });
-
-        await ticket.save();
-        
-        console.log('Ticket sauvegardé avec succès:', ticket._id);
-
-        res.json({
-            success: true,
-            ticket: {
-                id: ticket._id,
-                number: ticket.number,
-                date: ticket.date,
-                draw: ticket.draw,
-                draw_time: ticket.draw_time,
-                bets: ticket.bets,
-                total: ticket.total,
-                agent_name: ticket.agent_name
-            }
-        });
-    } catch (error) {
-        console.error('Erreur détaillée sauvegarde fiche:', error);
-        console.error('Stack trace:', error.stack);
-        res.status(500).json({
-            success: false,
-            error: 'Erreur lors de la sauvegarde de la fiche: ' + error.message
-        });
+    const user = await User.findById(req.tokenInfo.userId);
+    if (!user) {
+      return res.status(401).json({
+        success: false,
+        error: 'Utilisateur non trouvé'
+      });
     }
+
+    const lastTicket = await Ticket.findOne().sort({ number: -1 });
+    const ticketNumber = lastTicket ? lastTicket.number + 1 : 100001;
+
+    const total = bets.reduce((sum, bet) => sum + bet.amount, 0);
+
+    const ticket = new Ticket({
+      number: ticketNumber,
+      draw: draw,
+      draw_time: draw_time,
+      bets: bets,
+      total: total,
+      agent_id: user._id,
+      agent_name: user.name,
+      subsystem_id: user.subsystem_id,
+      date: new Date()
+    });
+
+    await ticket.save();
+
+    res.json({
+      success: true,
+      ticket: {
+        id: ticket._id,
+        number: ticket.number,
+        date: ticket.date,
+        draw: ticket.draw,
+        draw_time: ticket.draw_time,
+        bets: ticket.bets,
+        total: ticket.total,
+        agent_name: ticket.agent_name
+      }
+    });
+  } catch (error) {
+    console.error('Erreur sauvegarde fiche:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Erreur lors de la sauvegarde de la fiche'
+    });
+  }
 });
+
 // Route pour les tickets en attente de l'agent
 app.get('/api/tickets/pending', vérifierToken, async (req, res) => {
   try {
@@ -1865,270 +1842,6 @@ app.post('/api/check-winners', vérifierToken, async (req, res) => {
     res.status(500).json({
       success: false,
       error: 'Erreur lors de la vérification des gagnants'
-    });
-  }
-});
-
-// =================== NOUVELLES ROUTES POUR LES DONNÉES DU SOUS-SYSTÈME ===================
-
-// Route pour obtenir les informations du sous-système
-app.get('/api/subsystem-info', vérifierToken, async (req, res) => {
-  try {
-    const user = await User.findById(req.tokenInfo.userId);
-    if (!user) {
-      return res.status(401).json({
-        success: false,
-        error: 'Utilisateur non trouvé'
-      });
-    }
-
-    const subsystem = await Subsystem.findById(user.subsystem_id);
-    if (!subsystem) {
-      return res.status(404).json({
-        success: false,
-        error: 'Sous-système non trouvé'
-      });
-    }
-
-    // Récupérer la configuration de l'entreprise
-    const config = await Config.findOne();
-    
-    // Récupérer les tirages
-    const draws = await Draw.find({ is_active: true }).sort({ order: 1 });
-
-    // Formater les tirages pour le frontend
-    const formattedDraws = {};
-    draws.forEach(draw => {
-      formattedDraws[draw.code] = {
-        name: draw.name,
-        times: draw.times,
-        icon: draw.icon
-      };
-    });
-
-    res.json({
-      success: true,
-      config: {
-        name: subsystem.name,
-        logo: config ? config.logo_url : 'logo-borlette.jpg',
-        settings: {
-          blockDrawBeforeMinutes: 5,
-          allowMultiDraw: true,
-          allowAutoGames: true,
-          maxBetAmount: 10000
-        }
-      },
-      draws: formattedDraws,
-      games: {
-        lotto3: {
-          name: "LOTO 3",
-          multiplier: 500,
-          icon: "fas fa-list-ol",
-          description: "3 chif (lot 1 + 1 chif devan)",
-          category: "lotto"
-        },
-        grap: {
-          name: "GRAP",
-          multiplier: 500,
-          icon: "fas fa-chart-line",
-          description: "Grap boule paire (111, 222, ..., 000)",
-          category: "special"
-        },
-        marriage: {
-          name: "MARYAJ",
-          multiplier: 1000,
-          icon: "fas fa-link",
-          description: "Maryaj 2 chif (ex: 12*34)",
-          category: "special"
-        },
-        borlette: {
-          name: "BORLETTE",
-          multiplier: 60,
-          multiplier2: 20,
-          multiplier3: 10,
-          icon: "fas fa-dice",
-          description: "2 chif (1er lot ×60, 2e ×20, 3e ×10)",
-          category: "borlette"
-        },
-        boulpe: {
-          name: "BOUL PE",
-          multiplier: 60,
-          multiplier2: 20,
-          multiplier3: 10,
-          icon: "fas fa-circle",
-          description: "Boul pe (00-99)",
-          category: "borlette"
-        },
-        lotto4: {
-          name: "LOTO 4",
-          multiplier: 5000,
-          icon: "fas fa-list-ol",
-          description: "4 chif (lot 1+2 accumulate) - 3 opsyon",
-          category: "lotto"
-        },
-        lotto5: {
-          name: "LOTO 5",
-          multiplier: 25000,
-          icon: "fas fa-list-ol",
-          description: "5 chif (lot 1+2+3 accumulate) - 3 opsyon",
-          category: "lotto"
-        },
-        'auto-marriage': {
-          name: "MARYAJ OTOMATIK",
-          multiplier: 1000,
-          icon: "fas fa-robot",
-          description: "Marie boules otomatik",
-          category: "special"
-        },
-        'auto-lotto4': {
-          name: "LOTO 4 OTOMATIK",
-          multiplier: 5000,
-          icon: "fas fa-robot",
-          description: "Lotto 4 otomatik",
-          category: "special"
-        }
-      }
-    });
-
-  } catch (error) {
-    console.error('Erreur chargement info sous-système:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Erreur serveur lors du chargement des informations du sous-système'
-    });
-  }
-});
-
-// Route pour obtenir les tirages du sous-système
-app.get('/api/subsystem/draws', vérifierToken, async (req, res) => {
-  try {
-    const user = await User.findById(req.tokenInfo.userId);
-    if (!user) {
-      return res.status(401).json({
-        success: false,
-        error: 'Utilisateur non trouvé'
-      });
-    }
-
-    const draws = await Draw.find({ is_active: true }).sort({ order: 1 });
-
-    // Formater les tirages
-    const formattedDraws = draws.map(draw => ({
-      id: draw._id,
-      code: draw.code,
-      name: draw.name,
-      times: draw.times,
-      icon: draw.icon,
-      order: draw.order
-    }));
-
-    res.json({
-      success: true,
-      draws: formattedDraws
-    });
-
-  } catch (error) {
-    console.error('Erreur chargement tirages:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Erreur serveur lors du chargement des tirages'
-    });
-  }
-});
-
-// Route pour obtenir les jeux du sous-système
-app.get('/api/subsystem/games', vérifierToken, async (req, res) => {
-  try {
-    const user = await User.findById(req.tokenInfo.userId);
-    if (!user) {
-      return res.status(401).json({
-        success: false,
-        error: 'Utilisateur non trouvé'
-      });
-    }
-
-    // Pour l'instant, retourner les jeux par défaut
-    // Plus tard, cela pourrait être configuré par sous-système
-    const games = {
-      lotto3: {
-        name: "LOTO 3",
-        multiplier: 500,
-        icon: "fas fa-list-ol",
-        description: "3 chif (lot 1 + 1 chif devan)",
-        category: "lotto"
-      },
-      grap: {
-        name: "GRAP",
-        multiplier: 500,
-        icon: "fas fa-chart-line",
-        description: "Grap boule paire (111, 222, ..., 000)",
-        category: "special"
-      },
-      marriage: {
-        name: "MARYAJ",
-        multiplier: 1000,
-        icon: "fas fa-link",
-        description: "Maryaj 2 chif (ex: 12*34)",
-        category: "special"
-      },
-      borlette: {
-        name: "BORLETTE",
-        multiplier: 60,
-        multiplier2: 20,
-        multiplier3: 10,
-        icon: "fas fa-dice",
-        description: "2 chif (1er lot ×60, 2e ×20, 3e ×10)",
-        category: "borlette"
-      },
-      boulpe: {
-        name: "BOUL PE",
-        multiplier: 60,
-        multiplier2: 20,
-        multiplier3: 10,
-        icon: "fas fa-circle",
-        description: "Boul pe (00-99)",
-        category: "borlette"
-      },
-      lotto4: {
-        name: "LOTO 4",
-        multiplier: 5000,
-        icon: "fas fa-list-ol",
-        description: "4 chif (lot 1+2 accumulate) - 3 opsyon",
-        category: "lotto"
-      },
-      lotto5: {
-        name: "LOTO 5",
-        multiplier: 25000,
-        icon: "fas fa-list-ol",
-        description: "5 chif (lot 1+2+3 accumulate) - 3 opsyon",
-        category: "lotto"
-      },
-      'auto-marriage': {
-        name: "MARYAJ OTOMATIK",
-        multiplier: 1000,
-        icon: "fas fa-robot",
-        description: "Marie boules otomatik",
-        category: "special"
-      },
-      'auto-lotto4': {
-        name: "LOTO 4 OTOMATIK",
-        multiplier: 5000,
-        icon: "fas fa-robot",
-        description: "Lotto 4 otomatik",
-        category: "special"
-      }
-    };
-
-    res.json({
-      success: true,
-      games: games
-    });
-
-  } catch (error) {
-    console.error('Erreur chargement jeux:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Erreur serveur lors du chargement des jeux'
     });
   }
 });
@@ -3323,9 +3036,6 @@ app.listen(PORT, () => {
   console.log('  GET    /api/results                     - Récupérer résultats');
   console.log('  POST   /api/check-winners               - Vérifier gagnants');
   console.log('  GET    /api/auth/check                  - Vérifier session');
-  console.log('  GET    /api/subsystem-info              - Informations sous-système');
-  console.log('  GET    /api/subsystem/draws             - Tirages du sous-système');
-  console.log('  GET    /api/subsystem/games             - Jeux du sous-système');
   console.log('');
   console.log('📋 Routes API SOUS-SYSTÈMES (Admin + Supervisor Level 2) disponibles:');
   console.log('  GET    /api/subsystem/users             - Lister utilisateurs');

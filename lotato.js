@@ -307,14 +307,45 @@ async function apiCall(endpoint, method = 'GET', data = null) {
 function checkAuth() {
     const token = localStorage.getItem('nova_token');
     
-    if (!token) {
+    if (!token || !token.startsWith('nova_')) {
         // Rediriger vers la page de connexion
         window.location.href = '/index.html';
         return false;
     }
     
     authToken = token;
+    
+    // Vérifier que le token est valide (optionnel)
+    if (isTokenExpired(token)) {
+        // Token expiré, rediriger vers la connexion
+        localStorage.removeItem('nova_token');
+        window.location.href = '/index.html';
+        return false;
+    }
+    
     return true;
+}
+
+// Fonction pour vérifier si un token est expiré (simplifiée)
+function isTokenExpired(token) {
+    try {
+        // Les tokens nova sont formatés: nova_timestamp_userid_role_level
+        const parts = token.split('_');
+        if (parts.length < 5) return true;
+        
+        const timestamp = parseInt(parts[1]);
+        if (isNaN(timestamp)) return true;
+        
+        // Vérifier si le token a plus de 24h
+        const now = Date.now();
+        const tokenAge = now - timestamp;
+        const maxAge = 24 * 60 * 60 * 1000; // 24h en millisecondes
+        
+        return tokenAge > maxAge;
+    } catch (error) {
+        console.error('Erreur vérification token:', error);
+        return true;
+    }
 }
 
 // Charger les informations de l'agent et du sous-système
@@ -572,23 +603,20 @@ document.addEventListener('DOMContentLoaded', function() {
     const urlParams = new URLSearchParams(window.location.search);
     const tokenFromUrl = urlParams.get('token');
     
-    if (tokenFromUrl) {
+    if (tokenFromUrl && tokenFromUrl.trim() !== '' && tokenFromUrl.startsWith('nova_')) {
         // Sauvegarder le token reçu
         localStorage.setItem('nova_token', tokenFromUrl);
         // Nettoyer l'URL
         window.history.replaceState({}, document.title, window.location.pathname);
         console.log("Token reçu et sauvegardé");
+        // Rediriger vers la même page sans le paramètre token pour éviter les problèmes
+        window.location.href = window.location.pathname;
+        return; // Arrêter l'exécution ici, la page sera rechargée
     }
     
     // FIN DU CODE À AJOUTER ↑↑↑
     
-    // Vérifier l'authentification
-    if (!checkAuth()) {
-        return;
-    }
-    
-    // ... reste du code ...
-    // Vérifier l'authentification
+    // Vérifier l'authentification UNE SEULE FOIS
     if (!checkAuth()) {
         return;
     }
@@ -601,6 +629,9 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Mettre à jour l'heure
     updateCurrentTime();
+    
+    // ... reste du code sans la deuxième vérification d'auth ...
+});
     
     // Charger les informations de l'agent et du sous-système
     loadAgentAndSubsystemInfo();

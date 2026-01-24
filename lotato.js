@@ -566,6 +566,28 @@ function updateDrawsStatus() {
 document.addEventListener('DOMContentLoaded', function() {
     console.log("Document chargé, initialisation...");
     
+    // AJOUTEZ CE CODE ICI ↓↓↓
+    
+    // Vérifier si on a reçu un token après la connexion
+    const urlParams = new URLSearchParams(window.location.search);
+    const tokenFromUrl = urlParams.get('token');
+    
+    if (tokenFromUrl) {
+        // Sauvegarder le token reçu
+        localStorage.setItem('nova_token', tokenFromUrl);
+        // Nettoyer l'URL
+        window.history.replaceState({}, document.title, window.location.pathname);
+        console.log("Token reçu et sauvegardé");
+    }
+    
+    // FIN DU CODE À AJOUTER ↑↑↑
+    
+    // Vérifier l'authentification
+    if (!checkAuth()) {
+        return;
+    }
+    
+    // ... reste du code ...
     // Vérifier l'authentification
     if (!checkAuth()) {
         return;

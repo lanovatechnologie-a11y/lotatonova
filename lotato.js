@@ -593,7 +593,7 @@ function updateDrawsStatus() {
     });
 }
 
-// Initialisation
+// Initialisation - REMPLACER TOUTE la partie DOMContentLoaded par ceci :
 document.addEventListener('DOMContentLoaded', function() {
     console.log("Document chargé, initialisation...");
     
@@ -607,10 +607,11 @@ document.addEventListener('DOMContentLoaded', function() {
         authToken = tokenFromUrl;
         
         // Nettoyer l'URL SANS recharger la page
-        window.history.replaceState({}, document.title, window.location.pathname);
-        console.log("Token reçu et sauvegardé");
+        const newUrl = window.location.pathname;
+        window.history.replaceState({}, document.title, newUrl);
+        console.log("Token reçu et sauvegardé, URL nettoyée:", newUrl);
         
-        // NE PAS rediriger ici - continuer l'exécution normale
+        // NE PAS appeler checkAuth() ici, laisser le déroulement normal
     }
     
     // Vérifier l'authentification
@@ -624,12 +625,270 @@ document.addEventListener('DOMContentLoaded', function() {
     // Afficher l'application principale
     showMainApp();
     
+    // Mettre à jour l'heure
+    updateCurrentTime();
+    
+    // Charger les informations de l'agent et du sous-système
+    loadAgentAndSubsystemInfo();
+    
+    // Charger les données depuis l'API
+    loadDataFromAPI();
+    
+    // Configurer la détection de connexion
+    setupConnectionDetection();
+    
+    // Mettre à jour l'affichage du logo
+    updateLogoDisplay();
+    
+    // Charger les résultats depuis la base de données
+    loadResultsFromDatabase();
+    
+    // Mettre à jour les statuts des tirages
+    updateDrawsStatus();
+    
+    // Ajouter les écouteurs d'événements pour les tirages
+    document.querySelectorAll('.draw-card').forEach(card => {
+        card.addEventListener('click', function() {
+            console.log("Carte de tiraj cliquée:", this.getAttribute('data-draw'));
+            const drawId = this.getAttribute('data-draw');
+            
+            // Vérifier si au moins un tirage n'est pas bloqué
+            const morningStatus = getDrawStatus(drawId, 'morning');
+            const eveningStatus = getDrawStatus(drawId, 'evening');
+            
+            if (morningStatus === 'blocked' && eveningStatus === 'blocked') {
+                showNotification("Tout tiray pou " + draws[drawId].name + " yo bloke (5 minit anvan)", "warning");
+                return;
+            }
+            
+            openBettingScreen(drawId, 'morning');
+        });
+    });
+    
+    // Ajouter les écouteurs d'événements pour les boutons de tirage
+    document.querySelectorAll('.draw-btn').forEach(btn => {
+        btn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            const card = this.closest('.draw-card');
+            const drawId = card.getAttribute('data-draw');
+            const time = this.getAttribute('data-time');
+            
+            console.log("Bouton tiraj cliqué:", drawId, time);
+            
+            // Vérifier si le tirage est bloqué
+            const status = getDrawStatus(drawId, time);
+            if (status === 'blocked') {
+                showNotification("Tiraj sa a bloke (5 minit anvan lè li)", "warning");
+                return;
+            }
+            
+            if (status === 'passed') {
+                showNotification("Tiraj sa a deja pase", "warning");
+                return;
+            }
+            
+            card.querySelectorAll('.draw-btn').forEach(b => {
+                b.classList.remove('active');
+            });
+            this.classList.add('active');
+            
+            openBettingScreen(drawId, time);
+        });
+    });
+    
+    // Bouton de retour
+    document.getElementById('back-button').addEventListener('click', closeBettingScreen);
+    
+    // Bouton de confirmation en haut
+    document.getElementById('confirm-bet-top').addEventListener('click', submitBets);
+    
+    // Boutons de fiche
+    document.getElementById('save-print-ticket').addEventListener('click', function() {
+        console.log("Sauvegarder et imprimer cliqué");
+        checkConnectionBeforeSavePrint();
+    });
+    
+    document.getElementById('save-ticket-only').addEventListener('click', function() {
+        console.log("Sauvegarder seulement cliqué");
+        saveTicket();
+    });
+    
+    document.getElementById('print-ticket-only').addEventListener('click', function() {
+        console.log("Imprimer seulement cliqué");
+        checkConnectionBeforePrint();
+    });
+    
+    // Bouton pour sauvegarder et imprimer la fiche multi-tirages
+    document.getElementById('save-print-multi-ticket').addEventListener('click', function() {
+        console.log("Sauvegarder et imprimer fiche multi-tirages");
+        saveAndPrintMultiDrawTicket();
+    });
+    
+    // Bouton pour voir la fiche multi-tirages actuelle
+    document.getElementById('view-current-multi-ticket').addEventListener('click', function() {
+        console.log("Voir fiche multi-tirages actuelle");
+        viewCurrentMultiDrawTicket();
+    });
+    
+    // Bouton pour ouvrir l'écran des fiches multi-tirages
+    document.getElementById('open-multi-tickets').addEventListener('click', function() {
+        console.log("Ouvrir écran fiches multi-tirages");
+        openMultiTicketsScreen();
+    });
+    
+    // Bouton de retour de l'écran multi-tirages
+    document.getElementById('back-from-multi-tickets').addEventListener('click', function() {
+        console.log("Retour de l'écran multi-tirages");
+        document.getElementById('multi-tickets-screen').style.display = 'none';
+        document.querySelector('.container').style.display = 'block';
+    });
+    
+    // Navigation
+    document.querySelectorAll('.nav-item').forEach(item => {
+        item.addEventListener('click', function() {
+            const screen = this.getAttribute('data-screen');
+            console.log("Navigation cliquée:", screen);
+            showScreen(screen);
+        });
+    });
+    
+    // Boutons de retour
+    document.querySelectorAll('.back-button').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const screen = this.getAttribute('data-screen') || 'home';
+            console.log("Bouton retour cliqué vers:", screen);
+            showScreen(screen);
+        });
+    });
+    
+    // Bouton retour du rapport
+    document.getElementById('back-from-report').addEventListener('click', function() {
+        console.log("Retour du rapport");
+        document.getElementById('report-screen').style.display = 'none';
+        document.querySelector('.container').style.display = 'block';
+    });
+    
+    // Bouton retour de vérification des résultats
+    document.getElementById('back-from-results').addEventListener('click', function() {
+        console.log("Retour de vérification des résultats");
+        document.getElementById('results-check-screen').style.display = 'none';
+        document.querySelector('.container').style.display = 'block';
+    });
+    
+    // Boutons de connexion
+    document.getElementById('retry-connection').addEventListener('click', function() {
+        console.log("Réessayer connexion");
+        retryConnectionCheck();
+    });
+    
+    document.getElementById('cancel-print').addEventListener('click', function() {
+        console.log("Annuler impression");
+        cancelPrint();
+    });
+    
+    // Bouton pour générer le rapport
+    document.getElementById('generate-report-btn').addEventListener('click', function() {
+        console.log("Générer rapport");
+        generateEndOfDrawReport();
+    });
+    
+    // Bouton pour ouvrir l'écran de vérification des résultats
+    document.getElementById('open-results-check').addEventListener('click', function() {
+        console.log("Ouvrir vérification des résultats");
+        openResultsCheckScreen();
+    });
+    
+    // Bouton pour vérifier les fiches gagnantes
+    document.getElementById('check-winners-btn').addEventListener('click', function() {
+        console.log("Vérifier fiches gagnantes");
+        checkWinningTickets();
+    });
+    
+    // Multi-tirages
+    document.getElementById('multi-draw-toggle').addEventListener('click', function() {
+        console.log("Toggle multi-tirages");
+        toggleMultiDrawPanel();
+    });
+    
+    // Changement du bouton pour ajouter à la fiche multi-tirages
+    document.getElementById('add-to-multi-draw').addEventListener('click', function() {
+        console.log("Ajouter à la fiche multi-tirages");
+        addToMultiDrawTicket();
+    });
+    
+    // Initialiser le panneau multi-tirages
+    initMultiDrawPanel();
+    
+    // Gestion des fiches - Écouteurs d'événements ajoutés
+    document.getElementById('search-ticket-btn').addEventListener('click', function() {
+        console.log("Rechercher fiche");
+        searchTicket();
+    });
+    
+    document.getElementById('show-all-tickets').addEventListener('click', function() {
+        console.log("Afficher toutes les fiches");
+        showAllTickets();
+    });
+    
+    document.getElementById('show-pending-tickets').addEventListener('click', function() {
+        console.log("Afficher fiches en attente");
+        showNotification("Fonksyon sa a pa disponib. Tout tikè dwe sove dirèkteman nan santral la.", "info");
+    });
+    
+    // Recherche historique
+    document.getElementById('search-history-btn').addEventListener('click', function() {
+        console.log("Rechercher historique");
+        searchHistory();
+    });
+    
+    document.getElementById('search-winning-btn').addEventListener('click', function() {
+        console.log("Rechercher fiches gagnantes");
+        searchWinningTickets();
+    });
+    
+    // Actualiser périodiquement
+    setInterval(updateCurrentTime, 60000);
+    setInterval(updateDrawsStatus, 60000); // Mettre à jour les statuts toutes les minutes
+    // Vérifier périodiquement les résultats
+    setInterval(checkForNewResults, 300000); // Toutes les 5 minutes
+    
+    console.log("Initialisation terminée");
 });
-    // Vérifier l'authentification UNE SEULE FOIS
-    if (!checkAuth()) {
-        return;
+
+// Modifier la fonction checkAuth pour qu'elle n'utilise PAS la redirection
+function checkAuth() {
+    const token = localStorage.getItem('nova_token');
+    
+    if (!token || !token.startsWith('nova_')) {
+        console.log("Aucun token trouvé, redirection vers index.html");
+        // Rediriger vers la page de connexion
+        window.location.href = '/index.html';
+        return false;
     }
     
+    authToken = token;
+    
+    // Vérifier que le token est valide (optionnel)
+    if (isTokenExpired(token)) {
+        // Token expiré, rediriger vers la connexion
+        console.log("Token expiré, nettoyage et redirection");
+        localStorage.removeItem('nova_token');
+        window.location.href = '/index.html';
+        return false;
+    }
+    
+    console.log("Token valide trouvé, authentification réussie");
+    return true;
+}
+
+// Ajouter une fonction pour nettoyer complètement l'URL
+function cleanUrlFromToken() {
+    if (window.location.search.includes('token=')) {
+        const newUrl = window.location.origin + window.location.pathname;
+        window.history.replaceState({}, document.title, newUrl);
+        console.log("URL nettoyée du token:", newUrl);
+    }
+}
     // Masquer l'écran de connexion intégré
     document.getElementById('login-screen').style.display = 'none';
     

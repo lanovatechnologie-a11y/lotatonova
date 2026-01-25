@@ -94,13 +94,13 @@ let resultsDatabase = {
     }
 };
 
-// Données des tirages
+// Données des tirages avec heures spécifiques pour le blocage
 const draws = {
     miami: {
         name: "Miami (Florida)",
         times: {
-            morning: "1:30 PM",
-            evening: "9:50 PM"
+            morning: { time: "1:30 PM", hour: 13, minute: 30 },
+            evening: { time: "9:50 PM", hour: 21, minute: 50 }
         },
         date: "Sam, 29 Nov",
         countdown: "18 h 30 min"
@@ -108,8 +108,8 @@ const draws = {
     georgia: {
         name: "Georgia",
         times: {
-            morning: "12:30 PM",
-            evening: "7:00 PM"
+            morning: { time: "12:30 PM", hour: 12, minute: 30 },
+            evening: { time: "7:00 PM", hour: 19, minute: 0 }
         },
         date: "Sam, 29 Nov",
         countdown: "17 h 29 min"
@@ -117,8 +117,8 @@ const draws = {
     newyork: {
         name: "New York",
         times: {
-            morning: "2:30 PM",
-            evening: "8:00 PM"
+            morning: { time: "2:30 PM", hour: 14, minute: 30 },
+            evening: { time: "8:00 PM", hour: 20, minute: 0 }
         },
         date: "Sam, 29 Nov",
         countdown: "19 h 30 min"
@@ -126,8 +126,8 @@ const draws = {
     texas: {
         name: "Texas",
         times: {
-            morning: "12:00 PM",
-            evening: "6:00 PM"
+            morning: { time: "12:00 PM", hour: 12, minute: 0 },
+            evening: { time: "6:00 PM", hour: 18, minute: 0 }
         },
         date: "Sam, 29 Nov",
         countdown: "18 h 27 min"
@@ -135,8 +135,8 @@ const draws = {
     tunisia: {
         name: "Tunisie",
         times: {
-            morning: "10:30 AM",
-            evening: "2:00 PM"
+            morning: { time: "10:30 AM", hour: 10, minute: 30 },
+            evening: { time: "2:00 PM", hour: 14, minute: 0 }
         },
         date: "Sam, 29 Nov",
         countdown: "8 h 30 min"
@@ -305,9 +305,56 @@ async function apiCall(url, method = 'GET', body = null) {
     }
 }
 
+// ==========================================
+// NOUVEAU: Vérifier si un tirage est bloqué
+// ==========================================
+function isDrawBlocked(drawId, drawTime) {
+    const draw = draws[drawId];
+    if (!draw || !draw.times[drawTime]) {
+        return true; // Par sécurité, bloquer si non trouvé
+    }
+
+    const now = new Date();
+    const drawTimeInfo = draw.times[drawTime];
+    
+    // Créer la date du tirage pour aujourd'hui
+    const drawDate = new Date(now);
+    drawDate.setHours(drawTimeInfo.hour, drawTimeInfo.minute, 0, 0);
+    
+    // Calculer 5 minutes avant le tirage
+    const blockTime = new Date(drawDate.getTime() - (5 * 60 * 1000));
+    
+    // Si nous sommes entre le blocage (5 min avant) et après le tirage, bloquer
+    if (now >= blockTime) {
+        return true;
+    }
+    
+    return false;
+}
+
+// ==========================================
+// NOUVEAU: Vérifier le blocage avant d'ouvrir l'écran de pari
+// ==========================================
+function checkDrawBeforeOpening(drawId, time) {
+    if (isDrawBlocked(drawId, time)) {
+        const drawTime = draws[drawId].times[time].time;
+        showNotification(`Tiraj sa a bloke! Li fèt à ${drawTime} epi ou pa kapab fè parye 5 minit avan.`, "error");
+        return false;
+    }
+    return true;
+}
+
 // Vérifier l'authentification et charger les données de l'utilisateur
 async function checkAuth() {
-    const token = localStorage.getItem('nova_token');
+    // Vérifier d'abord si le token est dans l'URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const tokenFromUrl = urlParams.get('token');
+    
+    // Vérifier ensuite dans le localStorage
+    const tokenFromStorage = localStorage.getItem('nova_token');
+    
+    // Priorité: token URL > token storage
+    const token = tokenFromUrl || tokenFromStorage;
     
     if (!token) {
         // Rediriger vers la page de connexion
@@ -316,6 +363,11 @@ async function checkAuth() {
     }
     
     authToken = token;
+    
+    // Stocker le token dans localStorage s'il vient de l'URL
+    if (tokenFromUrl && !tokenFromStorage) {
+        localStorage.setItem('nova_token', tokenFromUrl);
+    }
     
     // Charger les informations de l'utilisateur depuis l'API
     try {
@@ -339,6 +391,8 @@ async function checkAuth() {
 // Gérer la déconnexion
 function handleLogout() {
     localStorage.removeItem('nova_token');
+    localStorage.removeItem('nova_user_role');
+    localStorage.removeItem('nova_user_data');
     authToken = null;
     currentUser = null;
     window.location.href = '/index.html';
@@ -358,10 +412,6 @@ async function loadDataFromAPI() {
         const ticketsData = await apiCall(APP_CONFIG.tickets);
         savedTickets = ticketsData.tickets || [];
         ticketNumber = ticketsData.nextTicketNumber || 1;
-        
-        // SUPPRIMÉ: Charger les tickets en attente
-        // const pendingData = await apiCall(APP_CONFIG.ticketsPending);
-        // pendingSyncTickets = pendingData.tickets || [];
         
         // Charger les tickets gagnants
         const winningData = await apiCall(APP_CONFIG.winningTickets);
@@ -419,6 +469,13 @@ async function saveTicket() {
     console.log("Sauvegarder fiche via API");
     if (activeBets.length === 0) {
         showNotification("Pa gen okenn parye pou sove nan fiche a", "warning");
+        return;
+    }
+    
+    // Vérifier que le tirage n'est pas bloqué
+    if (currentDraw && currentDrawTime && isDrawBlocked(currentDraw, currentDrawTime)) {
+        const drawTime = draws[currentDraw].times[currentDrawTime].time;
+        showNotification(`Tiraj sa a bloke! Li fèt à ${drawTime} epi ou pa kapab sove fiche 5 minit avan.`, "error");
         return;
     }
     
@@ -539,6 +596,12 @@ document.addEventListener('DOMContentLoaded', async function() {
         card.addEventListener('click', function() {
             console.log("Carte de tiraj cliquée:", this.getAttribute('data-draw'));
             const drawId = this.getAttribute('data-draw');
+            
+            // Vérifier si le tirage du matin est bloqué
+            if (!checkDrawBeforeOpening(drawId, 'morning')) {
+                return;
+            }
+            
             openBettingScreen(drawId, 'morning');
         });
     });
@@ -552,6 +615,11 @@ document.addEventListener('DOMContentLoaded', async function() {
             const time = this.getAttribute('data-time');
             
             console.log("Bouton tiraj cliqué:", drawId, time);
+            
+            // Vérifier si le tirage est bloqué
+            if (!checkDrawBeforeOpening(drawId, time)) {
+                return;
+            }
             
             card.querySelectorAll('.draw-btn').forEach(b => {
                 b.classList.remove('active');
@@ -825,6 +893,16 @@ function addToMultiDrawTicket() {
         isValid = false;
     }
     
+    // Vérifier si un des tirages sélectionnés est bloqué
+    for (const drawId of selectedMultiDraws) {
+        // Pour multi-tirages, vérifier les deux créneaux (matin et soir)
+        if (isDrawBlocked(drawId, 'morning') || isDrawBlocked(drawId, 'evening')) {
+            errorMessage = "Youn nan tiraj yo bloke (5 minit avan lè tiraj la)";
+            isValid = false;
+            break;
+        }
+    }
+    
     if (!isValid) {
         showNotification(errorMessage, "warning");
         return;
@@ -951,6 +1029,14 @@ async function saveAndPrintMultiDrawTicket() {
     if (currentMultiDrawTicket.bets.length === 0) {
         showNotification("Fiche multi-tirages la vid", "warning");
         return;
+    }
+    
+    // Vérifier si un des tirages est bloqué
+    for (const drawId of currentMultiDrawTicket.draws) {
+        if (isDrawBlocked(drawId, 'morning') || isDrawBlocked(drawId, 'evening')) {
+            showNotification("Youn nan tiraj yo bloke! Ou pa kapab sove fiche multi-tirages 5 minit avan tiraj la.", "error");
+            return;
+        }
     }
     
     // Vérifier que l'utilisateur est connecté
@@ -3571,6 +3657,13 @@ function submitBets() {
         return;
     }
     
+    // Vérifier si le tirage est bloqué
+    if (currentDraw && currentDrawTime && isDrawBlocked(currentDraw, currentDrawTime)) {
+        const drawTime = draws[currentDraw].times[currentDrawTime].time;
+        showNotification(`Tiraj sa a bloke! Li fèt à ${drawTime} epi ou pa kapab soumèt parye 5 minit avan.`, "error");
+        return;
+    }
+    
     let drawInfo = draws[currentDraw].name;
     if (currentDrawTime) {
         drawInfo += ` (${currentDrawTime === 'morning' ? 'Maten' : 'Swè'})`;
@@ -3681,6 +3774,13 @@ async function saveAndPrintTicket() {
     console.log("Sauvegarder et imprimer");
     if (activeBets.length === 0) {
         showNotification("Pa gen okenn parye pou sove nan fiche a", "warning");
+        return;
+    }
+    
+    // Vérifier si le tirage est bloqué
+    if (currentDraw && currentDrawTime && isDrawBlocked(currentDraw, currentDrawTime)) {
+        const drawTime = draws[currentDraw].times[currentDrawTime].time;
+        showNotification(`Tiraj sa a bloke! Li fèt à ${drawTime} epi ou pa kapab sove oswa enprime fiche 5 minit avan.`, "error");
         return;
     }
     

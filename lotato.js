@@ -267,15 +267,19 @@ async function apiCall(url, method = 'GET', body = null) {
         'Content-Type': 'application/json'
     };
 
-    // CORRECTION ICI : On utilise 'x-auth-token' au lieu de 'Authorization: Bearer'
-    // pour correspondre à ce que server.js attend (ligne 225 de server.js)
+    // AJOUT: Gérer les deux types de headers pour la compatibilité
     if (authToken) {
         headers['x-auth-token'] = authToken;
+        // AJOUT: Ajouter aussi le format Bearer pour plus de compatibilité
+        headers['Authorization'] = `Bearer ${authToken}`;
     }
 
     const options = {
         method,
-        headers
+        headers,
+        // AJOUT: Important pour les requêtes cross-origin
+        mode: 'cors',
+        credentials: 'include'
     };
 
     if (body) {
@@ -283,55 +287,28 @@ async function apiCall(url, method = 'GET', body = null) {
     }
 
     try {
+        console.log('API Call:', { url, method, headers, body });
         const response = await fetch(url, options);
+        console.log('API Response:', response.status);
 
         if (response.status === 401) {
-            // Token invalide ou expiré
             handleLogout();
             return null;
         }
 
-        // Gérer les réponses vides ou non-JSON
         const contentType = response.headers.get("content-type");
         if (contentType && contentType.indexOf("application/json") !== -1) {
-            return await response.json();
+            const data = await response.json();
+            console.log('API Response data:', data);
+            return data;
         } else {
             return { success: response.ok };
         }
     } catch (error) {
         console.error('Erreur API:', error);
-        // Si erreur réseau et qu'on essaie de sauvegarder, on ne bloque pas tout
         return null;
     }
 }
-
-// ==========================================
-// NOUVEAU: Vérifier si un tirage est bloqué
-// ==========================================
-function isDrawBlocked(drawId, drawTime) {
-    const draw = draws[drawId];
-    if (!draw || !draw.times[drawTime]) {
-        return true; // Par sécurité, bloquer si non trouvé
-    }
-
-    const now = new Date();
-    const drawTimeInfo = draw.times[drawTime];
-    
-    // Créer la date du tirage pour aujourd'hui
-    const drawDate = new Date(now);
-    drawDate.setHours(drawTimeInfo.hour, drawTimeInfo.minute, 0, 0);
-    
-    // Calculer 5 minutes avant le tirage
-    const blockTime = new Date(drawDate.getTime() - (5 * 60 * 1000));
-    
-    // Si nous sommes entre le blocage (5 min avant) et après le tirage, bloquer
-    if (now >= blockTime) {
-        return true;
-    }
-    
-    return false;
-}
-
 // ==========================================
 // NOUVEAU: Vérifier le blocage avant d'ouvrir l'écran de pari
 // ==========================================
@@ -346,38 +323,50 @@ function checkDrawBeforeOpening(drawId, time) {
 
 // Vérifier l'authentification et charger les données de l'utilisateur
 async function checkAuth() {
-    // Vérifier d'abord si le token est dans l'URL
+    // 1. Vérifier dans l'URL d'abord
     const urlParams = new URLSearchParams(window.location.search);
     const tokenFromUrl = urlParams.get('token');
     
-    // Vérifier ensuite dans le localStorage
+    // 2. Vérifier dans localStorage
     const tokenFromStorage = localStorage.getItem('nova_token');
     
-    // Priorité: token URL > token storage
+    // Priorité: URL > localStorage
     const token = tokenFromUrl || tokenFromStorage;
     
+    console.log('Token check:', { tokenFromUrl, tokenFromStorage, token });
+    
     if (!token) {
-        // Rediriger vers la page de connexion
+        console.log('Aucun token trouvé, redirection vers login');
         window.location.href = '/index.html';
+        return false;
+    }
+    
+    // Vérifier que le token commence par 'nova_'
+    if (!token.startsWith('nova_')) {
+        console.error('Token invalide, ne commence pas par nova_:', token);
+        handleLogout();
         return false;
     }
     
     authToken = token;
     
-    // Stocker le token dans localStorage s'il vient de l'URL
+    // Sauvegarder dans localStorage si venant de l'URL
     if (tokenFromUrl && !tokenFromStorage) {
         localStorage.setItem('nova_token', tokenFromUrl);
+        console.log('Token sauvegardé dans localStorage');
     }
     
-    // Charger les informations de l'utilisateur depuis l'API
     try {
+        console.log('Vérification token via API...');
         const response = await apiCall(APP_CONFIG.authCheck);
+        console.log('Réponse vérification auth:', response);
+        
         if (response && response.success) {
             currentUser = response.admin;
             console.log('Utilisateur connecté:', currentUser);
             return true;
         } else {
-            // Token invalide
+            console.error('Token invalide, réponse API:', response);
             handleLogout();
             return false;
         }
@@ -449,6 +438,19 @@ async function loadDataFromAPI() {
 // ==========================================
 // 3. Correction dans la fonction saveTicket()
 // ==========================================
+async function saveTicket() {
+    console.log("=== DEBUT saveTicket ===");
+    console.log("Active bets:", activeBets);
+    console.log("Current user:", currentUser);
+    console.log("Auth token:", authToken);
+    
+    if (activeBets.length === 0) {
+        showNotification("Pa gen okenn parye pou sove nan fiche a", "warning");
+        return;
+    }
+    
+    // ... reste du code ...
+}
 
 async function saveTicketAPI(ticketData) {
     try {

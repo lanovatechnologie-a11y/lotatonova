@@ -1884,6 +1884,438 @@ app.get('/api/subsystems/mine', vérifierToken, async (req, res) => {
     });
   }
 });
+// =================== NOUVELLES ROUTES POUR LES SOUS-SYSTÈMES ===================
+
+// Route pour créer un utilisateur dans un sous-système
+app.post('/api/subsystem/users/create', vérifierToken, vérifierAccèsSubsystem, async (req, res) => {
+  try {
+    const currentUser = req.currentUser;
+    const { 
+      name, 
+      username, 
+      password, 
+      role, 
+      level, 
+      supervisorId, 
+      supervisorType 
+    } = req.body;
+
+    // Validation des données
+    if (!name || !username || !password || !role) {
+      return res.status(400).json({
+        success: false,
+        error: 'Nom, identifiant, mot de passe et rôle sont obligatoires'
+      });
+    }
+
+    // Récupérer le sous-système
+    const subsystem = await Subsystem.findById(currentUser.subsystem_id);
+    if (!subsystem) {
+      return res.status(404).json({
+        success: false,
+        error: 'Sous-système non trouvé'
+      });
+    }
+
+    // Vérifier la limite d'utilisateurs
+    const activeUsersCount = await User.countDocuments({ 
+      subsystem_id: subsystem._id,
+      is_active: true,
+      role: { $in: ['agent', 'supervisor'] }
+    });
+
+    if (activeUsersCount >= subsystem.max_users) {
+      return res.status(400).json({
+        success: false,
+        error: `Limite d'utilisateurs atteinte (${subsystem.max_users} maximum)`
+      });
+    }
+
+    // Vérifier si l'identifiant existe déjà
+    const existingUser = await User.findOne({ username });
+    if (existingUser) {
+      return res.status(400).json({
+        success: false,
+        error: 'Cet identifiant est déjà utilisé'
+      });
+    }
+
+    // Déterminer le niveau pour les superviseurs
+    let userLevel = 1;
+    if (role === 'supervisor') {
+      userLevel = level || 1;
+    } else if (role === 'agent') {
+      userLevel = 1;
+    }
+
+    // Créer l'utilisateur
+    const newUser = new User({
+      username,
+      password,
+      name,
+      role,
+      level: userLevel,
+      subsystem_id: subsystem._id,
+      is_active: true,
+      dateCreation: new Date()
+    });
+
+    // Assigner un superviseur si spécifié (pour les agents)
+    if (role === 'agent' && supervisorId) {
+      // Vérifier que le superviseur appartient au même sous-système
+      const supervisor = await User.findOne({
+        _id: supervisorId,
+        subsystem_id: subsystem._id,
+        role: 'supervisor'
+      });
+
+      if (supervisor) {
+        if (supervisorType === 'supervisor1') {
+          newUser.supervisor_id = supervisorId;
+        } else if (supervisorType === 'supervisor2') {
+          newUser.supervisor2_id = supervisorId;
+        }
+      }
+    }
+
+    await newUser.save();
+
+    // Mettre à jour les statistiques du sous-système
+    subsystem.stats.active_users = activeUsersCount + 1;
+    subsystem.stats.usage_percentage = Math.round(((activeUsersCount + 1) / subsystem.max_users) * 100);
+    await subsystem.save();
+
+    res.json({
+      success: true,
+      message: 'Utilisateur créé avec succès',
+      user: {
+        id: newUser._id,
+        name: newUser.name,
+        username: newUser.username,
+        role: newUser.role,
+        level: newUser.level
+      }
+    });
+
+  } catch (error) {
+    console.error('Erreur création utilisateur:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Erreur serveur lors de la création de l\'utilisateur'
+    });
+  }
+});
+
+// Route pour supprimer un utilisateur (soft delete)
+app.delete('/api/subsystem/users/:id', vérifierToken, vérifierAccèsSubsystem, async (req, res) => {
+  try {
+    const currentUser = req.currentUser;
+    const userId = req.params.id;
+
+    // Vérifier que l'utilisateur appartient au même sous-système
+    const subsystem = await Subsystem.findById(currentUser.subsystem_id);
+    const user = await User.findOne({
+      _id: userId,
+      subsystem_id: subsystem._id
+    });
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        error: 'Utilisateur non trouvé dans votre sous-système'
+      });
+    }
+
+    // Empêcher la suppression d'un administrateur de sous-système
+    if (user.role === 'subsystem') {
+      return res.status(403).json({
+        success: false,
+        error: 'Vous ne pouvez pas supprimer un administrateur de sous-système'
+      });
+    }
+
+    // Empêcher un utilisateur de se supprimer lui-même
+    if (user._id.toString() === currentUser._id.toString()) {
+      return res.status(400).json({
+        success: false,
+        error: 'Vous ne pouvez pas vous supprimer vous-même'
+      });
+    }
+
+    // Soft delete: désactiver l'utilisateur
+    user.is_active = false;
+    await user.save();
+
+    // Mettre à jour les statistiques du sous-système
+    const activeUsersCount = await User.countDocuments({ 
+      subsystem_id: subsystem._id,
+      is_active: true,
+      role: { $in: ['agent', 'supervisor'] }
+    });
+    
+    subsystem.stats.active_users = activeUsersCount;
+    subsystem.stats.usage_percentage = Math.round((activeUsersCount / subsystem.max_users) * 100);
+    await subsystem.save();
+
+    res.json({
+      success: true,
+      message: 'Utilisateur désactivé avec succès'
+    });
+
+  } catch (error) {
+    console.error('Erreur suppression utilisateur:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Erreur serveur lors de la suppression de l\'utilisateur'
+    });
+  }
+});
+
+// Route pour obtenir les tickets du sous-système
+app.get('/api/subsystem/tickets', vérifierToken, vérifierAccèsSubsystem, async (req, res) => {
+  try {
+    const currentUser = req.currentUser;
+    const { period, limit, draw, date } = req.query;
+
+    const subsystem = await Subsystem.findById(currentUser.subsystem_id);
+    if (!subsystem) {
+      return res.status(404).json({
+        success: false,
+        error: 'Sous-système non trouvé'
+      });
+    }
+
+    // Construire la requête
+    let query = { subsystem_id: subsystem._id };
+    
+    // Filtrer par période
+    if (period === 'today') {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      query.date = { $gte: today };
+    } else if (period === 'week') {
+      const weekAgo = new Date();
+      weekAgo.setDate(weekAgo.getDate() - 7);
+      query.date = { $gte: weekAgo };
+    } else if (period === 'month') {
+      const monthAgo = new Date();
+      monthAgo.setDate(monthAgo.getDate() - 30);
+      query.date = { $gte: monthAgo };
+    }
+
+    // Filtrer par tirage
+    if (draw && draw !== 'all') {
+      query.draw = draw;
+    }
+
+    // Filtrer par date spécifique
+    if (date) {
+      const startDate = new Date(date);
+      const endDate = new Date(startDate);
+      endDate.setDate(endDate.getDate() + 1);
+      query.date = { $gte: startDate, $lt: endDate };
+    }
+
+    // Déterminer la limite
+    const limitValue = parseInt(limit) || 100;
+
+    // Récupérer les tickets
+    const tickets = await Ticket.find(query)
+      .sort({ date: -1 })
+      .limit(limitValue);
+
+    // Calculer les totaux
+    const totalTickets = tickets.length;
+    const totalSales = tickets.reduce((sum, ticket) => sum + ticket.total, 0);
+
+    // Mettre à jour les statistiques si c'est aujourd'hui
+    if (period === 'today' || !period) {
+      subsystem.stats.today_tickets = totalTickets;
+      subsystem.stats.today_sales = totalSales;
+      await subsystem.save();
+    }
+
+    res.json({
+      success: true,
+      tickets: tickets.map(ticket => ({
+        id: ticket._id,
+        number: ticket.number,
+        date: ticket.date,
+        draw: ticket.draw,
+        draw_time: ticket.draw_time,
+        bets: ticket.bets,
+        total: ticket.total,
+        agent_id: ticket.agent_id,
+        agent_name: ticket.agent_name,
+        is_synced: ticket.is_synced
+      })),
+      stats: {
+        total_tickets: totalTickets,
+        total_sales: totalSales
+      }
+    });
+
+  } catch (error) {
+    console.error('Erreur récupération tickets:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Erreur serveur lors de la récupération des tickets'
+    });
+  }
+});
+
+// Route pour les activités du sous-système
+app.get('/api/subsystem/activities', vérifierToken, vérifierAccèsSubsystem, async (req, res) => {
+  try {
+    const currentUser = req.currentUser;
+    const subsystem = await Subsystem.findById(currentUser.subsystem_id);
+
+    if (!subsystem) {
+      return res.status(404).json({
+        success: false,
+        error: 'Sous-système non trouvé'
+      });
+    }
+
+    // Pour l'instant, nous simulerons des activités
+    // Dans une version complète, nous aurions un schéma d'activités
+    const activities = [
+      {
+        user: 'Debesly borlette',
+        action: 'Création d\'utilisateur',
+        details: 'Création de l\'agent Dédie jean',
+        timestamp: new Date(Date.now() - 3600000)
+      },
+      {
+        user: 'Debesly borlette',
+        action: 'Modification des paramètres',
+        details: 'Changement des multiplicateurs Borlette',
+        timestamp: new Date(Date.now() - 7200000)
+      },
+      {
+        user: 'Dédie jean',
+        action: 'Vente de ticket',
+        details: 'Ticket #100001 vendu pour 500 HTG',
+        timestamp: new Date(Date.now() - 10800000)
+      }
+    ];
+
+    res.json({
+      success: true,
+      activities: activities
+    });
+
+  } catch (error) {
+    console.error('Erreur récupération activités:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Erreur serveur lors de la récupération des activités'
+    });
+  }
+});
+
+// Route pour synchroniser un ticket
+app.put('/api/tickets/:id/sync', vérifierToken, vérifierAccèsSubsystem, async (req, res) => {
+  try {
+    const currentUser = req.currentUser;
+    const ticketId = req.params.id;
+
+    // Vérifier que le ticket appartient au sous-système
+    const subsystem = await Subsystem.findById(currentUser.subsystem_id);
+    const ticket = await Ticket.findOne({
+      _id: ticketId,
+      subsystem_id: subsystem._id
+    });
+
+    if (!ticket) {
+      return res.status(404).json({
+        success: false,
+        error: 'Ticket non trouvé dans votre sous-système'
+      });
+    }
+
+    // Marquer comme synchronisé
+    ticket.is_synced = true;
+    ticket.synced_at = new Date();
+    await ticket.save();
+
+    res.json({
+      success: true,
+      message: 'Ticket synchronisé avec succès'
+    });
+
+  } catch (error) {
+    console.error('Erreur synchronisation ticket:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Erreur serveur lors de la synchronisation du ticket'
+    });
+  }
+});
+
+// Route pour les tickets gagnants
+app.get('/api/tickets/winning', vérifierToken, async (req, res) => {
+  try {
+    // Cette route est déjà définie mais avec vérification d'agent
+    // Nous allons la modifier pour permettre l'accès aux sous-systèmes
+    const currentUser = req.currentUser;
+    
+    let query = {};
+    
+    // Si c'est un agent, ne voir que ses tickets
+    if (currentUser.role === 'agent') {
+      query.agent_id = currentUser._id;
+    } 
+    // Si c'est un sous-système ou superviseur niveau 2, voir tous les tickets du sous-système
+    else if (currentUser.role === 'subsystem' || (currentUser.role === 'supervisor' && currentUser.level === 2)) {
+      const subsystem = await Subsystem.findById(currentUser.subsystem_id);
+      if (!subsystem) {
+        return res.status(404).json({
+          success: false,
+          error: 'Sous-système non trouvé'
+        });
+      }
+      
+      // Récupérer tous les agents du sous-système
+      const agents = await User.find({ 
+        subsystem_id: subsystem._id,
+        role: 'agent' 
+      }).select('_id');
+      
+      const agentIds = agents.map(agent => agent._id);
+      query.agent_id = { $in: agentIds };
+    } else {
+      return res.status(403).json({
+        success: false,
+        error: 'Accès refusé'
+      });
+    }
+
+    const winners = await Winner.find(query)
+      .sort({ date: -1 })
+      .limit(50);
+
+    res.json({
+      success: true,
+      tickets: winners.map(winner => ({
+        id: winner._id,
+        ticket_number: winner.ticket_number,
+        date: winner.date,
+        draw: winner.draw,
+        draw_time: winner.draw_time,
+        winning_bets: winner.winning_bets,
+        total_winnings: winner.total_winnings,
+        paid: winner.paid
+      }))
+    });
+  } catch (error) {
+    console.error('Erreur chargement gagnants:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Erreur lors du chargement des gagnants'
+    });
+  }
+});
 
 // =================== ROUTES POUR LES SUPERVISEURS NIVEAU 1 (DE SERVER N) ===================
 

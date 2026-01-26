@@ -148,11 +148,11 @@ const betSchema = new mongoose.Schema({
   details: { type: mongoose.Schema.Types.Mixed }
 });
 
-// Schéma pour les fiches
+// Schéma pour les fiches (Ticket)
 const ticketSchema = new mongoose.Schema({
   number: { type: Number, required: true, unique: true },
   draw: { type: String, required: true },
-  draw_time: { type: String, enum: ['morning', 'evening'], required: true },
+  draw_time: { type: String }, // Rendu optionnel et flexible
   date: { type: Date, default: Date.now },
   bets: [betSchema],
   total: { type: Number, required: true },
@@ -166,6 +166,34 @@ const ticketSchema = new mongoose.Schema({
 });
 
 const Ticket = mongoose.model('Ticket', ticketSchema);
+
+// Schéma pour les résultats (Result)
+const resultSchema = new mongoose.Schema({
+  draw: { type: String, required: true },
+  draw_time: { type: String }, // Assoupli
+  date: { type: Date, required: true },
+  lot1: { type: String, required: true },
+  lot2: { type: String },
+  lot3: { type: String },
+  verified: { type: Boolean, default: false },
+  verified_by: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  verified_at: { type: Date }
+});
+
+const Result = mongoose.model('Result', resultSchema);
+
+// Schéma pour l'historique (History)
+const historySchema = new mongoose.Schema({
+  date: { type: Date, default: Date.now },
+  draw: { type: String, required: true },
+  draw_time: { type: String }, // Assoupli
+  bets: [betSchema],
+  total: { type: Number, required: true },
+  agent_id: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  agent_name: { type: String, required: true }
+});
+
+const History = mongoose.model('History', historySchema);
 
 // Schéma pour les fiches multi-tirages
 const multiDrawTicketSchema = new mongoose.Schema({
@@ -190,30 +218,6 @@ const multiDrawTicketSchema = new mongoose.Schema({
 });
 
 const MultiDrawTicket = mongoose.model('MultiDrawTicket', multiDrawTicketSchema);
-
-// Schéma pour les gagnants
-const winnerSchema = new mongoose.Schema({
-  ticket_id: { type: mongoose.Schema.Types.ObjectId, ref: 'Ticket' },
-  ticket_number: { type: Number, required: true },
-  draw: { type: String, required: true },
-  draw_time: { type: String, enum: ['morning', 'evening'], required: true },
-  date: { type: Date, default: Date.now },
-  winning_bets: [{
-    type: { type: String },
-    name: { type: String },
-    number: { type: String },
-    matched_number: { type: String },
-    win_type: { type: String },
-    win_amount: { type: Number }
-  }],
-  total_winnings: { type: Number, required: true },
-  paid: { type: Boolean, default: false },
-  paid_at: { type: Date },
-  paid_by: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
-  agent_id: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }
-});
-
-const Winner = mongoose.model('Winner', winnerSchema);
 
 // Schéma pour la configuration
 const configSchema = new mongoose.Schema({

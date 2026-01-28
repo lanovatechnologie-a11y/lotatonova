@@ -447,15 +447,22 @@ async function loadDataFromAPI() {
 }
 
 // ==========================================
-// 3. Correction dans la fonction saveTicket()
+// 3. CORRECTION CRITIQUE: Fonction saveTicketAPI()
 // ==========================================
 
 async function saveTicketAPI(ticketData) {
     try {
+        // CORRECTION: Envoyer TOUTES les données du ticket
         const response = await apiCall(APP_CONFIG.tickets, 'POST', {
+            number: ticketData.number,
             draw: ticketData.draw,
             draw_time: ticketData.drawTime,
-            bets: ticketData.bets
+            bets: ticketData.bets,
+            total: ticketData.total,
+            agent_id: ticketData.agent_id,
+            agent_name: ticketData.agent_name,
+            subsystem_id: ticketData.subsystem_id,
+            date: ticketData.date
         });
         return response;
     } catch (error) {
@@ -489,16 +496,15 @@ async function saveTicket() {
     const total = activeBets.reduce((sum, bet) => sum + bet.amount, 0);
     
     const ticket = {
-        subsystem_id: currentUser.subsystem_id,
-        agent_id: currentUser.id,
-        agent_name: currentUser.name,
         number: ticketNumber,
-        date: new Date().toISOString(),
         draw: currentDraw,
         drawTime: currentDrawTime,
         bets: activeBets,
         total: total,
-        status: 'active'
+        agent_id: currentUser.id,
+        agent_name: currentUser.name,
+        subsystem_id: currentUser.subsystem_id,
+        date: new Date().toISOString()
     };
     
     try {
@@ -508,9 +514,8 @@ async function saveTicket() {
         if (response && response.success) {
             // Ajouter aux tickets sauvegardés localement
             savedTickets.push({
-                ...ticket,
-                id: response.ticket.id,
-                number: response.ticket.number
+                ...response.ticket,
+                id: response.ticket.id
             });
             
             // Incrémenter le numéro de ticket
@@ -542,7 +547,16 @@ async function saveTicket() {
 // Sauvegarder une fiche multi-tirages via API
 async function saveMultiDrawTicketAPI(ticket) {
     try {
-        const response = await apiCall(APP_CONFIG.multiDrawTickets, 'POST', { ticket: ticket });
+        const response = await apiCall(APP_CONFIG.multiDrawTickets, 'POST', { 
+            ticket: {
+                bets: ticket.bets,
+                draws: Array.from(ticket.draws),
+                totalAmount: ticket.totalAmount,
+                agent_id: ticket.agentId,
+                agent_name: ticket.agentName,
+                subsystem_id: ticket.subsystem_id
+            } 
+        });
         return response;
     } catch (error) {
         console.error('Erreur lors de la sauvegarde de la fiche multi-tirages:', error);
@@ -1050,39 +1064,42 @@ async function saveAndPrintMultiDrawTicket() {
         // Créer la fiche avec les informations de l'utilisateur
         const ticket = {
             id: currentMultiDrawTicket.id,
-            number: multiDrawTickets.length + 1,
-            date: new Date().toISOString(),
             bets: [...currentMultiDrawTicket.bets],
             totalAmount: currentMultiDrawTicket.totalAmount,
             draws: Array.from(currentMultiDrawTicket.draws),
-            agentName: currentUser.name,
             agentId: currentUser.id,
+            agentName: currentUser.name,
             subsystem_id: currentUser.subsystem_id
         };
         
         // Sauvegarder via API
-        await saveMultiDrawTicketAPI(ticket);
+        const response = await saveMultiDrawTicketAPI(ticket);
         
-        // Imprimer
-        printMultiDrawTicket(ticket);
-        
-        // Réinitialiser la fiche actuelle
-        currentMultiDrawTicket = {
-            id: Date.now().toString(),
-            bets: [],
-            totalAmount: 0,
-            draws: new Set(),
-            createdAt: new Date().toISOString()
-        };
-        
-        // Mettre à jour l'affichage
-        updateMultiDrawTicketDisplay();
-        
-        // Recharger les fiches multi-tirages depuis l'API
-        await loadMultiDrawTickets();
-        
-        showNotification("Fiche multi-tirages anrejistre ak enprime avèk siksè!", "success");
+        if (response && response.success) {
+            // Imprimer
+            printMultiDrawTicket(response.ticket);
+            
+            // Réinitialiser la fiche actuelle
+            currentMultiDrawTicket = {
+                id: Date.now().toString(),
+                bets: [],
+                totalAmount: 0,
+                draws: new Set(),
+                createdAt: new Date().toISOString()
+            };
+            
+            // Mettre à jour l'affichage
+            updateMultiDrawTicketDisplay();
+            
+            // Recharger les fiches multi-tirages depuis l'API
+            await loadMultiDrawTickets();
+            
+            showNotification("Fiche multi-tirages anrejistre ak enprime avèk siksè!", "success");
+        } else {
+            showNotification("Erreur lors de la sauvegarde de la fiche multi-tirages", "error");
+        }
     } catch (error) {
+        console.error('Erreur sauvegarde fiche multi-tirages:', error);
         showNotification("Erreur lors de la sauvegarde de la fiche multi-tirages", "error");
     }
 }
@@ -1120,7 +1137,7 @@ function printMultiDrawTicket(ticket) {
             <p>Fiche Multi-Tirages</p>
             <p><strong>Nimewo:</strong> #${String(ticket.number).padStart(6, '0')} (Multi)</p>
             <p><strong>Dat:</strong> ${new Date(ticket.date).toLocaleString('fr-FR')}</p>
-            <p><strong>Ajan:</strong> ${ticket.agentName}</p>
+            <p><strong>Ajan:</strong> ${ticket.agent_name}</p>
             <p><strong>Sous-système:</strong> ${currentUser.subsystem_name || 'Non spécifié'}</p>
             <hr>
             <div style="margin: 15px 0;">
@@ -4298,7 +4315,7 @@ function showAllTickets() {
 function showPendingTickets() {
     // SUPPRIMÉ: Cette fonction n'est plus nécessaire
     document.getElementById('search-ticket-number').value = '';
-    showNotification("Fonksyon sa pa disponib. Tout fiche yo synchrone direkteman.", "info");
+    showNotification("Fonksyon sa pa disponib. Tout fiche yo synchrone directement.", "info");
 }
 
 function generateEndOfDrawReport() {

@@ -580,7 +580,8 @@ app.get('/api/tickets', vérifierToken, async (req, res) => {
         draw_time: ticket.draw_time,
         bets: ticket.bets,
         total: ticket.total,
-        agent_name: ticket.agent_name
+        agent_name: ticket.agent_name,
+        subsystem_id: ticket.subsystem_id
       })),
       nextTicketNumber: nextTicketNumber
     });
@@ -593,10 +594,20 @@ app.get('/api/tickets', vérifierToken, async (req, res) => {
   }
 });
 
-// Route pour sauvegarder un ticket (modifiée pour utiliser le token)
+// =================== CORRECTION CRITIQUE: Route pour sauvegarder un ticket ===================
 app.post('/api/tickets', vérifierToken, async (req, res) => {
   try {
-    const { draw, draw_time, bets } = req.body;
+    const { 
+      number, 
+      draw, 
+      draw_time, 
+      bets, 
+      total, 
+      agent_id, 
+      agent_name, 
+      subsystem_id, 
+      date 
+    } = req.body;
 
     const user = await User.findById(req.tokenInfo.userId);
     if (!user) {
@@ -606,20 +617,37 @@ app.post('/api/tickets', vérifierToken, async (req, res) => {
       });
     }
 
-    const lastTicket = await Ticket.findOne().sort({ number: -1 });
-    const ticketNumber = lastTicket ? lastTicket.number + 1 : 100001;
+    // Déterminer le numéro de ticket
+    let ticketNumber;
+    if (number) {
+      // Vérifier si le numéro existe déjà
+      const existingTicket = await Ticket.findOne({ number: number });
+      if (existingTicket) {
+        // Générer un nouveau numéro si conflit
+        const lastTicket = await Ticket.findOne().sort({ number: -1 });
+        ticketNumber = lastTicket ? lastTicket.number + 1 : 100001;
+      } else {
+        ticketNumber = number;
+      }
+    } else {
+      const lastTicket = await Ticket.findOne().sort({ number: -1 });
+      ticketNumber = lastTicket ? lastTicket.number + 1 : 100001;
+    }
 
-    const total = bets.reduce((sum, bet) => sum + bet.amount, 0);
+    // Calculer le total si non fourni
+    const calculatedTotal = total || bets.reduce((sum, bet) => sum + bet.amount, 0);
 
+    // CORRECTION: Créer le ticket avec toutes les données nécessaires
     const ticket = new Ticket({
       number: ticketNumber,
       draw: draw,
       draw_time: draw_time,
       bets: bets,
-      total: total,
-      agent_id: user._id,
-      agent_name: user.name,
-      date: new Date()
+      total: calculatedTotal,
+      agent_id: agent_id || user._id,
+      agent_name: agent_name || user.name,
+      subsystem_id: subsystem_id || user.subsystem_id, // ✅ AJOUT CRITIQUE
+      date: date || new Date()
     });
 
     await ticket.save();
@@ -634,7 +662,8 @@ app.post('/api/tickets', vérifierToken, async (req, res) => {
         draw_time: ticket.draw_time,
         bets: ticket.bets,
         total: ticket.total,
-        agent_name: ticket.agent_name
+        agent_name: ticket.agent_name,
+        subsystem_id: ticket.subsystem_id
       }
     });
   } catch (error) {
@@ -710,6 +739,7 @@ app.post('/api/tickets/pending', vérifierToken, async (req, res) => {
       total: ticket.total,
       agent_id: user._id,
       agent_name: user.name,
+      subsystem_id: user.subsystem_id, // ✅ AJOUT CRITIQUE
       date: new Date(),
       is_synced: false
     });
@@ -799,7 +829,8 @@ app.get('/api/tickets/multi-draw', vérifierToken, async (req, res) => {
         bets: ticket.bets,
         draws: ticket.draws,
         total: ticket.total,
-        agent_name: ticket.agent_name
+        agent_name: ticket.agent_name,
+        subsystem_id: ticket.subsystem_id
       }))
     });
   } catch (error) {
@@ -834,7 +865,8 @@ app.post('/api/tickets/multi-draw', vérifierToken, async (req, res) => {
       draws: Array.from(ticket.draws),
       total: ticket.totalAmount,
       agent_id: user._id,
-      agent_name: user.name
+      agent_name: user.name,
+      subsystem_id: user.subsystem_id // ✅ AJOUT CRITIQUE
     });
 
     await multiDrawTicket.save();
@@ -848,7 +880,8 @@ app.post('/api/tickets/multi-draw', vérifierToken, async (req, res) => {
         bets: multiDrawTicket.bets,
         draws: multiDrawTicket.draws,
         total: multiDrawTicket.total,
-        agent_name: multiDrawTicket.agent_name
+        agent_name: multiDrawTicket.agent_name,
+        subsystem_id: multiDrawTicket.subsystem_id
       }
     });
   } catch (error) {
@@ -1884,6 +1917,7 @@ app.get('/api/subsystems/mine', vérifierToken, async (req, res) => {
     });
   }
 });
+
 // =================== NOUVELLES ROUTES POUR LES SOUS-SYSTÈMES ===================
 
 // Route pour créer un utilisateur dans un sous-système

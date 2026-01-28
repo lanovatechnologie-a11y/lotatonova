@@ -98,30 +98,6 @@ const subsystemSchema = new mongoose.Schema({
 });
 
 const Subsystem = mongoose.model('Subsystem', subsystemSchema);
-const subsystemSchema = new mongoose.Schema({
-  name: { type: String, required: true },
-  subdomain: { type: String, required: true, unique: true },
-  contact_email: { type: String, required: true },
-  contact_phone: { type: String },
-  logo_url: { type: String, default: 'logo-borlette.jpg' }, // AJOUT: Champ pour le logo
-  max_users: { type: Number, default: 10 },
-  subscription_type: { 
-    type: String, 
-    enum: ['basic', 'standard', 'premium', 'enterprise'], 
-    default: 'standard' 
-  },
-  subscription_months: { type: Number, default: 1 },
-  subscription_expires: { type: Date },
-  admin_user: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
-  is_active: { type: Boolean, default: true },
-  created_at: { type: Date, default: Date.now },
-  stats: {
-    active_users: { type: Number, default: 0 },
-    today_sales: { type: Number, default: 0 },
-    today_tickets: { type: Number, default: 0 },
-    usage_percentage: { type: Number, default: 0 }
-  }
-});
 
 // =================== NOUVEAUX SCHÉMAS POUR LOTATO (DE SERVER L) ===================
 
@@ -1153,44 +1129,6 @@ app.post('/api/check-winners', vérifierToken, async (req, res) => {
       error: 'Erreur lors de la vérification des gagnants'
     });
   }
-});
-// Route pour obtenir les informations du sous-système
-app.get('/api/subsystem/info', vérifierToken, async (req, res) => {
-    try {
-        const user = await User.findById(req.tokenInfo.userId);
-        if (!user) {
-            return res.status(401).json({
-                success: false,
-                error: 'Utilisateur non trouvé'
-            });
-        }
-
-        const subsystem = await Subsystem.findById(user.subsystem_id);
-        if (!subsystem) {
-            return res.status(404).json({
-                success: false,
-                error: 'Sous-système non trouvé'
-            });
-        }
-
-        res.json({
-            success: true,
-            subsystem: {
-                _id: subsystem._id,
-                name: subsystem.name,
-                subdomain: subsystem.subdomain,
-                contact_email: subsystem.contact_email,
-                contact_phone: subsystem.contact_phone,
-                logo_url: subsystem.logo_url || 'logo-borlette.jpg'
-            }
-        });
-    } catch (error) {
-        console.error('Erreur récupération sous-système:', error);
-        res.status(500).json({
-            success: false,
-            error: 'Erreur lors de la récupération des informations du sous-système'
-        });
-    }
 });
 
 // =================== ROUTES API EXISTANTES (DE SERVER N) ===================

@@ -567,13 +567,13 @@ async function saveTicket() {
         const response = await saveTicketAPI(ticket);
         
         if (response && response.success) {
-            // Ajouter aux tickets sauvegardés localement
-            savedTickets.push({
+            // CORRECTION: Ajouter le nouveau ticket à savedTickets
+            savedTickets.unshift({
                 ...response.ticket,
                 id: response.ticket.id
             });
             
-            // Incrémenter le numéro de ticket
+            // CORRECTION: Mettre à jour ticketNumber avec le prochain numéro disponible
             ticketNumber = response.ticket.number + 1;
             
             showNotification("Fiche sove avèk siksè!", "success");
@@ -959,7 +959,6 @@ function addToMultiDrawTicket() {
             isValid = false;
             break;
         }
-    }
     
     if (!isValid) {
         showNotification(errorMessage, "warning");
@@ -3867,7 +3866,7 @@ async function saveAndPrintTicket() {
 // Imprimer la fiche
 function printTicket() {
     console.log("Imprimer fiche");
-    const lastTicket = savedTickets[savedTickets.length - 1];
+    const lastTicket = savedTickets[0]; // CORRECTION: Prendre le premier ticket (le plus récent)
     
     if (!lastTicket) {
         showNotification("Pa gen fiche ki sove pou enprime.", "warning");

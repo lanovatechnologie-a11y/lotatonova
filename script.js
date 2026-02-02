@@ -456,85 +456,48 @@ async function saveTicketAPI(ticketData) {
 // ==========================================
 // 5. FONCTION PRINCIPALE DE SAUVEGARDE DE TICKET
 // ==========================================
-async function saveTicket() {
-    console.log("Sauvegarder fiche via API");
-    
-    if (activeBets.length === 0) {
-        showNotification("Pa gen okenn parye pou sove nan fiche a", "warning");
-        return;
-    }
-    
-    // Vérifier que le tirage n'est pas bloqué
-    if (currentDraw && currentDrawTime && isDrawBlocked(currentDraw, currentDrawTime)) {
-        const drawTime = draws[currentDraw].times[currentDrawTime].time;
-        showNotification(`Tiraj sa a bloke! Li fèt à ${drawTime} epi ou pa kapab sove fiche 5 minit avan.`, "error");
-        return;
-    }
-    
-    // Vérifier que l'utilisateur est connecté
-    if (!currentUser) {
-        showNotification("Ou pa konekte. Tanpri rekonekte.", "error");
-        handleLogout();
-        return;
-    }
-    
-    // Calculer le total
-    const total = activeBets.reduce((sum, bet) => sum + bet.amount, 0);
-    
-    // Créer l'objet ticket
-    const ticket = {
-        number: ticketNumber,
-        draw: currentDraw,
-        drawTime: currentDrawTime,
-        bets: activeBets,
-        total: total,
-        agent_id: currentUser.id,
-        agent_name: currentUser.name,
-        subsystem_id: currentUser.subsystem_id,
-        date: new Date().toISOString()
-    };
-    
+async function saveTicketAPI(ticketData) {
     try {
-        console.log('Tentative de sauvegarde du ticket:', ticket);
+        console.log('Sauvegarde du ticket via API:', ticketData);
         
-        // Sauvegarder via API
-        const response = await saveTicketAPI(ticket);
+        // Vérifier que l'utilisateur est connecté ET a un subsystem_id
+        if (!currentUser) {
+            throw new Error('Utilisateur non connecté');
+        }
+        
+        if (!currentUser.subsystem_id) {
+            throw new Error('L\'utilisateur n\'est pas associé à un sous-système');
+        }
+        
+        // Préparer les données EXACTEMENT comme attendu par server.js
+        const ticketToSend = {
+            number: ticketData.number,
+            draw: ticketData.draw,
+            draw_time: ticketData.drawTime, // Server attend "draw_time" avec underscore
+            bets: ticketData.bets,
+            total: ticketData.total,
+            agent_id: currentUser.id,
+            agent_name: currentUser.name,
+            subsystem_id: currentUser.subsystem_id, // CRITIQUE: Doit être présent
+            date: ticketData.date || new Date().toISOString()
+        };
+        
+        console.log('Ticket à envoyer à l\'API:', ticketToSend);
+        
+        const response = await apiCall(APP_CONFIG.tickets, 'POST', ticketToSend);
         
         if (response && response.success) {
-            // Ajouter aux tickets sauvegardés localement
-            savedTickets.push({
-                ...response.ticket,
-                id: response.ticket.id || Date.now().toString()
-            });
-            
-            // Incrémenter le numéro de ticket
-            ticketNumber = response.ticket.number + 1;
-            
-            showNotification("Fiche sove avèk siksè!", "success");
-            
-            // Réinitialiser les paris actifs
-            activeBets = [];
-            updateBetsList();
-            
+            console.log('✅ Ticket sauvegardé avec succès:', response.ticket);
             return response;
         } else {
-            showNotification("Erreur lors de la sauvegarde du ticket", "error");
-            return null;
+            console.error('❌ Échec de la sauvegarde:', response);
+            throw new Error(response?.error || 'Échec de la sauvegarde du ticket');
         }
     } catch (error) {
-        console.error('Erreur lors de la sauvegarde du ticket:', error);
-        
-        if (error.message.includes('Session expirée')) {
-            showNotification("Session expirée. Veuillez vous reconnecter.", "error");
-            handleLogout();
-        } else {
-            showNotification("Erreur lors de la sauvegarde du ticket: " + error.message, "error");
-        }
-        
-        return null;
+        console.error('❌ Erreur lors de la sauvegarde du ticket:', error);
+        throw error;
     }
 }
-
 // ==========================================
 // 6. NOUVEAU: VÉRIFIER SI UN TIRAGE EST BLOQUÉ
 // ==========================================

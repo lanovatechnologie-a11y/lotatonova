@@ -595,84 +595,96 @@ app.get('/api/tickets', vérifierToken, async (req, res) => {
 });
 
 // =================== CORRECTION CRITIQUE: Route pour sauvegarder un ticket ===================
+// Route pour sauvegarder un ticket
 app.post('/api/tickets', vérifierToken, async (req, res) => {
-  try {
-    const { 
-      number, 
-      draw, 
-      draw_time, 
-      bets, 
-      total, 
-      agent_id, 
-      agent_name, 
-      subsystem_id, 
-      date 
-    } = req.body;
+    try {
+        const { 
+            number, 
+            draw, 
+            draw_time, 
+            bets, 
+            total, 
+            agent_id, 
+            agent_name, 
+            subsystem_id, 
+            date 
+        } = req.body;
 
-    const user = await User.findById(req.tokenInfo.userId);
-    if (!user) {
-      return res.status(401).json({
-        success: false,
-        error: 'Utilisateur non trouvé'
-      });
+        console.log('📥 Données reçues pour ticket:', {
+            number, draw, draw_time, total,
+            agent_id, agent_name, subsystem_id
+        });
+
+        const user = await User.findById(req.tokenInfo.userId);
+        if (!user) {
+            return res.status(401).json({
+                success: false,
+                error: 'Utilisateur non trouvé'
+            });
+        }
+
+        // CRITIQUE: Vérifier le subsystem_id
+        let finalSubsystemId = subsystem_id || user.subsystem_id;
+        if (!finalSubsystemId) {
+            return res.status(400).json({
+                success: false,
+                error: 'L\'agent doit être associé à un sous-système'
+            });
+        }
+
+        // Vérifier si le numéro existe déjà
+        let ticketNumber;
+        if (number) {
+            const existingTicket = await Ticket.findOne({ number: number });
+            if (existingTicket) {
+                const lastTicket = await Ticket.findOne().sort({ number: -1 });
+                ticketNumber = lastTicket ? lastTicket.number + 1 : 100001;
+            } else {
+                ticketNumber = number;
+            }
+        } else {
+            const lastTicket = await Ticket.findOne().sort({ number: -1 });
+            ticketNumber = lastTicket ? lastTicket.number + 1 : 100001;
+        }
+
+        // Créer le ticket
+        const ticket = new Ticket({
+            number: ticketNumber,
+            draw: draw,
+            draw_time: draw_time,
+            bets: bets,
+            total: total || bets.reduce((sum, bet) => sum + bet.amount, 0),
+            agent_id: agent_id || user._id,
+            agent_name: agent_name || user.name,
+            subsystem_id: finalSubsystemId, // CRITIQUE: Utiliser le subsystem_id vérifié
+            date: date || new Date()
+        });
+
+        await ticket.save();
+
+        console.log('✅ Ticket sauvegardé:', ticket._id);
+
+        res.json({
+            success: true,
+            ticket: {
+                id: ticket._id,
+                number: ticket.number,
+                date: ticket.date,
+                draw: ticket.draw,
+                draw_time: ticket.draw_time,
+                bets: ticket.bets,
+                total: ticket.total,
+                agent_name: ticket.agent_name,
+                subsystem_id: ticket.subsystem_id
+            }
+        });
+    } catch (error) {
+        console.error('❌ Erreur sauvegarde fiche:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Erreur lors de la sauvegarde de la fiche: ' + error.message
+        });
     }
-
-    // Déterminer le numéro de ticket
-    let ticketNumber;
-    if (number) {
-      // Vérifier si le numéro existe déjà
-      const existingTicket = await Ticket.findOne({ number: number });
-      if (existingTicket) {
-        // Générer un nouveau numéro si conflit
-        const lastTicket = await Ticket.findOne().sort({ number: -1 });
-        ticketNumber = lastTicket ? lastTicket.number + 1 : 100001;
-      } else {
-        ticketNumber = number;
-      }
-    } else {
-      const lastTicket = await Ticket.findOne().sort({ number: -1 });
-      ticketNumber = lastTicket ? lastTicket.number + 1 : 100001;
-    }
-
-    // Calculer le total si non fourni
-    const calculatedTotal = total || bets.reduce((sum, bet) => sum + bet.amount, 0);
-
-    // CORRECTION: Créer le ticket avec toutes les données nécessaires
-    const ticket = new Ticket({
-      number: ticketNumber,
-      draw: draw,
-      draw_time: draw_time,
-      bets: bets,
-      total: calculatedTotal,
-      agent_id: agent_id || user._id,
-      agent_name: agent_name || user.name,
-      subsystem_id: subsystem_id || user.subsystem_id, // ✅ AJOUT CRITIQUE
-      date: date || new Date()
-    });
-
-    await ticket.save();
-
-    res.json({
-      success: true,
-      ticket: {
-        id: ticket._id,
-        number: ticket.number,
-        date: ticket.date,
-        draw: ticket.draw,
-        draw_time: ticket.draw_time,
-        bets: ticket.bets,
-        total: ticket.total,
-        agent_name: ticket.agent_name,
-        subsystem_id: ticket.subsystem_id
-      }
-    });
-  } catch (error) {
-    console.error('Erreur sauvegarde fiche:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Erreur lors de la sauvegarde de la fiche'
-    });
-  }
 });
 
 // Route pour les tickets en attente de l'agent

@@ -1,16 +1,19 @@
 {
   "name": "nova-lotto-backend",
-  "version": "1.0.0",
-  "description": "Système de gestion multi-niveaux Nova Lotto",
+  "version": "2.0.0",
+  "description": "Système de gestion multi-niveaux Nova Lotto avec PostgreSQL",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "dev": "node server.js",
+    "setup": "node init-db.js"
   },
   "dependencies": {
     "express": "^4.18.2",
-    "mongoose": "^8.0.0",
+    "pg": "^8.11.3",
     "cors": "^2.8.5",
-    "compression": "^1.7.4"
+    "compression": "^1.7.4",
+    "dotenv": "^16.3.1"
   },
   "license": "MIT"
 }

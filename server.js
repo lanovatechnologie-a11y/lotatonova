@@ -46,9 +46,18 @@ const db = mongoose.connection;
 db.on('error', console.error.bind(console, '❌ Connexion MongoDB échouée'));
 db.once('open', () => {
   console.log('✅ MongoDB connecté avec succès !');
+  // Initialiser les compteurs après la connexion
+  initCounters();
 });
 
-// =================== SCHÉMAS SIMPLES ===================
+// =================== SCHÉMAS ===================
+
+// Schéma pour les compteurs (numéros atomiques)
+const counterSchema = new mongoose.Schema({
+  _id: { type: String, required: true },
+  seq: { type: Number, default: 100001 }
+});
+const Counter = mongoose.model('Counter', counterSchema);
 
 // Schema utilisateur simple
 const userSchema = new mongoose.Schema({
@@ -99,7 +108,7 @@ const subsystemSchema = new mongoose.Schema({
 
 const Subsystem = mongoose.model('Subsystem', subsystemSchema);
 
-// =================== NOUVEAUX SCHÉMAS POUR LOTATO (DE SERVER L) ===================
+// =================== NOUVEAUX SCHÉMAS POUR LOTATO ===================
 
 // Schéma pour les tirages
 const drawSchema = new mongoose.Schema({
@@ -240,6 +249,31 @@ const historySchema = new mongoose.Schema({
 
 const History = mongoose.model('History', historySchema);
 
+// =================== INITIALISATION DES COMPTEURS ===================
+async function initCounters() {
+  try {
+    // Compteur pour les tickets normaux
+    const ticketCounter = await Counter.findById('ticketNumber');
+    if (!ticketCounter) {
+      const lastTicket = await Ticket.findOne().sort({ number: -1 });
+      const startSeq = lastTicket ? lastTicket.number + 1 : 100001;
+      await Counter.create({ _id: 'ticketNumber', seq: startSeq });
+      console.log(`✅ Compteur ticketNumber initialisé à ${startSeq}`);
+    }
+
+    // Compteur pour les tickets multi-tirages
+    const multiCounter = await Counter.findById('multiDrawTicketNumber');
+    if (!multiCounter) {
+      const lastMulti = await MultiDrawTicket.findOne().sort({ number: -1 });
+      const startSeq = lastMulti ? lastMulti.number + 1 : 500001;
+      await Counter.create({ _id: 'multiDrawTicketNumber', seq: startSeq });
+      console.log(`✅ Compteur multiDrawTicketNumber initialisé à ${startSeq}`);
+    }
+  } catch (err) {
+    console.error('❌ Erreur lors de l\'initialisation des compteurs :', err);
+  }
+}
+
 // =================== MIDDLEWARE DE VÉRIFICATION DE TOKEN ===================
 
 function vérifierToken(req, res, next) {
@@ -361,7 +395,7 @@ async function vérifierAgent(req, res, next) {
   }
 }
 
-// =================== ROUTES DE CONNEXION (DE SERVER N) ===================
+// =================== ROUTES DE CONNEXION ===================
 
 app.post('/api/auth/login', async (req, res) => {
   try {
@@ -456,7 +490,7 @@ app.post('/api/auth/login', async (req, res) => {
   }
 });
 
-// =================== ROUTES POUR LOTATO (DE SERVER L) ===================
+// =================== ROUTES POUR LOTATO ===================
 
 // Route pour enregistrer un historique
 app.post('/api/history', vérifierToken, async (req, res) => {
@@ -551,7 +585,7 @@ app.get('/api/history', vérifierToken, async (req, res) => {
   }
 });
 
-// Route pour obtenir les tickets de l'agent
+// Route pour obtenir les tickets de l'agent (retourne aussi le prochain numéro estimé)
 app.get('/api/tickets', vérifierToken, async (req, res) => {
   try {
     const user = await User.findById(req.tokenInfo.userId);
@@ -566,9 +600,9 @@ app.get('/api/tickets', vérifierToken, async (req, res) => {
       .sort({ date: -1 })
       .limit(100);
 
-    // Trouver le prochain numéro de ticket
-    const lastTicket = await Ticket.findOne().sort({ number: -1 });
-    const nextTicketNumber = lastTicket ? lastTicket.number + 1 : 100001;
+    // Obtenir le prochain numéro depuis le compteur (pour compatibilité frontend)
+    const counter = await Counter.findById('ticketNumber');
+    const nextTicketNumber = counter ? counter.seq : 100001;
 
     res.json({
       success: true,
@@ -594,12 +628,10 @@ app.get('/api/tickets', vérifierToken, async (req, res) => {
   }
 });
 
-// =================== CORRECTION CRITIQUE: Route pour sauvegarder un ticket ===================
-// Route pour sauvegarder un ticket
+// Route pour sauvegarder un ticket (CORRIGÉE : compteur atomique)
 app.post('/api/tickets', vérifierToken, async (req, res) => {
     try {
         const { 
-            number, 
             draw, 
             draw_time, 
             bets, 
@@ -611,7 +643,7 @@ app.post('/api/tickets', vérifierToken, async (req, res) => {
         } = req.body;
 
         console.log('📥 Données reçues pour ticket:', {
-            number, draw, draw_time, total,
+            draw, draw_time, total,
             agent_id, agent_name, subsystem_id
         });
 
@@ -632,20 +664,13 @@ app.post('/api/tickets', vérifierToken, async (req, res) => {
             });
         }
 
-        // Vérifier si le numéro existe déjà
-        let ticketNumber;
-        if (number) {
-            const existingTicket = await Ticket.findOne({ number: number });
-            if (existingTicket) {
-                const lastTicket = await Ticket.findOne().sort({ number: -1 });
-                ticketNumber = lastTicket ? lastTicket.number + 1 : 100001;
-            } else {
-                ticketNumber = number;
-            }
-        } else {
-            const lastTicket = await Ticket.findOne().sort({ number: -1 });
-            ticketNumber = lastTicket ? lastTicket.number + 1 : 100001;
-        }
+        // Obtenir un nouveau numéro de manière atomique
+        const counter = await Counter.findByIdAndUpdate(
+            'ticketNumber',
+            { $inc: { seq: 1 } },
+            { new: true, upsert: true }
+        );
+        const ticketNumber = counter.seq;
 
         // Créer le ticket
         const ticket = new Ticket({
@@ -656,13 +681,13 @@ app.post('/api/tickets', vérifierToken, async (req, res) => {
             total: total || bets.reduce((sum, bet) => sum + bet.amount, 0),
             agent_id: agent_id || user._id,
             agent_name: agent_name || user.name,
-            subsystem_id: finalSubsystemId, // CRITIQUE: Utiliser le subsystem_id vérifié
+            subsystem_id: finalSubsystemId,
             date: date || new Date()
         });
 
         await ticket.save();
 
-        console.log('✅ Ticket sauvegardé:', ticket._id);
+        console.log('✅ Ticket sauvegardé:', ticket._id, 'numéro', ticket.number);
 
         res.json({
             success: true,
@@ -727,7 +752,7 @@ app.get('/api/tickets/pending', vérifierToken, async (req, res) => {
   }
 });
 
-// Route pour sauvegarder un ticket en attente
+// Route pour sauvegarder un ticket en attente (CORRIGÉE : compteur atomique)
 app.post('/api/tickets/pending', vérifierToken, async (req, res) => {
   try {
     const { ticket } = req.body;
@@ -740,8 +765,13 @@ app.post('/api/tickets/pending', vérifierToken, async (req, res) => {
       });
     }
 
-    const lastTicket = await Ticket.findOne().sort({ number: -1 });
-    const ticketNumber = lastTicket ? lastTicket.number + 1 : 100001;
+    // Obtenir un nouveau numéro de manière atomique
+    const counter = await Counter.findByIdAndUpdate(
+      'ticketNumber',
+      { $inc: { seq: 1 } },
+      { new: true, upsert: true }
+    );
+    const ticketNumber = counter.seq;
 
     const newTicket = new Ticket({
       number: ticketNumber,
@@ -751,7 +781,7 @@ app.post('/api/tickets/pending', vérifierToken, async (req, res) => {
       total: ticket.total,
       agent_id: user._id,
       agent_name: user.name,
-      subsystem_id: user.subsystem_id, // ✅ AJOUT CRITIQUE
+      subsystem_id: user.subsystem_id,
       date: new Date(),
       is_synced: false
     });
@@ -854,7 +884,7 @@ app.get('/api/tickets/multi-draw', vérifierToken, async (req, res) => {
   }
 });
 
-// Route pour sauvegarder une fiche multi-tirages
+// Route pour sauvegarder une fiche multi-tirages (CORRIGÉE : compteur atomique)
 app.post('/api/tickets/multi-draw', vérifierToken, async (req, res) => {
   try {
     const { ticket } = req.body;
@@ -867,8 +897,13 @@ app.post('/api/tickets/multi-draw', vérifierToken, async (req, res) => {
       });
     }
 
-    const lastTicket = await MultiDrawTicket.findOne().sort({ number: -1 });
-    const ticketNumber = lastTicket ? lastTicket.number + 1 : 500001;
+    // Obtenir un nouveau numéro de manière atomique pour les multi-tirages
+    const counter = await Counter.findByIdAndUpdate(
+      'multiDrawTicketNumber',
+      { $inc: { seq: 1 } },
+      { new: true, upsert: true }
+    );
+    const ticketNumber = counter.seq;
 
     const multiDrawTicket = new MultiDrawTicket({
       number: ticketNumber,
@@ -878,7 +913,7 @@ app.post('/api/tickets/multi-draw', vérifierToken, async (req, res) => {
       total: ticket.totalAmount,
       agent_id: user._id,
       agent_name: user.name,
-      subsystem_id: user.subsystem_id // ✅ AJOUT CRITIQUE
+      subsystem_id: user.subsystem_id
     });
 
     await multiDrawTicket.save();
@@ -1143,7 +1178,7 @@ app.post('/api/check-winners', vérifierToken, async (req, res) => {
   }
 });
 
-// =================== ROUTES API EXISTANTES (DE SERVER N) ===================
+// =================== ROUTES API EXISTANTES ===================
 
 app.get('/api/health', (req, res) => {
   res.json({ 
@@ -1220,7 +1255,7 @@ app.get('/api/auth/check', vérifierToken, async (req, res) => {
   }
 });
 
-// =================== ROUTES POUR LE MASTER DASHBOARD (DE SERVER N) ===================
+// =================== ROUTES POUR LE MASTER DASHBOARD ===================
 
 // Route d'initialisation master
 app.post('/api/master/init', async (req, res) => {
@@ -1357,7 +1392,7 @@ app.get('/api/master/check-session', vérifierToken, async (req, res) => {
   }
 });
 
-// =================== ROUTES POUR LES SOUS-SYSTÈMES (DE SERVER N) ===================
+// =================== ROUTES POUR LES SOUS-SYSTÈMES ===================
 
 // Routes Master pour les sous-systèmes
 app.post('/api/master/subsystems', vérifierToken, async (req, res) => {
@@ -2299,47 +2334,35 @@ app.put('/api/tickets/:id/sync', vérifierToken, vérifierAccèsSubsystem, async
   }
 });
 
-// Route pour les tickets gagnants
-app.get('/api/tickets/winning', vérifierToken, async (req, res) => {
+// Route pour les tickets gagnants (déjà définie mais avec vérification d'agent)
+// Nous laissons la route précédente pour /api/tickets/winning (agent) et celle-ci est pour les sous-systèmes
+// Note: la route /api/tickets/winning existe déjà plus haut avec vérification agent,
+// mais nous allons en ajouter une version pour sous-système/superviseur2 via vérifierAccèsSubsystem
+
+app.get('/api/subsystem/winning-tickets', vérifierToken, vérifierAccèsSubsystem, async (req, res) => {
   try {
-    // Cette route est déjà définie mais avec vérification d'agent
-    // Nous allons la modifier pour permettre l'accès aux sous-systèmes
     const currentUser = req.currentUser;
     
-    let query = {};
-    
-    // Si c'est un agent, ne voir que ses tickets
-    if (currentUser.role === 'agent') {
-      query.agent_id = currentUser._id;
-    } 
-    // Si c'est un sous-système ou superviseur niveau 2, voir tous les tickets du sous-système
-    else if (currentUser.role === 'subsystem' || (currentUser.role === 'supervisor' && currentUser.level === 2)) {
-      const subsystem = await Subsystem.findById(currentUser.subsystem_id);
-      if (!subsystem) {
-        return res.status(404).json({
-          success: false,
-          error: 'Sous-système non trouvé'
-        });
-      }
-      
-      // Récupérer tous les agents du sous-système
-      const agents = await User.find({ 
-        subsystem_id: subsystem._id,
-        role: 'agent' 
-      }).select('_id');
-      
-      const agentIds = agents.map(agent => agent._id);
-      query.agent_id = { $in: agentIds };
-    } else {
-      return res.status(403).json({
+    // Récupérer le sous-système
+    const subsystem = await Subsystem.findById(currentUser.subsystem_id);
+    if (!subsystem) {
+      return res.status(404).json({
         success: false,
-        error: 'Accès refusé'
+        error: 'Sous-système non trouvé'
       });
     }
 
-    const winners = await Winner.find(query)
+    // Récupérer tous les agents du sous-système
+    const agents = await User.find({ 
+      subsystem_id: subsystem._id,
+      role: 'agent' 
+    }).select('_id');
+    
+    const agentIds = agents.map(agent => agent._id);
+
+    const winners = await Winner.find({ agent_id: { $in: agentIds } })
       .sort({ date: -1 })
-      .limit(50);
+      .limit(100);
 
     res.json({
       success: true,
@@ -2351,11 +2374,12 @@ app.get('/api/tickets/winning', vérifierToken, async (req, res) => {
         draw_time: winner.draw_time,
         winning_bets: winner.winning_bets,
         total_winnings: winner.total_winnings,
-        paid: winner.paid
+        paid: winner.paid,
+        agent_id: winner.agent_id
       }))
     });
   } catch (error) {
-    console.error('Erreur chargement gagnants:', error);
+    console.error('Erreur chargement gagnants sous-système:', error);
     res.status(500).json({
       success: false,
       error: 'Erreur lors du chargement des gagnants'
@@ -2363,7 +2387,7 @@ app.get('/api/tickets/winning', vérifierToken, async (req, res) => {
   }
 });
 
-// =================== ROUTES POUR LES SUPERVISEURS NIVEAU 1 (DE SERVER N) ===================
+// =================== ROUTES POUR LES SUPERVISEURS NIVEAU 1 ===================
 
 // Route pour obtenir les statistiques des agents
 app.get('/api/supervisor1/agent-stats', vérifierToken, async (req, res) => {
@@ -2542,7 +2566,7 @@ app.get('/api/supervisor1/agent-reports/:agentId', vérifierToken, async (req, r
   }
 });
 
-// =================== ROUTES POUR LES ADMINISTRATEURS DE SOUS-SYSTÈMES ET SUPERVISEURS NIVEAU 2 (DE SERVER N) ===================
+// =================== ROUTES POUR LES ADMINISTRATEURS DE SOUS-SYSTÈMES ET SUPERVISEURS NIVEAU 2 ===================
 
 // Route pour lister les utilisateurs du sous-système
 app.get('/api/subsystem/users', vérifierToken, vérifierAccèsSubsystem, async (req, res) => {
@@ -2903,7 +2927,7 @@ app.get('/api/subsystem/stats', vérifierToken, vérifierAccèsSubsystem, async 
   }
 });
 
-// =================== ROUTES API EXISTANTES (DE SERVER N) ===================
+// =================== ROUTES API EXISTANTES ===================
 
 app.post('/api/agents/create', vérifierToken, async (req, res) => {
     try {
@@ -2923,7 +2947,7 @@ app.post('/api/agents/create', vérifierToken, async (req, res) => {
     }
 });
 
-// =================== ROUTES POUR INITIALISER LA BASE DE DONNÉES (DE SERVER N) ===================
+// =================== ROUTES POUR INITIALISER LA BASE DE DONNÉES ===================
 
 app.post('/api/init/master', async (req, res) => {
   try {
@@ -3087,12 +3111,12 @@ app.listen(PORT, () => {
   console.log('  POST   /api/history                     - Enregistrer historique');
   console.log('  GET    /api/history                     - Récupérer historique');
   console.log('  GET    /api/tickets                     - Récupérer tickets de l\'agent');
-  console.log('  POST   /api/tickets                     - Sauvegarder ticket');
+  console.log('  POST   /api/tickets                     - Sauvegarder ticket (avec compteur atomique)');
   console.log('  GET    /api/tickets/pending             - Tickets en attente');
-  console.log('  POST   /api/tickets/pending             - Sauvegarder ticket en attente');
+  console.log('  POST   /api/tickets/pending             - Sauvegarder ticket en attente (compteur)');
   console.log('  GET    /api/tickets/winning             - Tickets gagnants');
   console.log('  GET    /api/tickets/multi-draw          - Fiches multi-tirages');
-  console.log('  POST   /api/tickets/multi-draw          - Sauvegarder fiche multi-tirages');
+  console.log('  POST   /api/tickets/multi-draw          - Sauvegarder fiche multi-tirages (compteur)');
   console.log('  GET    /api/company-info                - Informations entreprise');
   console.log('  GET    /api/logo                        - URL du logo');
   console.log('  GET    /api/results                     - Récupérer résultats');
@@ -3122,6 +3146,7 @@ app.listen(PORT, () => {
   console.log('  PUT    /api/subsystem/users/:id       - Modifier utilisateur');
   console.log('  POST   /api/subsystem/assign          - Assigner superviseur');
   console.log('  GET    /api/subsystem/stats           - Statistiques sous-système');
+  console.log('  GET    /api/subsystem/winning-tickets - Tickets gagnants du sous-système');
   console.log('');
   console.log('📋 Routes API générales:');
   console.log('  GET    /api/health                    - Santé du serveur');

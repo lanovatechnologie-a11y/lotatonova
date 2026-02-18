@@ -44,14 +44,10 @@ mongoose.connect(process.env.MONGO_URL || 'mongodb://localhost:27017/lottodb', {
 
 const db = mongoose.connection;
 db.on('error', console.error.bind(console, '❌ Connexion MongoDB échouée'));
-db.once('open', async () => {
+db.once('open', () => {
   console.log('✅ MongoDB connecté avec succès !');
-  
-  // Nettoyer les anciens index (ticketNumber_1)
-  await cleanupIndexes();
-  
-  // Initialiser les compteurs de tickets
-  await initCounters();
+  // Initialiser les compteurs après la connexion
+  initCounters();
 });
 
 // =================== SCHÉMAS ===================
@@ -252,33 +248,6 @@ const historySchema = new mongoose.Schema({
 });
 
 const History = mongoose.model('History', historySchema);
-
-// =================== NETTOYAGE DES ANCIENS INDEX ===================
-async function cleanupIndexes() {
-  try {
-    const collection = mongoose.connection.collection('tickets');
-    const indexes = await collection.indexes();
-    
-    // Supprimer l'ancien index ticketNumber_1 s'il existe
-    const oldIndex = indexes.find(idx => idx.name === 'ticketNumber_1');
-    if (oldIndex) {
-      await collection.dropIndex('ticketNumber_1');
-      console.log('✅ Ancien index ticketNumber_1 supprimé avec succès');
-    } else {
-      console.log('ℹ️ Aucun ancien index ticketNumber_1 trouvé');
-    }
-
-    // Optionnel : vérifier que l'index number_1 est bien présent
-    const numberIndex = indexes.find(idx => idx.name === 'number_1');
-    if (!numberIndex) {
-      // En production, autoIndex est souvent désactivé, on le crée manuellement
-      await collection.createIndex({ number: 1 }, { unique: true });
-      console.log('✅ Index number_1 créé manuellement');
-    }
-  } catch (err) {
-    console.error('❌ Erreur lors du nettoyage des index :', err);
-  }
-}
 
 // =================== INITIALISATION DES COMPTEURS ===================
 async function initCounters() {
@@ -735,16 +704,6 @@ app.post('/api/tickets', vérifierToken, async (req, res) => {
             }
         });
     } catch (error) {
-        if (error.code === 11000) {
-            console.error('❌ Duplicate key error:', error.message);
-            // Extraire le champ concerné (pour diagnostic)
-            const match = error.message.match(/index: (\w+)_/);
-            const field = match ? match[1] : 'inconnu';
-            return res.status(409).json({
-                success: false,
-                error: `Duplication détectée sur le champ '${field}'. Le numéro de ticket ${ticketNumber} existe peut-être déjà.`
-            });
-        }
         console.error('❌ Erreur sauvegarde fiche:', error);
         res.status(500).json({
             success: false,
@@ -843,12 +802,6 @@ app.post('/api/tickets/pending', vérifierToken, async (req, res) => {
       }
     });
   } catch (error) {
-    if (error.code === 11000) {
-      return res.status(409).json({
-        success: false,
-        error: 'Erreur de duplication. Veuillez réessayer.'
-      });
-    }
     console.error('Erreur sauvegarde ticket en attente:', error);
     res.status(500).json({
       success: false,
@@ -979,12 +932,6 @@ app.post('/api/tickets/multi-draw', vérifierToken, async (req, res) => {
       }
     });
   } catch (error) {
-    if (error.code === 11000) {
-      return res.status(409).json({
-        success: false,
-        error: 'Erreur de duplication. Veuillez réessayer.'
-      });
-    }
     console.error('Erreur sauvegarde fiche multi-tirages:', error);
     res.status(500).json({
       success: false,
@@ -2387,7 +2334,11 @@ app.put('/api/tickets/:id/sync', vérifierToken, vérifierAccèsSubsystem, async
   }
 });
 
-// Route pour les tickets gagnants du sous-système (pour subsystem/supervisor2)
+// Route pour les tickets gagnants (déjà définie mais avec vérification d'agent)
+// Nous laissons la route précédente pour /api/tickets/winning (agent) et celle-ci est pour les sous-systèmes
+// Note: la route /api/tickets/winning existe déjà plus haut avec vérification agent,
+// mais nous allons en ajouter une version pour sous-système/superviseur2 via vérifierAccèsSubsystem
+
 app.get('/api/subsystem/winning-tickets', vérifierToken, vérifierAccèsSubsystem, async (req, res) => {
   try {
     const currentUser = req.currentUser;
